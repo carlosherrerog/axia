@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional, List
+import re
 
 
 # -----------------------------------------------------------------------
@@ -19,6 +20,15 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+
+    @field_validator('username')
+    @classmethod
+    def username_valid(cls, v):
+        if len(v) < 3 or len(v) > 30:
+            raise ValueError('El nombre de usuario debe tener entre 3 y 30 caracteres')
+        if not re.match(r'^[a-z0-9_]+$', v):
+            raise ValueError('El nombre de usuario solo puede contener letras minúsculas, números y guión bajo')
+        return v
 
     @field_validator('password')
     @classmethod

@@ -454,8 +454,8 @@ export default function AuthScreen({ navigation }) {
       } else {
         // Validación local de contraseña
         const specialCount = (regPwd.match(/[^a-zA-Z0-9]/g) || []).length;
-        if (regPwd.length < 6) {
-          setPwdError('La contraseña debe tener al menos 6 caracteres.');
+        if (regPwd.length < 8) {
+          setPwdError('La contraseña debe tener al menos 8 caracteres.');
           setLoading(false);
           return;
         }
