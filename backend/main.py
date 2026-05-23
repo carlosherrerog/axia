@@ -27,6 +27,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from fastapi.responses import HTMLResponse
+from fastapi import Request
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import joinedload
@@ -85,7 +89,10 @@ async def lifespan(app: FastAPI):
     # --- CÓDIGO DE APAGADO (Shutdown) ---
 
 # 2. Pasamos el lifespan al inicializar FastAPI
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="AXIA Backend", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 compra_venta = APIRouter(prefix="/nfts", tags=["Marketplace"])
 
@@ -341,7 +348,8 @@ def get_status():
     return {"status": "online", "architecture": "MVC Hybrid"}
 
 @app.post("/register", response_model=user_schemas.UserResponse)
-def register_user(user: user_schemas.UserCreate, db: Session = Depends(database.get_db)):
+@limiter.limit("5/minute")
+def register_user(request: Request, user: user_schemas.UserCreate, db: Session = Depends(database.get_db)):
     existing_user = db.query(models.User).filter(
         (models.User.email == user.email) | (models.User.username == user.username)
     ).first()
@@ -380,7 +388,8 @@ def register_user(user: user_schemas.UserCreate, db: Session = Depends(database.
     return new_user
 
 @app.post("/login", response_model=user_schemas.LoginSuccess)
-def login_user(user_credentials: user_schemas.UserLogin, db: Session = Depends(database.get_db)):
+@limiter.limit("10/minute")
+def login_user(request: Request, user_credentials: user_schemas.UserLogin, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(
         (models.User.email == user_credentials.identifier) | 
         (models.User.username == user_credentials.identifier)

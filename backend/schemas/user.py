@@ -87,7 +87,14 @@ class ListWatchRequest(BaseModel):
 # ACTUALIZAR PRECIO DE RELOJ LISTADO [CLIENTE]
 class UpdatePriceRequest(BaseModel):
     new_price_usdc: float
-    tx_hash: str   
+    tx_hash: str
+
+    @field_validator('new_price_usdc')
+    @classmethod
+    def price_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('El precio debe ser mayor que 0')
+        return v
 
 # CANCELAR ANUNCIO [CIENTE]
 class CancelListingRequest(BaseModel):

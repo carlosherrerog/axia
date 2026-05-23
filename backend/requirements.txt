@@ -18,3 +18,4 @@ pillow==12.2.0
 requests==2.33.1
 aiohttp==3.13.5
 websockets==15.0.1
+slowapi==0.1.9
