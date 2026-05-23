@@ -23,7 +23,7 @@ from schemas import user as user_schemas
 import blockchain
 from pydantic import BaseModel
 
-import resend
+import httpx
 from fastapi.responses import HTMLResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -37,7 +37,7 @@ from sqlalchemy import cast, String
 load_dotenv()
 
 # --- 1. CONFIGURACIÓN DE CORREO ---
-resend.api_key = os.getenv("RESEND_API_KEY")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -217,17 +217,21 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 def send_email(to_email: str, subject: str, html_body: str):
-    print(f"[Resend] API key set: {bool(resend.api_key)} | to: {to_email}")
     try:
-        result = resend.Emails.send({
-            "from": "AXIA <onboarding@resend.dev>",
-            "to": [to_email],
-            "subject": subject,
-            "html": html_body,
-        })
-        print(f"[Resend] Enviado OK: {result}")
+        response = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+            json={
+                "sender": {"name": "AXIA", "email": "axiawatches@gmail.com"},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_body,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
     except Exception as e:
-        print(f"[Resend] Error enviando correo: {e}")
+        print(f"Error enviando correo: {e}")
 
 def get_axia_template(titulo: str, mensaje: str, contenido_extra: str):
     """Genera un HTML con la estética profesional y futurista de AXIA (Polygon style)."""
