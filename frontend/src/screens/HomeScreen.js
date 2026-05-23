@@ -20,9 +20,10 @@ export default function HomeScreen() {
   const fetchData = useCallback(async () => {
     try {
       setLoadingData(true);
-      const userRes = await api.get('/users/me');
-      setLoggedUser(userRes.data);
-
+      try {
+        const userRes = await api.get('/users/me');
+        setLoggedUser(userRes.data);
+      } catch {} // modo invitado: continuar sin usuario
       const marketRes = await api.get('/marketplace');
       setWatches(marketRes.data);
     } catch (error) {

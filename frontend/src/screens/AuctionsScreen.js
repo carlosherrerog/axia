@@ -21,11 +21,11 @@ export default function AuctionsScreen({ navigation }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [userRes, auctionsRes] = await Promise.all([
-        api.get('/users/me'),
-        api.get('/auctions'),
-      ]);
-      setLoggedUser(userRes.data);
+      try {
+        const userRes = await api.get('/users/me');
+        setLoggedUser(userRes.data);
+      } catch {} // modo invitado: continuar sin usuario
+      const auctionsRes = await api.get('/auctions');
       setAuctions(auctionsRes.data);
     } catch (e) {
       console.error('Error cargando subastas:', e);

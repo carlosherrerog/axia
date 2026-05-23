@@ -292,79 +292,90 @@ export default function GlobalHeader({
         {/* Controles a la derecha */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
 
-          {/* Wallet */}
-          {isConnected ? (
-            <View style={{
-              flexDirection: 'row', alignItems: 'center',
-              borderRadius: 20, borderWidth: 1, borderColor: '#10b98140',
-              backgroundColor: '#10b98115', overflow: 'hidden',
-            }}>
-              {/* Zona copiar dirección */}
-              <TouchableOpacity
-                onPress={async () => {
-                  await Clipboard.setStringAsync(localUser.wallet_address);
-                  setWalletCopied(true);
-                  setTimeout(() => setWalletCopied(false), 2000);
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 10, paddingRight: 8, paddingVertical: 7 }}
-              >
-                <Ionicons
-                  name={walletCopied ? 'checkmark' : 'wallet-outline'}
-                  size={13}
-                  color="#10b981"
-                />
-                <Text numberOfLines={1} style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>
-                  {localUser.wallet_address.slice(0, 6)}…{localUser.wallet_address.slice(-4)}
-                </Text>
-              </TouchableOpacity>
-              {/* Separador */}
-              <View style={{ width: 1, height: 18, backgroundColor: '#10b98140' }} />
-              {/* Zona desconectar */}
-              <TouchableOpacity
-                onPress={() => setDisconnectVisible(true)}
-                style={{ paddingHorizontal: 9, paddingVertical: 7 }}
-              >
-                <Ionicons name="log-out-outline" size={13} color="#10b98199" />
-              </TouchableOpacity>
-            </View>
-          ) : (
+          {/* Invitado: botón de login */}
+          {!localUser?.id && (
             <TouchableOpacity
-              onPress={handleConnect}
+              onPress={() => navigation?.navigate('Login')}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 6,
-                paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-                backgroundColor: colors.surface,
-                borderWidth: 1, borderColor: colors.border,
+                paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                backgroundColor: colors.primary + '20',
+                borderWidth: 1, borderColor: colors.primary + '50',
               }}
             >
-              <Ionicons name="wallet-outline" size={14} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
-                Conectar wallet
+              <Ionicons name="log-in-outline" size={15} color={colors.primaryLight} />
+              <Text style={{ color: colors.primaryLight, fontSize: 13, fontWeight: '700' }}>
+                Iniciar sesión
               </Text>
             </TouchableOpacity>
           )}
 
-          {/* Notificaciones */}
-          <TouchableOpacity
-            onPress={() => navigation?.navigate('Notificaciones')}
-            style={[iconBtn, { position: 'relative' }]}
-          >
-            <Ionicons name="notifications-outline" size={16} color={colors.textSecondary} />
-            {displayCount > 0 && (
+          {/* Wallet — solo si hay usuario logueado */}
+          {localUser?.id && (
+            isConnected ? (
               <View style={{
-                position: 'absolute', top: -4, right: -4,
-                minWidth: 16, height: 16, borderRadius: 8,
-                backgroundColor: '#ef4444',
-                justifyContent: 'center', alignItems: 'center',
-                borderWidth: 1.5, borderColor: colors.backgroundAlt,
-                paddingHorizontal: 3,
+                flexDirection: 'row', alignItems: 'center',
+                borderRadius: 20, borderWidth: 1, borderColor: '#10b98140',
+                backgroundColor: '#10b98115', overflow: 'hidden',
               }}>
-                <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
-                  {displayCount > 9 ? '9+' : displayCount}
-                </Text>
+                <TouchableOpacity
+                  onPress={async () => {
+                    await Clipboard.setStringAsync(localUser.wallet_address);
+                    setWalletCopied(true);
+                    setTimeout(() => setWalletCopied(false), 2000);
+                  }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 10, paddingRight: 8, paddingVertical: 7 }}
+                >
+                  <Ionicons name={walletCopied ? 'checkmark' : 'wallet-outline'} size={13} color="#10b981" />
+                  <Text numberOfLines={1} style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>
+                    {localUser.wallet_address.slice(0, 6)}…{localUser.wallet_address.slice(-4)}
+                  </Text>
+                </TouchableOpacity>
+                <View style={{ width: 1, height: 18, backgroundColor: '#10b98140' }} />
+                <TouchableOpacity onPress={() => setDisconnectVisible(true)} style={{ paddingHorizontal: 9, paddingVertical: 7 }}>
+                  <Ionicons name="log-out-outline" size={13} color="#10b98199" />
+                </TouchableOpacity>
               </View>
-            )}
-          </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={handleConnect}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+                  backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+                }}
+              >
+                <Ionicons name="wallet-outline" size={14} color={colors.textSecondary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
+                  Conectar wallet
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
+
+          {/* Notificaciones — solo si hay usuario */}
+          {localUser?.id && (
+            <TouchableOpacity
+              onPress={() => navigation?.navigate('Notificaciones')}
+              style={[iconBtn, { position: 'relative' }]}
+            >
+              <Ionicons name="notifications-outline" size={16} color={colors.textSecondary} />
+              {displayCount > 0 && (
+                <View style={{
+                  position: 'absolute', top: -4, right: -4,
+                  minWidth: 16, height: 16, borderRadius: 8,
+                  backgroundColor: '#ef4444',
+                  justifyContent: 'center', alignItems: 'center',
+                  borderWidth: 1.5, borderColor: colors.backgroundAlt,
+                  paddingHorizontal: 3,
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }}>
+                    {displayCount > 9 ? '9+' : displayCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
 
           {/* Menú hamburguesa — solo en móvil y cuando la pantalla lo indica */}
           {isMobile && showHamburger && (

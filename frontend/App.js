@@ -1,9 +1,11 @@
 // App.js
 import React, { useState, useEffect } from 'react';
-import { Platform, View, useWindowDimensions, Text, Pressable, Image } from 'react-native';
+import { Platform, View, useWindowDimensions, Text, Pressable, Image, TouchableOpacity } from 'react-native';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import api from './src/api/api';
+import * as SecureStore from 'expo-secure-store';
 
 // IMPORTACIÓN DE PANTALLAS
 import AuthScreen                from './src/screens/AuthScreen';
@@ -43,6 +45,11 @@ const TABS = [
   { name: 'Marketplace', icon: 'home' },
   { name: 'Subastas',    icon: 'hammer' },
   { name: 'Perfil',      icon: 'person' },
+];
+
+const PUBLIC_TABS = [
+  { name: 'Marketplace', icon: 'home' },
+  { name: 'Subastas',    icon: 'hammer' },
 ];
 
 // COMPONENTE: BOTÓN DE NAVEGACIÓN (TAB ITEM)
@@ -273,7 +280,121 @@ function UserDashboard() {
   );
 }
 
-//  DASHBOARD RELOJERO 
+// DASHBOARD PÚBLICO (sin login)
+function PublicDashboard() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [activeTab, setActiveTab] = useState('Marketplace');
+
+  const handleTabPress = (name) => navigationRef.navigate(name);
+
+  const loginButton = (
+    <TouchableOpacity
+      onPress={() => navigationRef.navigate('Login')}
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        paddingVertical: 10, paddingHorizontal: 12,
+        marginBottom: 24, borderRadius: 12,
+        backgroundColor: theme.primary + '20',
+        borderWidth: 1, borderColor: theme.primary + '50',
+      }}
+    >
+      <Ionicons name="log-in-outline" size={20} color={theme.primaryLight} />
+      {sidebarHovered && (
+        <Text style={{ color: theme.primaryLight, fontWeight: '700', fontSize: 14 }}>
+          Iniciar sesión
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bg }}>
+      {isDesktop && (
+        <View
+          onMouseEnter={() => setSidebarHovered(true)}
+          onMouseLeave={() => setSidebarHovered(false)}
+          style={{
+            width: sidebarHovered ? 220 : 68,
+            backgroundColor: theme.bgAlt,
+            borderRightWidth: 1, borderColor: theme.border,
+            paddingTop: 36, paddingHorizontal: 10, zIndex: 100,
+            ...(Platform.OS === 'web' && { transition: 'width 0.3s ease' }),
+          }}
+        >
+          <View style={{ height: 48, marginBottom: 32, justifyContent: 'center', alignItems: sidebarHovered ? 'flex-start' : 'center', paddingLeft: sidebarHovered ? 4 : 0 }}>
+            {sidebarHovered ? (
+              <Image source={require('./assets/axia-icons/axia-wordmark-purple.svg')} style={{ width: 76, height: 22 }} resizeMode="contain" />
+            ) : (
+              <Image source={require('./assets/axia-icons/axia-icon-rounded-purple.svg')} style={{ width: 34, height: 34 }} resizeMode="contain" />
+            )}
+          </View>
+          <View style={{ height: 1, backgroundColor: theme.border, marginBottom: 16, marginHorizontal: 2 }} />
+          {PUBLIC_TABS.map(({ name, icon }) => (
+            <TabItem
+              key={name} isDesktop
+              isFocused={activeTab === name}
+              iconName={activeTab === name ? icon : `${icon}-outline`}
+              label={name} sidebarHovered={sidebarHovered}
+              onPress={() => handleTabPress(name)}
+            />
+          ))}
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <View style={{ height: 1, backgroundColor: theme.border, marginBottom: 12, marginHorizontal: 2 }} />
+            {loginButton}
+          </View>
+        </View>
+      )}
+
+      <View style={{ flex: 1, position: 'relative', alignItems: 'center' }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: 1280 }}>
+          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+            <Stack.Screen name="Marketplace"   component={HomeScreen} />
+            <Stack.Screen name="Subastas"      component={AuctionsScreen} />
+            <Stack.Screen name="PublicWatch"   component={PublicWatchScreen} />
+            <Stack.Screen name="AuctionScreen" component={AuctionScreen} />
+            <Stack.Screen name="PublicProfile" component={PublicProfileScreen} />
+            <Stack.Screen name="Info"          component={InfoScreen} />
+          </Stack.Navigator>
+        </View>
+
+        {!isDesktop && (
+          <View style={{
+            position: 'absolute', bottom: Platform.OS === 'ios' ? 30 : 20,
+            left: 20, right: 20, height: 68,
+            backgroundColor: 'rgba(24,24,27,0.85)', borderRadius: 34,
+            flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+            borderWidth: 1, borderColor: 'rgba(63,63,70,0.7)', elevation: 12, zIndex: 100,
+            ...(Platform.OS === 'web' && { backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }),
+          }}>
+            {PUBLIC_TABS.map(({ name, icon }) => (
+              <TabItem
+                key={name} isDesktop={false}
+                isFocused={activeTab === name}
+                iconName={activeTab === name ? icon : `${icon}-outline`}
+                onPress={() => handleTabPress(name)}
+              />
+            ))}
+            <TouchableOpacity
+              onPress={() => navigationRef.navigate('Login')}
+              style={{
+                width: 48, height: 48, borderRadius: 24,
+                justifyContent: 'center', alignItems: 'center',
+                backgroundColor: theme.primary + '25',
+                borderWidth: 1, borderColor: theme.primary + '60',
+              }}
+            >
+              <Ionicons name="log-in-outline" size={22} color={theme.primaryLight} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+//  DASHBOARD RELOJERO
 function WatchmakerDashboard() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -313,7 +434,16 @@ const linking = {
   prefixes: ['http://localhost:8081', 'axia://'],
   config: {
     screens: {
-      Login: '',
+      PublicDashboard: {
+        path: '',
+        screens: {
+          Marketplace: 'marketplace',
+          Subastas: 'auctions',
+          PublicWatch: 'watch/:watchId',
+          AuctionScreen: 'auction/:tokenId',
+        },
+      },
+      Login: 'login',
       RoleSelection: 'onboarding',
       Admin: 'admin',
       WatchmakerDashboard: {
@@ -348,13 +478,37 @@ const linking = {
 
 // APP ROOT
 function AppNavigator() {
+  const handleReady = async () => {
+    try {
+      const token = Platform.OS === 'web'
+        ? localStorage.getItem('userToken')
+        : await SecureStore.getItemAsync('userToken');
+      if (!token) return;
+
+      const res = await api.get('/users/me');
+      const u = res.data;
+
+      if (u.is_admin)
+        navigationRef.reset({ index: 0, routes: [{ name: 'Admin', params: { user: u } }] });
+      else if (u.roles?.includes('RELOJERO'))
+        navigationRef.reset({ index: 0, routes: [{ name: 'WatchmakerDashboard', params: { user: u } }] });
+      else if (u.roles?.includes('FABRICANTE'))
+        navigationRef.reset({ index: 0, routes: [{ name: 'ManufacturerDashboard', params: { user: u } }] });
+      else
+        navigationRef.reset({ index: 0, routes: [{ name: 'UserDashboard', params: { user: u } }] });
+    } catch {
+      // Token inválido o expirado — quedarse en PublicDashboard
+    }
+  };
+
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login"           component={AuthScreen} />
-        <Stack.Screen name="RoleSelection"  component={RoleSelectionScreen} />
-        <Stack.Screen name="Admin"          component={AdminScreen} />
-        <Stack.Screen name="UserDashboard"  component={UserDashboard} />
+    <NavigationContainer ref={navigationRef} linking={linking} onReady={handleReady}>
+      <Stack.Navigator initialRouteName="PublicDashboard" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="PublicDashboard"       component={PublicDashboard} />
+        <Stack.Screen name="Login"                 component={AuthScreen} />
+        <Stack.Screen name="RoleSelection"         component={RoleSelectionScreen} />
+        <Stack.Screen name="Admin"                 component={AdminScreen} />
+        <Stack.Screen name="UserDashboard"         component={UserDashboard} />
         <Stack.Screen name="WatchmakerDashboard"   component={WatchmakerDashboard} />
         <Stack.Screen name="ManufacturerDashboard" component={ManufacturerDashboard} />
       </Stack.Navigator>
