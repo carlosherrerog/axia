@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://axia-8ivf.onrender.com';
 
 const api = axios.create({
     baseURL: API_URL, 
