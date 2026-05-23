@@ -227,7 +227,9 @@ def send_email(to_email: str, subject: str, html_body: str):
         mailer.set_html_content(html_body, mail_body)
         mailer.send(mail_body)
     except Exception as e:
+        import traceback
         print(f"Error enviando correo: {e}")
+        traceback.print_exc()
 
 def get_axia_template(titulo: str, mensaje: str, contenido_extra: str):
     """Genera un HTML con la estética profesional y futurista de AXIA (Polygon style)."""
