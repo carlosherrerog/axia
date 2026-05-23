@@ -7,7 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
 import { useFocusEffect } from '@react-navigation/native';
-import api from '../api/api';
+import api, { getToken, WS_URL } from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
 import AlertModal, { useAlert } from '../components/AlertModal';
 import { useTheme } from '../context/ThemeContext';
@@ -112,14 +112,17 @@ export default function AuctionScreen({ route, navigation }) {
 
   useEffect(() => {
     if (!loggedUser?.id) return;
-    const ws = new WebSocket(`ws://localhost:8000/ws/${loggedUser.id}`);
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'update_auction') fetchData(true);
-      } catch {}
-    };
-    return () => ws.close();
+    let ws;
+    getToken().then(token => {
+      ws = new WebSocket(`${WS_URL}/ws/${loggedUser.id}?token=${token}`);
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'update_auction') fetchData(true);
+        } catch {}
+      };
+    });
+    return () => ws?.close();
   }, [loggedUser?.id]);
 
   const findUserByWallet = (wallet) =>

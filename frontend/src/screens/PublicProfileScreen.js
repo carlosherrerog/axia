@@ -4,7 +4,7 @@ import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, useWindowDim
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard'; // ✅ Importado Clipboard
-import api from '../api/api.js';
+import api, { WS_URL } from '../api/api.js';
 import PublicWatchCard from '../components/PublicWatchCard';
 import GlobalHeader from '../components/GlobalHeader';
 import { colors, watchScreenStyles, roleColors } from '../themes/styles.js';
@@ -44,7 +44,7 @@ export default function PublicProfileScreen({ route, navigation }) {
       fetchLoggedUser();
       fetchProfile();
 
-      const ws = new WebSocket('ws://localhost:8000/ws/admin');
+      const ws = new WebSocket(`${WS_URL}/ws/admin`);
       ws.onmessage = (event) => {
         if (event.data === "update_marketplace" || event.data === "update_nfts") {
           fetchProfile(); 

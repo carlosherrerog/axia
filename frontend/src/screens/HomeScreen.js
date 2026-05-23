@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
-import api from '../api/api';
+import api, { WS_URL } from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
 import { MarketplaceWatchSection } from '../components/WatchSections';
 import AlertModal, { useAlert } from '../components/AlertModal';
@@ -35,7 +35,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-      const ws = new WebSocket('ws://localhost:8000/ws/admin');
+      const ws = new WebSocket(`${WS_URL}/ws/admin`);
       
       ws.onmessage = (event) => {
         if (event.data === "update_marketplace") {

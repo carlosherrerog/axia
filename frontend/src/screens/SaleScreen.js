@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { ethers } from 'ethers';
 import { useFocusEffect } from '@react-navigation/native';
-import api from '../api/api';
+import api, { getToken, WS_URL } from '../api/api';
 import { resolveImageUri } from '../utils/ipfs';
 import { useTheme } from '../context/ThemeContext';
 import { roleColors } from '../themes/styles';
@@ -72,15 +72,15 @@ export default function SaleScreen({ route, navigation }) {
     let dead = false;
 
     const connect = () => {
-      ws = new WebSocket(`ws://localhost:8000/ws/${loggedUser.id}`);
-      ws.onmessage = (event) => {
-        if (event.data === 'update_users' || event.data === 'update_marketplace') {
-          fetchSale();
-        }
-      };
-      ws.onclose = () => {
-        if (!dead) retryTimeout = setTimeout(connect, 3000);
-      };
+      getToken().then(token => {
+        ws = new WebSocket(`${WS_URL}/ws/${loggedUser.id}?token=${token}`);
+        ws.onmessage = (event) => {
+          if (event.data === 'update_users' || event.data === 'update_marketplace') fetchSale();
+        };
+        ws.onclose = () => {
+          if (!dead) retryTimeout = setTimeout(connect, 3000);
+        };
+      });
     };
 
     connect();

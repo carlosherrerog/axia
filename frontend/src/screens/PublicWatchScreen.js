@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { ethers } from 'ethers'; 
-import api from '../api/api.js';
+import api, { WS_URL } from '../api/api.js';
 import { colors, watchScreenStyles, alertColors, globalStyles, alertStyles, WATCH_STATES, roleColors } from '../themes/styles.js';
 import { resolveImageUri } from '../utils/ipfs';
 import GlobalHeader from '../components/GlobalHeader';
@@ -95,7 +95,7 @@ export default function PublicWatchScreen({ route, navigation }) {
       fetchLoggedUser();
       fetchWatchPublicDetails(false);
 
-      const ws = new WebSocket('ws://localhost:8000/ws/admin');
+      const ws = new WebSocket(`${WS_URL}/ws/admin`);
       ws.onmessage = (event) => {
         if (event.data === "update_marketplace" || event.data === "update_nfts") {
           fetchWatchPublicDetails(true);

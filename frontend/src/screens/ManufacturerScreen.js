@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import api from '../api/api';
+import api, { getToken, WS_URL } from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
 import UserInfo from '../components/UserInfo';
 import WatchCard from '../components/WatchCard';
@@ -95,9 +95,12 @@ export default function ManufacturerScreen({ navigation }) {
 
   useEffect(() => {
     if (!loggedUser?.id) return;
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${loggedUser.id}`);
-    ws.onmessage = (e) => { if (e.data === 'update_users') fetchData(); };
-    return () => ws.close();
+    let ws;
+    getToken().then(token => {
+      ws = new WebSocket(`${WS_URL}/ws/${loggedUser.id}?token=${token}`);
+      ws.onmessage = (e) => { if (e.data === 'update_users') fetchData(); };
+    });
+    return () => ws?.close();
   }, [loggedUser?.id, fetchData]);
 
   const stock   = watches.filter(w => !w.is_listed && w.marketplace_state < 2 && w.security_state !== 4);

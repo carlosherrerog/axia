@@ -8,7 +8,7 @@ import { ethers } from 'ethers';
 import * as SecureStore from 'expo-secure-store';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
-import api from '../api/api.js';
+import api, { WS_URL } from '../api/api.js';
 import { roleColors, alertColors } from '../themes/styles.js';
 import { useTheme } from '../context/ThemeContext';
 import UserInfo from '../components/UserInfo';
@@ -374,7 +374,7 @@ export default function AdminScreen({ route, navigation }) {
   useFocusEffect(useCallback(() => {
     fetchUsers(true);
 
-    const ws = new WebSocket('ws://localhost:8000/ws/admin');
+    const ws = new WebSocket(`${WS_URL}/ws/admin`);
     ws.onmessage = (event) => {
       const msg = event.data;
       if (msg === 'update_users' || msg === 'new_user_registered' || msg.startsWith('new_role_request')) {

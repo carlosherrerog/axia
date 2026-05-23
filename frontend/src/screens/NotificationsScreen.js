@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import api from '../api/api.js';
+import api, { getToken, WS_URL } from '../api/api.js';
 import GlobalHeader from '../components/GlobalHeader';
 import NotificationCard from '../components/NotificationCard';
 import { globalStyles } from '../themes/styles.js';
@@ -47,9 +47,12 @@ export default function NotificationsScreen({ navigation }) {
 
   useEffect(() => {
     if (!loggedUser?.id) return;
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${loggedUser.id}`);
-    ws.onmessage = (e) => { if (e.data === 'update_users') fetchData(); };
-    return () => ws.close();
+    let ws;
+    getToken().then(token => {
+      ws = new WebSocket(`${WS_URL}/ws/${loggedUser.id}?token=${token}`);
+      ws.onmessage = (e) => { if (e.data === 'update_users') fetchData(); };
+    });
+    return () => ws?.close();
   }, [loggedUser?.id, fetchData]);
 
   const handleDelete = async (id) => {

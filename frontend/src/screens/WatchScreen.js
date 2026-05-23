@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store'; 
-import api from '../api/api.js';
+import api, { WS_URL } from '../api/api.js';
 import { globalStyles, colors, watchScreenStyles, alertColors, roleColors, alertStyles,
          WATCH_STATES} from '../themes/styles.js';
 
@@ -162,7 +162,7 @@ export default function WatchScreen({ route, navigation }) {
       fetchLoggedUser();
       fetchWatchDetails(); // Carga inicial (con pantalla de carga)
       
-      const ws = new WebSocket('ws://localhost:8000/ws/admin');
+      const ws = new WebSocket(`${WS_URL}/ws/admin`);
       ws.onmessage = (event) => {
         if (event.data === "update_users" || event.data === "update_nfts" || event.data === "update_marketplace") {
           // Si el aviso viene del WebSocket, recargamos los datos en SILENCIO (true)

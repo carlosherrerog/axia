@@ -38,7 +38,7 @@ load_dotenv()
 # --- 1. CONFIGURACIÓN DE CORREO ---
 GMAIL_USER = os.getenv("GMAIL_USER")
 GMAIL_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -146,8 +146,20 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 @app.websocket("/ws/{user_id}")
-async def websocket_user_personal(websocket: WebSocket, user_id: int):
+async def websocket_user_personal(websocket: WebSocket, user_id: int, token: str = Query(None)):
     """Conexión personal: los mensajes dirigidos a user_id llegan solo aquí."""
+    if not token:
+        await websocket.close(code=1008)
+        return
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_user_id = int(payload.get("sub"))
+        if token_user_id != user_id:
+            await websocket.close(code=1008)
+            return
+    except Exception:
+        await websocket.close(code=1008)
+        return
     await manager.connect(websocket, user_id)
     try:
         while True:
@@ -1513,11 +1525,11 @@ async def buy_watch(watch_id: int, db: Session = Depends(database.get_db), curre
     if watch.owner_id == current_user.id:
         raise HTTPException(status_code=400, detail="No puedes comprar tu propio reloj")
 
-    # 2. Buscar el anuncio activo
+    # 2. Buscar el anuncio activo con bloqueo de fila para evitar doble compra simultánea
     listing = db.query(models.MarketplaceListing).filter(
         models.MarketplaceListing.token_id == watch_id,
-        models.MarketplaceListing.listing_state == 1 # Active
-    ).first()
+        models.MarketplaceListing.listing_state == 1
+    ).with_for_update().first()
 
     if not listing:
         raise HTTPException(status_code=400, detail="El reloj no tiene un anuncio activo")
@@ -2380,14 +2392,18 @@ def get_public_user_profile(user_id: int, db: Session = Depends(database.get_db)
 # ===============================================
 @app.post("/nfts/{token_id}/transfer")
 async def transfer_nft(
-    token_id: int, 
-    request: user_schemas.TransferRequest, 
-    db: Session = Depends(database.get_db)
+    token_id: int,
+    request: user_schemas.TransferRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
     # 1. Se busca el reloj
     nft = db.query(models.Watch).filter(models.Watch.token_id == token_id).first()
     if not nft:
         raise HTTPException(status_code=404, detail="Reloj no encontrado")
+
+    if nft.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Solo el propietario puede transferir este reloj")
 
     # 2. Se busca al nuevo usuario por su dirección de wallet
     new_user = db.query(models.User).filter(models.User.wallet_address.ilike(request.new_owner)).first()
@@ -2510,11 +2526,11 @@ async def create_auction(token_id: int, payload: dict, db: Session = Depends(dat
 
 @app.post("/auctions/{token_id}/bid")
 async def place_bid(token_id: int, payload: dict, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
-    
+
     auction = db.query(models.WatchAuction).filter(
-        models.WatchAuction.token_id == token_id, 
+        models.WatchAuction.token_id == token_id,
         models.WatchAuction.is_active == True
-    ).first()
+    ).with_for_update().first()
 
     if not auction:
         raise HTTPException(status_code=404, detail="No hay una subasta activa para este reloj.")
@@ -2522,6 +2538,11 @@ async def place_bid(token_id: int, payload: dict, db: Session = Depends(database
     # Comprobar que no haya caducado el tiempo
     if int(time.time()) > auction.end_time:
         raise HTTPException(status_code=400, detail="La subasta ya ha finalizado el tiempo permitido.")
+
+    # El propietario no puede pujar en su propia subasta
+    watch = db.query(models.Watch).filter(models.Watch.token_id == token_id).first()
+    if watch and watch.owner_id == current_user.id:
+        raise HTTPException(status_code=400, detail="No puedes pujar en tu propia subasta.")
 
     bid_amount_usdc = payload.get("bid_amount_usdc")
     if not bid_amount_usdc:

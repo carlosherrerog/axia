@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
-import api from '../api/api';
+import api, { getToken, WS_URL } from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
 import WatchCardForWatchmaker from '../components/WatchCardForWatchmaker';
 import UserInfo from '../components/UserInfo';
@@ -80,15 +80,15 @@ export default function WatchmakerScreen({ navigation }) {
     let dead = false;
 
     const connect = () => {
-      ws = new WebSocket(`ws://localhost:8000/ws/${loggedUser.id}`);
-      ws.onmessage = (event) => {
-        if (event.data === 'update_users' || event.data === 'update_marketplace') {
-          fetchWatches();
-        }
-      };
-      ws.onclose = () => {
-        if (!dead) retryTimeout = setTimeout(connect, 3000);
-      };
+      getToken().then(token => {
+        ws = new WebSocket(`${WS_URL}/ws/${loggedUser.id}?token=${token}`);
+        ws.onmessage = (event) => {
+          if (event.data === 'update_users' || event.data === 'update_marketplace') fetchWatches();
+        };
+        ws.onclose = () => {
+          if (!dead) retryTimeout = setTimeout(connect, 3000);
+        };
+      });
     };
 
     connect();

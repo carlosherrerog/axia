@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
-import api from '../api/api.js';
+import api, { getToken, WS_URL } from '../api/api.js';
 import GlobalHeader from '../components/GlobalHeader';
 import WatchSections from '../components/WatchSections';
 import UserInfo from '../components/UserInfo';
@@ -261,22 +261,24 @@ export default function UserDashboardScreen({ route, navigation }) {
     fetchInitialData();
     let ws = null;
     if (loggedUser?.id) {
-      ws = new WebSocket(`ws://localhost:8000/ws/${loggedUser.id}`);
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'update_auction' || event.data === 'update_marketplace') {
-            fetchMyCollection();
-            if (isDealer) fetchAuctions();
-          } else if (event.data === 'update_users' || event.data === 'update_marketplace') {
-            fetchMyCollection();
+      getToken().then(token => {
+        ws = new WebSocket(`${WS_URL}/ws/${loggedUser.id}?token=${token}`);
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'update_auction' || event.data === 'update_marketplace') {
+              fetchMyCollection();
+              if (isDealer) fetchAuctions();
+            } else if (event.data === 'update_users' || event.data === 'update_marketplace') {
+              fetchMyCollection();
+            }
+          } catch {
+            if (event.data === 'update_users' || event.data === 'update_marketplace') fetchMyCollection();
           }
-        } catch {
-          if (event.data === 'update_users' || event.data === 'update_marketplace') fetchMyCollection();
-        }
-      };
+        };
+      });
     }
-    return () => { if (ws) ws.close(); };
+    return () => { if (ws) ws?.close(); };
   }, [fetchInitialData, loggedUser?.id]);
 
   // Cargar subastas al entrar al tab o al recuperar el foco (volver de AuctionScreen)

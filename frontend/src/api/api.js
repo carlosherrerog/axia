@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const API_URL = 'https://axia-8ivf.onrender.com';
+export const WS_URL = 'wss://axia-8ivf.onrender.com';
 
 const api = axios.create({
     baseURL: API_URL, 
@@ -10,7 +11,7 @@ const api = axios.create({
 
 // --- FUNCIONES PARA GESTIÓN DE TOKENS ---
 
-const getToken = async () => {
+export const getToken = async () => {
     if (Platform.OS === 'web') return localStorage.getItem('userToken');
     return await SecureStore.getItemAsync('userToken');
 };

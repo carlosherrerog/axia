@@ -6,7 +6,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
-import api from '../api/api';
+import api, { getToken, WS_URL } from '../api/api';
 import { roleColors, darkColors } from '../themes/styles';
 import { useTheme } from '../context/ThemeContext';
 import MenuDropdown from './MenuDropDown';
@@ -77,18 +77,16 @@ export default function GlobalHeader({
     };
 
     fetchUnread(false);
-    ws = new WebSocket(`ws://localhost:8000/ws/${localUser.id}`);
-    ws.onmessage = (e) => {
-      if (e.data === 'update_users') {
-        fetchUnread(true);
-        return;
-      }
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'update_marketplace' || msg.type === 'update_auction') fetchUnread(true);
-      } catch {}
-    };
-
+    getToken().then(token => {
+      ws = new WebSocket(`${WS_URL}/ws/${localUser.id}?token=${token}`);
+      ws.onmessage = (e) => {
+        if (e.data === 'update_users') { fetchUnread(true); return; }
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'update_marketplace' || msg.type === 'update_auction') fetchUnread(true);
+        } catch {}
+      };
+    });
     const unsubFocus = navigation?.addListener('focus', () => fetchUnread(true));
     return () => { ws?.close(); unsubFocus?.(); };
   }, [localUser, navigation]);
