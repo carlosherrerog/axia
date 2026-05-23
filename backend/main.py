@@ -23,7 +23,8 @@ from schemas import user as user_schemas
 import blockchain
 from pydantic import BaseModel
 
-from mailersend import emails as mailersend_emails
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 from fastapi.responses import HTMLResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -37,8 +38,7 @@ from sqlalchemy import cast, String
 load_dotenv()
 
 # --- 1. CONFIGURACIÓN DE CORREO ---
-MAILERSEND_API_KEY = os.getenv("MAILERSEND_API_KEY")
-MAILERSEND_FROM  = os.getenv("MAILERSEND_FROM")   # noreply@trial-xxxx.mlsender.net
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -219,17 +219,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 def send_email(to_email: str, subject: str, html_body: str):
     try:
-        mailer = mailersend_emails.NewEmail(MAILERSEND_API_KEY)
-        mail_body = {}
-        mailer.set_mail_from({"name": "AXIA", "email": MAILERSEND_FROM}, mail_body)
-        mailer.set_mail_to([{"email": to_email}], mail_body)
-        mailer.set_subject(subject, mail_body)
-        mailer.set_html_content(html_body, mail_body)
-        mailer.send(mail_body)
+        config = sib_api_v3_sdk.Configuration()
+        config.api_key['api-key'] = BREVO_API_KEY
+        api = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(config))
+        api.send_transac_email(sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": to_email}],
+            sender={"name": "AXIA", "email": "axiawatches@gmail.com"},
+            subject=subject,
+            html_content=html_body,
+        ))
     except Exception as e:
-        import traceback
         print(f"Error enviando correo: {e}")
-        traceback.print_exc()
 
 def get_axia_template(titulo: str, mensaje: str, contenido_extra: str):
     """Genera un HTML con la estética profesional y futurista de AXIA (Polygon style)."""
@@ -420,14 +420,71 @@ def verify_email(token: str, db: Session = Depends(database.get_db)):
         if user:
             user.is_verified = True
             db.commit()
-            return """
-            <html><body style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h2 style="color: #16a34a;">¡Cuenta verificada con éxito!</h2>
-            <p>Ya puedes volver a la aplicación e iniciar sesión.</p>
-            </body></html>
-            """
+            return """<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AXIA · Cuenta verificada</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#0d0d1a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+    .card{background:#13112a;border:1px solid #2a2542;border-radius:20px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 60px rgba(130,71,229,0.15);}
+    .logo{font-size:22px;font-weight:800;letter-spacing:3px;color:#f8f8ff;margin-bottom:32px;}
+    .logo span{color:#8247e5;}
+    .icon{width:72px;height:72px;background:linear-gradient(135deg,#8247e5,#a855f7);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px;}
+    h1{color:#f8f8ff;font-size:22px;font-weight:700;margin-bottom:12px;}
+    p{color:#9ca3af;font-size:14px;line-height:1.6;margin-bottom:28px;}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:#0c1a0c;border:1px solid #16a34a;border-radius:999px;padding:6px 16px;color:#4ade80;font-size:13px;font-weight:600;margin-bottom:32px;}
+    .btn{display:inline-block;background:linear-gradient(135deg,#8247e5,#a855f7);color:#fff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:12px;text-decoration:none;letter-spacing:0.5px;}
+    .footer{margin-top:32px;color:#4b5563;font-size:12px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">AX<span>I</span>A</div>
+    <div class="icon">✓</div>
+    <div class="badge">✔ Verificación completada</div>
+    <h1>¡Tu cuenta está activa!</h1>
+    <p>Tu dirección de correo ha sido verificada correctamente. Ya puedes iniciar sesión en AXIA y empezar a explorar el marketplace de alta relojería.</p>
+    <a class="btn" href="https://axia-sandy.vercel.app">Ir a la aplicación</a>
+    <div class="footer">AXIA · Alta Relojería · Blockchain</div>
+  </div>
+</body>
+</html>"""
     except Exception:
-        return "<html><body><h2>Enlace inválido o expirado.</h2></body></html>"
+        return """<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>AXIA · Enlace inválido</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:#0d0d1a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+    .card{background:#13112a;border:1px solid #2a2542;border-radius:20px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 60px rgba(229,71,71,0.1);}
+    .logo{font-size:22px;font-weight:800;letter-spacing:3px;color:#f8f8ff;margin-bottom:32px;}
+    .logo span{color:#8247e5;}
+    .icon{width:72px;height:72px;background:linear-gradient(135deg,#7f1d1d,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px;}
+    h1{color:#f8f8ff;font-size:22px;font-weight:700;margin-bottom:12px;}
+    p{color:#9ca3af;font-size:14px;line-height:1.6;margin-bottom:28px;}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:#1a0a0a;border:1px solid #dc2626;border-radius:999px;padding:6px 16px;color:#f87171;font-size:13px;font-weight:600;margin-bottom:32px;}
+    .btn{display:inline-block;background:linear-gradient(135deg,#8247e5,#a855f7);color:#fff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:12px;text-decoration:none;letter-spacing:0.5px;}
+    .footer{margin-top:32px;color:#4b5563;font-size:12px;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">AX<span>I</span>A</div>
+    <div class="icon">✕</div>
+    <div class="badge">✕ Enlace inválido</div>
+    <h1>Enlace expirado o inválido</h1>
+    <p>Este enlace de verificación no es válido o ha expirado. Regístrate de nuevo en la aplicación para recibir un correo actualizado.</p>
+    <a class="btn" href="https://axia-sandy.vercel.app">Volver a la app</a>
+    <div class="footer">AXIA · Alta Relojería · Blockchain</div>
+  </div>
+</body>
+</html>"""
 
 @app.post("/forgot-password")
 def forgot_password(background_tasks: BackgroundTasks, email: str = Body(..., embed=True), db: Session = Depends(database.get_db)):
