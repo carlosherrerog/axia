@@ -42,14 +42,16 @@ const theme = {
 };
 
 const TABS = [
-  { name: 'Marketplace', icon: 'home',   label: 'Mercado'  },
-  { name: 'Subastas',    icon: 'hammer', label: 'Subastas' },
-  { name: 'Perfil',      icon: 'person', label: 'Perfil'   },
+  { name: 'Marketplace', icon: 'home',               label: 'Mercado'      },
+  { name: 'Subastas',    icon: 'hammer',             label: 'Subastas'     },
+  { name: 'Perfil',      icon: 'person',             label: 'Perfil'       },
+  { name: 'Info',        icon: 'information-circle', label: 'Información', webOnly: true },
 ];
 
 const PUBLIC_TABS = [
-  { name: 'Marketplace', icon: 'home',   label: 'Mercado'  },
-  { name: 'Subastas',    icon: 'hammer', label: 'Subastas' },
+  { name: 'Marketplace', icon: 'home',               label: 'Mercado'      },
+  { name: 'Subastas',    icon: 'hammer',             label: 'Subastas'     },
+  { name: 'Info',        icon: 'information-circle', label: 'Información', webOnly: true },
 ];
 
 // BARRA INFERIOR MÓVIL — plana con etiquetas
@@ -68,7 +70,7 @@ function MobileBottomBar({ activeTab, onTabPress, tabs, extraRight }) {
         WebkitBackdropFilter: 'blur(12px)',
       }),
     }}>
-      {tabs.map(({ name, icon, label }) => {
+      {tabs.filter(t => !t.webOnly).map(({ name, icon, label }) => {
         const isFocused = activeTab === name;
         return (
           <Pressable
@@ -108,7 +110,7 @@ function UserDashboard() {
       const route = navigationRef.getCurrentRoute();
       if (!route) return;
       const { name } = route;
-      if (['Marketplace', 'Subastas'].includes(name)) setActiveTab(name);
+      if (['Marketplace', 'Subastas', 'Info'].includes(name)) setActiveTab(name);
       else if (['Perfil', 'ProfessionalRequest', 'Configuracion'].includes(name)) setActiveTab('Perfil');
     });
     return unsubscribe;
@@ -161,7 +163,7 @@ function PublicDashboard() {
   useEffect(() => {
     const unsubscribe = navigationRef.addListener('state', () => {
       const route = navigationRef.getCurrentRoute();
-      if (route && ['Marketplace', 'Subastas'].includes(route.name)) setActiveTab(route.name);
+      if (route && ['Marketplace', 'Subastas', 'Info'].includes(route.name)) setActiveTab(route.name);
     });
     return unsubscribe;
   }, []);

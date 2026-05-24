@@ -152,11 +152,13 @@ export default function GlobalHeader({
   };
 
   const moreMenuItems = [
-    {
-      icon: 'information-circle-outline', label: 'Información', color: colors.textSecondary,
-      onPress: () => { setMoreMenuVisible(false); navigation?.navigate('Info'); },
-    },
-    { divider: true },
+    ...(isMobile ? [
+      {
+        icon: 'information-circle-outline', label: 'Información', color: colors.textSecondary,
+        onPress: () => { setMoreMenuVisible(false); navigation?.navigate('Info'); },
+      },
+      { divider: true },
+    ] : []),
     {
       icon: 'log-out-outline', label: 'Cerrar sesión', color: '#f43f5e',
       onPress: handleLogout,
@@ -402,7 +404,25 @@ export default function GlobalHeader({
             </TouchableOpacity>
           )}
 
-          {/* Menú hamburguesa — solo en móvil y cuando la pantalla lo indica */}
+          {/* Avatar dropdown — solo escritorio, usuario logueado */}
+          {!isMobile && localUser?.id && (
+            <TouchableOpacity
+              onPress={() => setMoreMenuVisible(v => !v)}
+              style={{
+                width: 36, height: 36, borderRadius: 18,
+                backgroundColor: colors.primary + '20',
+                borderWidth: 1.5,
+                borderColor: moreMenuVisible ? colors.primary + '90' : colors.primary + '40',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.primary }}>
+                {(localUser.username?.[0] || '?').toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Hamburguesa — solo móvil */}
           {isMobile && showHamburger && (
             <TouchableOpacity
               onPress={() => setMoreMenuVisible(v => !v)}
