@@ -1361,6 +1361,52 @@ async def revoke_role(
     
     return {"detail": f"Permiso de {role} revocado para {target_user.username}."}
 
+@app.get("/admin/marketplace-status")
+async def get_marketplace_status(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+    try:
+        is_paused = blockchain.marketplace_contract.functions.paused().call()
+        return {"paused": is_paused}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error consultando estado: {e}")
+
+@app.post("/admin/marketplace-pause")
+async def pause_marketplace(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+    try:
+        tx = blockchain.marketplace_contract.functions.pauseMarketplace().build_transaction({
+            "from": blockchain.ADMIN_ADDRESS,
+            "nonce": blockchain.w3.eth.get_transaction_count(blockchain.ADMIN_ADDRESS),
+            "gas": 100000,
+            "gasPrice": blockchain.w3.eth.gas_price,
+        })
+        signed = blockchain.w3.eth.account.sign_transaction(tx, private_key=blockchain.ADMIN_PRIVATE_KEY)
+        blockchain.w3.eth.send_raw_transaction(signed.raw_transaction)
+        await manager.broadcast({"type": "marketplace_paused"})
+        return {"paused": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error pausando marketplace: {e}")
+
+@app.post("/admin/marketplace-resume")
+async def resume_marketplace(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+    try:
+        tx = blockchain.marketplace_contract.functions.resumeMarketplace().build_transaction({
+            "from": blockchain.ADMIN_ADDRESS,
+            "nonce": blockchain.w3.eth.get_transaction_count(blockchain.ADMIN_ADDRESS),
+            "gas": 100000,
+            "gasPrice": blockchain.w3.eth.gas_price,
+        })
+        signed = blockchain.w3.eth.account.sign_transaction(tx, private_key=blockchain.ADMIN_PRIVATE_KEY)
+        blockchain.w3.eth.send_raw_transaction(signed.raw_transaction)
+        await manager.broadcast({"type": "marketplace_resumed"})
+        return {"paused": False}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reanudando marketplace: {e}")
+
 # ===============================================================================
 #  COMPRA VENTA VISUALIZACIÓN
 # ===============================================================================
