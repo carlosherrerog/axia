@@ -11,6 +11,7 @@ import api from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
 import AlertModal, { useAlert } from '../components/AlertModal';
 import { useTheme } from '../context/ThemeContext';
+import { roleColors } from '../themes/styles';
 
 // ── Componentes locales ─────────────────────────────────────────────────────
 
