@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   Platform, Modal, RefreshControl, Pressable, Image, useWindowDimensions,
+  TextInput as TextInputNative,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
@@ -244,6 +245,285 @@ function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLog
           )}
         </View>
       )}
+    </View>
+  );
+}
+
+// ─── Fees Card ────────────────────────────────────────────────────────────────
+function FeesCard({ colors }) {
+  const [fees, setFees]           = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [saving, setSaving]       = useState(false);
+  const [editing, setEditing]     = useState(false);
+  const [editRecipient, setEditRecipient] = useState(false);
+  const [draft, setDraft]         = useState({});
+  const [recipientDraft, setRecipientDraft] = useState('');
+  const [alert, setAlert]         = useState(null);
+
+  const toBps  = (pct) => Math.round(parseFloat(pct) * 100);
+  const toPct  = (bps) => (bps / 100).toFixed(2);
+
+  const fetchFees = async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.get('/admin/fees');
+      setFees(data);
+      setDraft({
+        platform:   toPct(data.platform),
+        royalty:    toPct(data.royalty),
+        watchmaker: toPct(data.watchmaker),
+        deposit:    toPct(data.deposit),
+      });
+      setRecipientDraft(data.recipient);
+    } catch {
+      setAlert({ type: 'error', msg: 'No se pudieron cargar las comisiones.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchFees(); }, []);
+
+  const handleSaveFees = async () => {
+    setSaving(true);
+    try {
+      await api.post('/admin/fees', {
+        platform:   toBps(draft.platform),
+        royalty:    toBps(draft.royalty),
+        watchmaker: toBps(draft.watchmaker),
+        deposit:    toBps(draft.deposit),
+      });
+      await fetchFees();
+      setEditing(false);
+      setAlert({ type: 'success', msg: 'Comisiones actualizadas correctamente.' });
+    } catch (e) {
+      setAlert({ type: 'error', msg: e.response?.data?.detail || 'Error al guardar.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveRecipient = async () => {
+    setSaving(true);
+    try {
+      await api.post('/admin/fee-recipient', { address: recipientDraft });
+      await fetchFees();
+      setEditRecipient(false);
+      setAlert({ type: 'success', msg: 'Wallet destinataria actualizada.' });
+    } catch (e) {
+      setAlert({ type: 'error', msg: e.response?.data?.detail || 'Error al guardar.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const FEE_ROWS = [
+    { key: 'platform',   label: 'Plataforma',  icon: 'storefront-outline', max: 10, color: '#8247e5' },
+    { key: 'royalty',    label: 'Regalía fabricante', icon: 'business-outline', max: 10, color: '#f59e0b' },
+    { key: 'watchmaker', label: 'Relojero',     icon: 'build-outline',      max: 5,  color: '#06b6d4' },
+    { key: 'deposit',    label: 'Depósito vendedor',  icon: 'shield-outline', max: 5,  color: '#10b981' },
+  ];
+
+  return (
+    <View style={{
+      backgroundColor: colors.backgroundAlt, borderRadius: 16,
+      borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 16, paddingVertical: 14,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{
+            width: 32, height: 32, borderRadius: 10,
+            backgroundColor: 'rgba(130,71,229,0.12)',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Ionicons name="cash-outline" size={16} color="#8247e5" />
+          </View>
+          <View>
+            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>Comisiones</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 11 }}>Configuración del smart contract</Text>
+          </View>
+        </View>
+        {!loading && (
+          <TouchableOpacity
+            onPress={() => editing ? handleSaveFees() : setEditing(true)}
+            disabled={saving}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 5,
+              paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+              backgroundColor: editing ? 'rgba(16,185,129,0.1)' : 'rgba(130,71,229,0.1)',
+              borderWidth: 1,
+              borderColor: editing ? 'rgba(16,185,129,0.25)' : 'rgba(130,71,229,0.25)',
+            }}
+          >
+            {saving
+              ? <ActivityIndicator size="small" color="#10b981" />
+              : <Ionicons name={editing ? 'checkmark' : 'pencil-outline'} size={13}
+                  color={editing ? '#10b981' : '#8247e5'} />
+            }
+            <Text style={{
+              fontSize: 12, fontWeight: '700',
+              color: editing ? '#10b981' : '#8247e5',
+            }}>
+              {editing ? 'Guardar' : 'Editar'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Filas de comisiones */}
+      <View style={{ padding: 14, gap: 10 }}>
+        {loading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+        ) : (
+          FEE_ROWS.map(row => (
+            <View key={row.key} style={{
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: colors.surface, borderRadius: 10,
+              paddingHorizontal: 12, paddingVertical: 10,
+              borderWidth: 1, borderColor: colors.border, gap: 10,
+            }}>
+              <View style={{
+                width: 28, height: 28, borderRadius: 8,
+                backgroundColor: `${row.color}15`,
+                alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Ionicons name={row.icon} size={13} color={row.color} />
+              </View>
+              <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>
+                {row.label}
+              </Text>
+              {editing ? (
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  borderWidth: 1, borderColor: `${row.color}40`,
+                  borderRadius: 7, backgroundColor: `${row.color}08`,
+                  paddingHorizontal: 8, paddingVertical: 5, minWidth: 70,
+                }}>
+                  <TextInputNative
+                    value={String(draft[row.key] ?? '')}
+                    onChangeText={v => setDraft(d => ({ ...d, [row.key]: v }))}
+                    keyboardType="decimal-pad"
+                    selectTextOnFocus
+                    style={{
+                      color: row.color, fontWeight: '700', fontSize: 14,
+                      minWidth: 36, textAlign: 'right',
+                      ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+                    }}
+                  />
+                  <Text style={{ color: colors.textMuted, fontSize: 13, marginLeft: 2 }}>%</Text>
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                  <Text style={{ color: row.color, fontWeight: '800', fontSize: 18 }}>
+                    {fees ? toPct(fees[row.key]) : '—'}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>%</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 10, marginLeft: 4 }}>
+                    (máx {row.max}%)
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))
+        )}
+
+        {/* Alerta inline */}
+        {alert && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+            backgroundColor: alert.type === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(244,63,94,0.08)',
+            borderRadius: 8, padding: 10,
+            borderWidth: 1,
+            borderColor: alert.type === 'success' ? 'rgba(16,185,129,0.25)' : 'rgba(244,63,94,0.25)',
+          }}>
+            <Ionicons
+              name={alert.type === 'success' ? 'checkmark-circle-outline' : 'alert-circle-outline'}
+              size={14} color={alert.type === 'success' ? '#10b981' : '#f43f5e'}
+            />
+            <Text style={{
+              flex: 1, fontSize: 12,
+              color: alert.type === 'success' ? '#10b981' : '#f43f5e',
+            }}>{alert.msg}</Text>
+            <TouchableOpacity onPress={() => setAlert(null)}>
+              <Ionicons name="close" size={13} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Cancelar edición */}
+        {editing && (
+          <TouchableOpacity
+            onPress={() => { setEditing(false); setDraft({ platform: toPct(fees.platform), royalty: toPct(fees.royalty), watchmaker: toPct(fees.watchmaker), deposit: toPct(fees.deposit) }); }}
+            style={{ alignItems: 'center', paddingVertical: 6 }}
+          >
+            <Text style={{ color: colors.textMuted, fontSize: 12 }}>Cancelar</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Wallet destinataria */}
+        {!loading && fees && (
+          <View style={{
+            backgroundColor: colors.surface, borderRadius: 10,
+            borderWidth: 1, borderColor: colors.border,
+            paddingHorizontal: 12, paddingVertical: 10, gap: 6,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', letterSpacing: 0.5 }}>
+                WALLET DESTINATARIA
+              </Text>
+              <TouchableOpacity onPress={() => setEditRecipient(r => !r)}>
+                <Ionicons name={editRecipient ? 'close' : 'pencil-outline'} size={13} color={colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+            {editRecipient ? (
+              <View style={{ gap: 8 }}>
+                <View style={{
+                  borderWidth: 1, borderColor: 'rgba(130,71,229,0.3)',
+                  borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
+                  backgroundColor: 'rgba(130,71,229,0.05)',
+                }}>
+                  <TextInputNative
+                    value={recipientDraft}
+                    onChangeText={setRecipientDraft}
+                    placeholder="0x..."
+                    placeholderTextColor={colors.textMuted}
+                    style={{
+                      color: colors.text, fontSize: 11,
+                      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                      ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+                    }}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={handleSaveRecipient}
+                  disabled={saving}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 8,
+                    paddingVertical: 8, borderWidth: 1, borderColor: 'rgba(16,185,129,0.25)',
+                  }}
+                >
+                  {saving
+                    ? <ActivityIndicator size="small" color="#10b981" />
+                    : <Ionicons name="checkmark" size={14} color="#10b981" />
+                  }
+                  <Text style={{ color: '#10b981', fontWeight: '700', fontSize: 12 }}>Confirmar</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Text style={{
+                color: colors.textSecondary, fontSize: 10,
+                fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+              }} numberOfLines={1}>{fees.recipient}</Text>
+            )}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -624,11 +904,12 @@ export default function AdminScreen({ route, navigation }) {
   };
 
   const SECTIONS = [
-    { id: 'pending',    label: 'Solicitudes', icon: 'time-outline',       badge: stats.pending },
-    { id: 'RELOJERO',   label: 'Relojeros',   icon: 'build-outline',      badge: stats.relojeros   || null },
-    { id: 'DEALER',     label: 'Dealers',     icon: 'storefront-outline', badge: stats.dealers     || null },
-    { id: 'FABRICANTE', label: 'Fabricantes', icon: 'business-outline',   badge: stats.fabricantes || null },
-    { id: 'users',      label: 'Particulares', icon: 'people-outline',    badge: particulares.length || null },
+    { id: 'pending',     label: 'Solicitudes', icon: 'time-outline',       badge: stats.pending },
+    { id: 'RELOJERO',    label: 'Relojeros',   icon: 'build-outline',      badge: stats.relojeros   || null },
+    { id: 'DEALER',      label: 'Dealers',     icon: 'storefront-outline', badge: stats.dealers     || null },
+    { id: 'FABRICANTE',  label: 'Fabricantes', icon: 'business-outline',   badge: stats.fabricantes || null },
+    { id: 'users',       label: 'Particulares', icon: 'people-outline',    badge: particulares.length || null },
+    { id: 'fees',        label: 'Comisiones',  icon: 'cash-outline',       badge: null },
   ];
 
   const renderContent = () => {
@@ -697,6 +978,10 @@ export default function AdminScreen({ route, navigation }) {
           </View>
         );
       });
+    }
+
+    if (activeSection === 'fees') {
+      return <FeesCard colors={colors} />;
     }
   };
 
@@ -887,6 +1172,7 @@ export default function AdminScreen({ route, navigation }) {
               const on = activeSection === sec.id;
               const c  = sec.id === 'pending' ? '#f59e0b'
                 : sec.id === 'users' ? colors.primary
+                : sec.id === 'fees' ? '#8247e5'
                 : ROLE_META[sec.id]?.color || colors.primary;
               return (
                 <Pressable key={sec.id} onPress={() => setActiveSection(sec.id)}
@@ -922,12 +1208,14 @@ export default function AdminScreen({ route, navigation }) {
                 width: 3, height: 16, borderRadius: 2,
                 backgroundColor: activeSection === 'pending' ? '#f59e0b'
                   : activeSection === 'users' ? colors.primary
+                  : activeSection === 'fees' ? '#8247e5'
                   : ROLE_META[activeSection]?.color || colors.primary,
               }} />
               <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>
                 {activeSection === 'pending' && `${allPending.length} solicitud${allPending.length !== 1 ? 'es' : ''} pendiente${allPending.length !== 1 ? 's' : ''}`}
                 {['RELOJERO','DEALER','FABRICANTE'].includes(activeSection) && `${users.filter(u => u.roles?.includes(activeSection)).length} ${ROLE_META[activeSection].label.toLowerCase()} activos`}
                 {activeSection === 'users' && `${particulares.length} particular${particulares.length !== 1 ? 'es' : ''}`}
+                {activeSection === 'fees' && 'Configuración de comisiones'}
               </Text>
             </View>
           )}

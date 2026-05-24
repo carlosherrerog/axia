@@ -1407,6 +1407,78 @@ async def resume_marketplace(current_user: models.User = Depends(get_current_use
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reanudando marketplace: {e}")
 
+@app.get("/admin/fees")
+async def get_fees(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+    try:
+        c = blockchain.marketplace_contract.functions
+        return {
+            "platform":   c.marketPlaceFeePercent().call(),
+            "royalty":    c.royaltyPercent().call(),
+            "watchmaker": c.watchmakerFeePercent().call(),
+            "deposit":    c.sellerDepositPercent().call(),
+            "recipient":  c.feeRecipient().call(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error leyendo comisiones: {e}")
+
+class FeesRequest(BaseModel):
+    platform:   int
+    royalty:    int
+    watchmaker: int
+    deposit:    int
+
+@app.post("/admin/fees")
+async def set_fees(body: FeesRequest, current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+    if body.platform > 1000 or body.royalty > 1000:
+        raise HTTPException(status_code=400, detail="Plataforma y regalía máximo 10%.")
+    if body.watchmaker > 500 or body.deposit > 500:
+        raise HTTPException(status_code=400, detail="Relojero y depósito máximo 5%.")
+    if any(v < 0 for v in [body.platform, body.royalty, body.watchmaker, body.deposit]):
+        raise HTTPException(status_code=400, detail="Los valores no pueden ser negativos.")
+    try:
+        tx = blockchain.marketplace_contract.functions.setFees(
+            body.platform, body.royalty, body.watchmaker, body.deposit
+        ).build_transaction({
+            "from": blockchain.ADMIN_ADDRESS,
+            "nonce": blockchain.w3.eth.get_transaction_count(blockchain.ADMIN_ADDRESS),
+            "gas": 150000,
+            "gasPrice": blockchain.w3.eth.gas_price,
+        })
+        signed = blockchain.w3.eth.account.sign_transaction(tx, private_key=blockchain.ADMIN_PRIVATE_KEY)
+        blockchain.w3.eth.send_raw_transaction(signed.raw_transaction)
+        return {"ok": True, "platform": body.platform, "royalty": body.royalty,
+                "watchmaker": body.watchmaker, "deposit": body.deposit}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error actualizando comisiones: {e}")
+
+class FeeRecipientRequest(BaseModel):
+    address: str
+
+@app.post("/admin/fee-recipient")
+async def update_fee_recipient(body: FeeRecipientRequest, current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+    try:
+        checksum = blockchain.w3.to_checksum_address(body.address)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Dirección de wallet inválida.")
+    try:
+        tx = blockchain.marketplace_contract.functions.updateFeeRecipient(checksum).build_transaction({
+            "from": blockchain.ADMIN_ADDRESS,
+            "nonce": blockchain.w3.eth.get_transaction_count(blockchain.ADMIN_ADDRESS),
+            "gas": 100000,
+            "gasPrice": blockchain.w3.eth.gas_price,
+        })
+        signed = blockchain.w3.eth.account.sign_transaction(tx, private_key=blockchain.ADMIN_PRIVATE_KEY)
+        blockchain.w3.eth.send_raw_transaction(signed.raw_transaction)
+        return {"ok": True, "recipient": checksum}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error actualizando destinatario: {e}")
+
 # ===============================================================================
 #  COMPRA VENTA VISUALIZACIÓN
 # ===============================================================================
