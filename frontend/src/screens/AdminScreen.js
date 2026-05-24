@@ -911,53 +911,70 @@ function ContractsPanel({ colors, stats, users }) {
           ))}
         </View>
 
-        {/* Lista de contratos */}
-        {CONTRACTS.filter(c => c.address).map((c, i, arr) => (
-          <View key={c.key} style={{
-            flexDirection: 'row', alignItems: 'center', gap: 12,
-            paddingVertical: 11,
-            borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-            borderBottomColor: colors.border,
-          }}>
-            <View style={{
-              width: 32, height: 32, borderRadius: 9,
-              backgroundColor: c.color + '15', borderWidth: 1, borderColor: c.color + '35',
-              alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            }}>
-              <Ionicons name={c.icon} size={15} color={c.color} />
-            </View>
-
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 13 }}>{c.label}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>{c.desc}</Text>
-            </View>
-
-            <Text style={{
-              color: colors.textSecondary, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
-              marginRight: 6, flexShrink: 1,
-            }} selectable>
-              {c.address}
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => handleCopy(c.key, c.address)}
-              style={{ padding: 5 }}
-            >
-              <Ionicons
-                name={copiedKey === c.key ? 'checkmark-outline' : 'copy-outline'}
-                size={15}
-                color={copiedKey === c.key ? '#10b981' : colors.textMuted}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`${EXPLORER_BASE}${c.address}`)}
-              style={{ padding: 5 }}
-            >
-              <Ionicons name="open-outline" size={15} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        ))}
+        {/* Tarjetas de contratos — mismo diseño que InfoScreen */}
+        <View style={{ gap: 10 }}>
+          {CONTRACTS.filter(c => c.address).map(c => {
+            const isCopied = copiedKey === c.key;
+            return (
+              <View key={c.key} style={{
+                backgroundColor: colors.surface,
+                borderRadius: 12, borderWidth: 1, borderColor: colors.border,
+                padding: 12, gap: 10,
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <View style={{
+                    width: 32, height: 32, borderRadius: 9,
+                    backgroundColor: c.color + '18', borderWidth: 1, borderColor: c.color + '40',
+                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Ionicons name={c.icon} size={15} color={c.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: c.color, fontSize: 13, fontWeight: '700' }}>{c.label}</Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>{c.desc}</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => handleCopy(c.key, c.address)}
+                    style={{
+                      flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+                      backgroundColor: isCopied ? '#10b98112' : colors.backgroundAlt,
+                      borderRadius: 8, borderWidth: 1,
+                      borderColor: isCopied ? '#10b98140' : colors.border,
+                      paddingHorizontal: 10, paddingVertical: 7,
+                    }}
+                  >
+                    <Ionicons
+                      name={isCopied ? 'checkmark-circle' : 'copy-outline'}
+                      size={13}
+                      color={isCopied ? '#10b981' : colors.textMuted}
+                    />
+                    <Text style={{
+                      color: isCopied ? '#10b981' : colors.textSecondary,
+                      fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'],
+                      flexShrink: 1,
+                    }} numberOfLines={1}>
+                      {isCopied ? '¡Copiada!' : c.address}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(`${EXPLORER_BASE}${c.address}`)}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 5,
+                      backgroundColor: '#8b5cf612',
+                      borderRadius: 8, borderWidth: 1, borderColor: '#8b5cf630',
+                      paddingHorizontal: 10, paddingVertical: 7,
+                    }}
+                  >
+                    <Ionicons name="open-outline" size={13} color="#8b5cf6" />
+                    <Text style={{ color: '#8b5cf6', fontSize: 12, fontWeight: '600' }}>Polygonscan</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
 
       </View>
     </View>
