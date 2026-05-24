@@ -860,7 +860,6 @@ function ContractsPanel({ colors, stats, users }) {
     setTimeout(() => setCopiedKey(null), 1500);
   };
 
-  const shortAddr = (addr) => addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '—';
 
   const statItems = [
     { icon: 'people-outline',           label: 'Usuarios',   value: stats?.total      ?? users.length, color: colors.primary },
@@ -934,10 +933,10 @@ function ContractsPanel({ colors, stats, users }) {
             </View>
 
             <Text style={{
-              color: colors.textSecondary, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
-              marginRight: 6,
-            }}>
-              {shortAddr(c.address)}
+              color: colors.textSecondary, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
+              marginRight: 6, flexShrink: 1,
+            }} selectable>
+              {c.address}
             </Text>
 
             <TouchableOpacity

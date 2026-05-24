@@ -555,7 +555,7 @@ function AccordionSection({ section, isLast }) {
                         color: isCopied ? '#10b981' : colors.textSecondary,
                         fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'],
                       }}>
-                        {isCopied ? '¡Copiada!' : shortAddress(block.address)}
+                        {isCopied ? '¡Copiada!' : block.address}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
