@@ -244,7 +244,7 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => Linking.openURL(`https://amoy.polygonscan.com/address/${addr}`)}
+              onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
               activeOpacity={0.7}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 5,

@@ -813,7 +813,7 @@ function ActiveUserCard({ u, roleColor, onRevoke, colors }) {
 }
 
 // ─── Pantalla principal ───────────────────────────────────────────────────────
-const EXPLORER_BASE = 'https://amoy.polygonscan.com/address/';
+const EXPLORER_BASE = 'https://polygonscan.com/address/';
 
 const CONTRACTS = [
   {
@@ -895,7 +895,7 @@ function ContractsPanel({ colors }) {
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>Contratos desplegados</Text>
           <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-            {expanded ? 'Polygon Amoy Testnet' : `${CONTRACTS.length} contratos · Polygon Amoy Testnet`}
+            {expanded ? 'Red local · Hardhat' : `${CONTRACTS.length} contratos · Red local · Hardhat`}
           </Text>
         </View>
         <Ionicons
