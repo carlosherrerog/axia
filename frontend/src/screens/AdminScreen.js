@@ -26,34 +26,50 @@ function AdminHeader({ user, marketPaused, onLogout, colors }) {
     <View style={{
       backgroundColor: colors.backgroundAlt,
       borderBottomWidth: 1, borderBottomColor: colors.border,
-      paddingTop: Platform.OS === 'ios' ? 52 : 16,
+      paddingTop: Platform.OS === 'ios' ? 52 : 14,
       paddingBottom: 14,
-      paddingHorizontal: 20,
-      flexDirection: 'row', alignItems: 'center', gap: 14,
-      ...(Platform.OS === 'web' && { boxShadow: '0 1px 0 rgba(255,255,255,0.04)' }),
+      paddingHorizontal: 24,
+      flexDirection: 'row', alignItems: 'center',
+      ...(Platform.OS === 'web' && {
+        boxShadow: '0 1px 12px rgba(0,0,0,0.2)',
+      }),
     }}>
-      {/* Logo */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        {Platform.OS === 'web'
-          ? <Image source={require('../../assets/axia-icons/axia-icon-rounded-purple.svg')}
-              style={{ width: 28, height: 28 }} resizeMode="contain" />
-          : <Ionicons name="diamond" size={22} color="#8247e5" />
-        }
+
+      {/* Marca izquierda: wordmark + separador + badge ADMIN */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        {Platform.OS === 'web' ? (
+          <Image
+            source={require('../../assets/axia-icons/axia-wordmark-purple.svg')}
+            style={{ width: 90, height: 30 }}
+            resizeMode="contain"
+          />
+        ) : (
+          <Text style={{ color: '#a855f7', fontSize: 17, fontWeight: '900', letterSpacing: 2 }}>
+            AXIA
+          </Text>
+        )}
+
+        {/* Separador vertical */}
+        <View style={{ width: 1, height: 18, backgroundColor: colors.border }} />
+
         <View style={{
-          backgroundColor: 'rgba(168,85,247,0.12)', borderRadius: 6,
-          paddingHorizontal: 8, paddingVertical: 3,
-          borderWidth: 1, borderColor: 'rgba(168,85,247,0.25)',
+          flexDirection: 'row', alignItems: 'center', gap: 6,
+          backgroundColor: 'rgba(168,85,247,0.1)',
+          borderRadius: 6, paddingHorizontal: 9, paddingVertical: 4,
+          borderWidth: 1, borderColor: 'rgba(168,85,247,0.22)',
         }}>
-          <Text style={{ color: '#a855f7', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 }}>
+          <Ionicons name="shield-checkmark" size={11} color="#a855f7" />
+          <Text style={{ color: '#a855f7', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 }}>
             ADMIN
           </Text>
         </View>
+
         {marketPaused && (
           <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: 4,
-            backgroundColor: 'rgba(244,63,94,0.1)', borderRadius: 6,
-            paddingHorizontal: 8, paddingVertical: 3,
-            borderWidth: 1, borderColor: 'rgba(244,63,94,0.3)',
+            flexDirection: 'row', alignItems: 'center', gap: 5,
+            backgroundColor: 'rgba(244,63,94,0.08)',
+            borderRadius: 6, paddingHorizontal: 9, paddingVertical: 4,
+            borderWidth: 1, borderColor: 'rgba(244,63,94,0.25)',
           }}>
             <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: '#f43f5e' }} />
             <Text style={{ color: '#f43f5e', fontSize: 10, fontWeight: '700', letterSpacing: 0.8 }}>
@@ -65,32 +81,38 @@ function AdminHeader({ user, marketPaused, onLogout, colors }) {
 
       <View style={{ flex: 1 }} />
 
-      {/* Usuario */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      {/* Derecha: nombre + avatar + logout */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>
+          <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13, lineHeight: 18 }}>
             {user?.full_name || user?.username}
           </Text>
           <Text style={{ color: colors.textMuted, fontSize: 11 }}>{user?.email}</Text>
         </View>
+
         <View style={{
           width: 36, height: 36, borderRadius: 18,
           backgroundColor: 'rgba(168,85,247,0.15)',
-          borderWidth: 2, borderColor: 'rgba(168,85,247,0.4)',
+          borderWidth: 2, borderColor: 'rgba(168,85,247,0.35)',
           justifyContent: 'center', alignItems: 'center',
         }}>
           <Text style={{ color: '#a855f7', fontWeight: '800', fontSize: 15 }}>{initial}</Text>
         </View>
+
+        <View style={{ width: 1, height: 18, backgroundColor: colors.border }} />
+
         <TouchableOpacity
           onPress={onLogout}
           style={{
-            width: 36, height: 36, borderRadius: 10,
-            backgroundColor: 'rgba(244,63,94,0.08)',
-            borderWidth: 1, borderColor: 'rgba(244,63,94,0.2)',
-            justifyContent: 'center', alignItems: 'center',
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+            paddingHorizontal: 12, paddingVertical: 7,
+            borderRadius: 8,
+            backgroundColor: 'rgba(244,63,94,0.07)',
+            borderWidth: 1, borderColor: 'rgba(244,63,94,0.18)',
           }}
         >
-          <Ionicons name="log-out-outline" size={17} color="#f43f5e" />
+          <Ionicons name="log-out-outline" size={14} color="#f43f5e" />
+          <Text style={{ color: '#f43f5e', fontSize: 12, fontWeight: '600' }}>Salir</Text>
         </TouchableOpacity>
       </View>
     </View>
