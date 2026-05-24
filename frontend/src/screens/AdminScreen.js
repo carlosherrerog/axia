@@ -403,7 +403,10 @@ function FeesCard({ colors }) {
                 const isNeg  = !isNaN(val) && val < 0;
                 const hasErr = isOver || isNeg;
                 return (
-                  <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ color: colors.textMuted, fontSize: 10 }}>
+                      (Máx. {row.max}%)
+                    </Text>
                     <View style={{
                       flexDirection: 'row', alignItems: 'center',
                       borderWidth: 1,
@@ -415,7 +418,6 @@ function FeesCard({ colors }) {
                       <TextInputNative
                         value={String(draft[row.key] ?? '')}
                         onChangeText={v => {
-                          // solo dígitos y un punto decimal, sin negativos
                           const clean = v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
                           setDraft(d => ({ ...d, [row.key]: clean }));
                         }}
@@ -430,11 +432,6 @@ function FeesCard({ colors }) {
                       />
                       <Text style={{ color: colors.textMuted, fontSize: 12 }}>%</Text>
                     </View>
-                    {hasErr && (
-                      <Text style={{ color: '#f43f5e', fontSize: 9 }}>
-                        {isNeg ? 'Mín. 0%' : `Máx. ${row.max}%`}
-                      </Text>
-                    )}
                   </View>
                 );
               })() : (
@@ -443,9 +440,6 @@ function FeesCard({ colors }) {
                     {fees ? toPct(fees[row.key]) : '—'}
                   </Text>
                   <Text style={{ color: colors.textMuted, fontSize: 10 }}>%</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 9, marginLeft: 3 }}>
-                    / {row.max}%
-                  </Text>
                 </View>
               )}
             </View>
