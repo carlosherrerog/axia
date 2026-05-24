@@ -153,10 +153,6 @@ export default function GlobalHeader({
       icon: 'information-circle-outline', label: 'Información', color: colors.textSecondary,
       onPress: () => { setMoreMenuVisible(false); navigation?.navigate('Info'); },
     },
-    {
-      icon: 'settings-outline', label: 'Configuración', color: colors.textSecondary,
-      onPress: () => { setMoreMenuVisible(false); navigation?.navigate('Configuracion'); },
-    },
     { divider: true },
     {
       icon: 'log-out-outline', label: 'Cerrar sesión', color: '#f43f5e',

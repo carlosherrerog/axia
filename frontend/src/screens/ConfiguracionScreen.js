@@ -6,11 +6,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { CommonActions } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import api from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
 import AlertModal, { useAlert } from '../components/AlertModal';
 import { useTheme } from '../context/ThemeContext';
-import { roleColors } from '../themes/styles';
 
 // ── Componentes locales ─────────────────────────────────────────────────────
 
@@ -136,7 +136,6 @@ export default function ConfiguracionScreen({ navigation }) {
   const [savingProfile, setSavingProfile]   = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
-  const [requestingRole, setRequestingRole] = useState(false);
 
   const [form, setForm]         = useState({ full_name: '', location: '' });
   const [passForm, setPassForm] = useState({ current: '', next: '', confirm: '' });
@@ -144,9 +143,8 @@ export default function ConfiguracionScreen({ navigation }) {
   const [showNext, setShowNext]       = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const [confirmDialog, setConfirmDialog]       = useState(null);
-  const [roleModal, setRoleModal]               = useState(false);
-  const [passModal, setPassModal]               = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [passModal, setPassModal]         = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -200,21 +198,6 @@ export default function ConfiguracionScreen({ navigation }) {
       showAlert('Error', e.response?.data?.detail || 'No se pudo cambiar la contraseña.', 'error');
     } finally {
       setSavingPassword(false);
-    }
-  };
-
-  // ── Solicitar rol ───────────────────────────────────────────────────────
-
-  const handleRequestRole = async (role) => {
-    try {
-      setRequestingRole(true);
-      await api.post('/users/request-role', { role, message: 'Solicitud enviada desde la app.' });
-      setRoleModal(false);
-      showAlert('Solicitud enviada', `Tu solicitud para el rol ${role} ha sido enviada. Un administrador la revisará pronto.`, 'success');
-    } catch (e) {
-      showAlert('Error', e.response?.data?.detail || 'No se pudo enviar la solicitud.', 'error');
-    } finally {
-      setRequestingRole(false);
     }
   };
 
@@ -381,6 +364,10 @@ export default function ConfiguracionScreen({ navigation }) {
               label="MetaMask conectada"
               description={loggedUser.wallet_address}
               isLast
+              onPress={async () => {
+                await Clipboard.setStringAsync(loggedUser.wallet_address);
+                showAlert('Copiado', 'Dirección de wallet copiada al portapapeles.', 'success');
+              }}
             />
           ) : (
             <>
@@ -416,7 +403,7 @@ export default function ConfiguracionScreen({ navigation }) {
               label="Solicitar rol"
               description="Accede a funciones avanzadas: Dealer, Relojero o Fabricante."
               isLast
-              onPress={() => setRoleModal(true)}
+              onPress={() => navigation.navigate('ProfessionalRequest')}
             />
           </SectionCard>
         )}
@@ -527,72 +514,6 @@ export default function ConfiguracionScreen({ navigation }) {
               onPress={() => { setPassModal(false); setPassForm({ current: '', next: '', confirm: '' }); }}
               style={{
                 paddingVertical: 12, borderRadius: 12,
-                backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal solicitar rol */}
-      <Modal visible={roleModal} transparent animationType="fade">
-        <View style={{
-          flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
-          ...(Platform.OS === 'web' && { backdropFilter: 'blur(6px)' }),
-        }}>
-          <View style={{
-            backgroundColor: colors.backgroundAlt, borderRadius: 24, padding: 28,
-            width: '88%', maxWidth: 380, borderWidth: 1, borderColor: colors.border,
-          }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
-              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17 }}>Solicitar rol</Text>
-            </View>
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 20, lineHeight: 19 }}>
-              Selecciona el rol que deseas solicitar. Un administrador revisará tu solicitud y recibirás una notificación.
-            </Text>
-
-            {[
-              { role: 'DEALER',     icon: 'storefront-outline',  color: roleColors.DEALER,     desc: 'Compra y vende relojes, crea subastas.' },
-              { role: 'RELOJERO',   icon: 'build-outline',       color: roleColors.RELOJERO,   desc: 'Perita y certifica relojes en ventas P2P.' },
-              { role: 'FABRICANTE', icon: 'construct-outline',   color: roleColors.FABRICANTE, desc: 'Crea y autentifica relojes en blockchain.' },
-            ].filter(r => availableRoles.includes(r.role)).map(({ role, icon, color, desc }) => (
-              <TouchableOpacity
-                key={role}
-                onPress={() => !requestingRole && handleRequestRole(role)}
-                disabled={requestingRole}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 12,
-                  backgroundColor: colors.surface, borderRadius: 14,
-                  borderWidth: 1, borderColor: colors.border,
-                  padding: 14, marginBottom: 10,
-                  opacity: requestingRole ? 0.6 : 1,
-                }}
-              >
-                <View style={{
-                  width: 38, height: 38, borderRadius: 10,
-                  backgroundColor: color + '18', borderWidth: 1, borderColor: color + '40',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Ionicons name={icon} size={18} color={color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>{role}</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{desc}</Text>
-                </View>
-                {requestingRole
-                  ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <Ionicons name="chevron-forward" size={15} color={colors.textMuted} />}
-              </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity
-              onPress={() => setRoleModal(false)}
-              style={{
-                marginTop: 6, paddingVertical: 12, borderRadius: 12,
                 backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
                 alignItems: 'center',
               }}
