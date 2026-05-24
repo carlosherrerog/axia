@@ -447,7 +447,7 @@ def verify_email(token: str, db: Session = Depends(database.get_db)):
     <div class="badge">✔ Verificación completada</div>
     <h1>¡Tu cuenta está activa!</h1>
     <p>Tu dirección de correo ha sido verificada correctamente. Ya puedes iniciar sesión en AXIA y empezar a explorar el marketplace de alta relojería.</p>
-    <a class="btn" href="https://axia-sandy.vercel.app">Ir a la aplicación</a>
+    <a class="btn" href="https://axia-sandy.vercel.app/login">Iniciar sesión</a>
     <div class="footer">AXIA · Alta Relojería · Blockchain</div>
   </div>
 </body>
@@ -480,7 +480,7 @@ def verify_email(token: str, db: Session = Depends(database.get_db)):
     <div class="badge">✕ Enlace inválido</div>
     <h1>Enlace expirado o inválido</h1>
     <p>Este enlace de verificación no es válido o ha expirado. Regístrate de nuevo en la aplicación para recibir un correo actualizado.</p>
-    <a class="btn" href="https://axia-sandy.vercel.app">Volver a la app</a>
+    <a class="btn" href="https://axia-sandy.vercel.app/login">Iniciar sesión</a>
     <div class="footer">AXIA · Alta Relojería · Blockchain</div>
   </div>
 </body>
