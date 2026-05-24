@@ -40,6 +40,48 @@ function SectionCard({ title, icon, color, children }) {
   );
 }
 
+function EditableRow({ icon, color, label, value, onChangeText, placeholder, isLast, readonly }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      paddingVertical: 13,
+      borderBottomWidth: isLast ? 0 : 1,
+      borderBottomColor: colors.border,
+    }}>
+      {icon ? (
+        <View style={{
+          width: 34, height: 34, borderRadius: 10,
+          backgroundColor: (color || colors.primary) + '15',
+          borderWidth: 1, borderColor: (color || colors.primary) + '30',
+          alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <Ionicons name={icon} size={16} color={color || colors.primary} />
+        </View>
+      ) : null}
+      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', width: 90, flexShrink: 0 }}>
+        {label}
+      </Text>
+      {readonly ? (
+        <Text style={{ flex: 1, color: colors.textMuted, fontSize: 14, textAlign: 'right' }} numberOfLines={1}>
+          {value}
+        </Text>
+      ) : (
+        <TextInput
+          style={{
+            flex: 1, color: colors.text, fontSize: 14, textAlign: 'right',
+            ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+          }}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textMuted}
+        />
+      )}
+    </View>
+  );
+}
+
 function SettingRow({ icon, color, label, description, onPress, right, danger, isLast }) {
   const { colors } = useTheme();
   const textColor  = danger ? '#ef4444' : colors.text;
@@ -104,6 +146,7 @@ export default function ConfiguracionScreen({ navigation }) {
 
   const [confirmDialog, setConfirmDialog]       = useState(null);
   const [roleModal, setRoleModal]               = useState(false);
+  const [passModal, setPassModal]               = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -214,19 +257,6 @@ export default function ConfiguracionScreen({ navigation }) {
     );
   }
 
-  const inputStyle = {
-    backgroundColor: colors.surface, color: colors.text,
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, borderWidth: 1, borderColor: colors.border,
-    ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
-  };
-
-  const labelStyle = {
-    color: colors.textSecondary, fontSize: 11, fontWeight: '700',
-    letterSpacing: 0.8, marginBottom: 7, textTransform: 'uppercase',
-  };
-
-  const readonlyInput = [inputStyle, { backgroundColor: colors.surface + '60', color: colors.textMuted }];
   const initials = (loggedUser?.username?.[0] || '?').toUpperCase();
   const hasWallet = !!loggedUser?.wallet_address;
   const userRoles = loggedUser?.roles || [];
@@ -305,114 +335,41 @@ export default function ConfiguracionScreen({ navigation }) {
 
         {/* ── Datos personales ── */}
         <SectionCard title="Datos personales" icon="person-circle-outline" color={colors.primary}>
-          <Text style={labelStyle}>Nombre de usuario</Text>
-          <View style={[readonlyInput, { marginBottom: 5, justifyContent: 'center' }]}>
-            <Text style={{ color: colors.textMuted, fontSize: 15 }}>{loggedUser?.username}</Text>
-          </View>
-          <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 16 }}>
-            El nombre de usuario no puede modificarse.
-          </Text>
-
-          <Text style={labelStyle}>Nombre completo</Text>
-          <TextInput
-            style={[inputStyle, { marginBottom: 16 }]}
-            value={form.full_name}
-            onChangeText={t => setForm(f => ({ ...f, full_name: t }))}
+          <EditableRow icon="at-outline"        color={colors.primary} label="Usuario"  value={loggedUser?.username} readonly />
+          <EditableRow icon="mail-outline"      color={colors.primary} label="Correo"   value={loggedUser?.email}    readonly />
+          <EditableRow
+            icon="person-outline" color={colors.primary} label="Nombre"
+            value={form.full_name} onChangeText={t => setForm(f => ({ ...f, full_name: t }))}
             placeholder="Tu nombre y apellidos"
-            placeholderTextColor={colors.textMuted}
           />
-
-          <Text style={labelStyle}>Correo electrónico</Text>
-          <View style={[readonlyInput, { marginBottom: 5, justifyContent: 'center' }]}>
-            <Text style={{ color: colors.textMuted, fontSize: 15 }}>{loggedUser?.email}</Text>
-          </View>
-          <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 16 }}>
-            El correo no puede cambiarse desde aquí.
-          </Text>
-
-          <Text style={labelStyle}>Ubicación</Text>
-          <TextInput
-            style={[inputStyle, { marginBottom: 16 }]}
-            value={form.location}
-            onChangeText={t => setForm(f => ({ ...f, location: t }))}
-            placeholder="Ciudad, país…"
-            placeholderTextColor={colors.textMuted}
-            maxLength={100}
+          <EditableRow
+            icon="location-outline" color={colors.primary} label="Ubicación"
+            value={form.location} onChangeText={t => setForm(f => ({ ...f, location: t }))}
+            placeholder="Ciudad, país…" isLast
           />
-
           <TouchableOpacity
             onPress={handleSaveProfile}
             disabled={savingProfile}
             style={{
-              marginTop: 8, backgroundColor: colors.primary,
-              borderRadius: 12, paddingVertical: 13,
+              marginTop: 16, backgroundColor: colors.primary,
+              borderRadius: 12, paddingVertical: 12,
               alignItems: 'center', opacity: savingProfile ? 0.7 : 1,
             }}
           >
-            {savingProfile ? <ActivityIndicator color="#fff" /> : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="checkmark-circle-outline" size={17} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Guardar perfil</Text>
-              </View>
-            )}
+            {savingProfile
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Guardar cambios</Text>}
           </TouchableOpacity>
         </SectionCard>
 
         {/* ── Seguridad ── */}
-        <SectionCard title="Cambiar contraseña" icon="lock-closed-outline" color="#f59e0b">
-          {[
-            { label: 'Contraseña actual', key: 'current', show: showCurrent, setShow: setShowCurrent },
-            { label: 'Nueva contraseña',  key: 'next',    show: showNext,    setShow: setShowNext    },
-            { label: 'Confirmar nueva',   key: 'confirm', show: showConfirm, setShow: setShowConfirm },
-          ].map(({ label, key, show, setShow }) => (
-            <View key={key} style={{ marginBottom: 14 }}>
-              <Text style={labelStyle}>{label}</Text>
-              <View style={{ position: 'relative' }}>
-                <TextInput
-                  style={[inputStyle, { paddingRight: 44 }]}
-                  value={passForm[key]}
-                  onChangeText={t => setPassForm(f => ({ ...f, [key]: t }))}
-                  placeholder="••••••••"
-                  placeholderTextColor={colors.textMuted}
-                  secureTextEntry={!show}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShow(v => !v)}
-                  style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}
-                >
-                  <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: 6,
-            backgroundColor: '#f59e0b12', borderRadius: 10, borderWidth: 1, borderColor: '#f59e0b30',
-            padding: 10, marginBottom: 14,
-          }}>
-            <Ionicons name="information-circle-outline" size={15} color="#f59e0b" />
-            <Text style={{ color: '#f59e0b', fontSize: 12, flex: 1 }}>
-              Mínimo 6 caracteres. Combina letras y números para mayor seguridad.
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={handleChangePassword}
-            disabled={savingPassword}
-            style={{
-              backgroundColor: '#f59e0b', borderRadius: 12, paddingVertical: 13,
-              alignItems: 'center', opacity: savingPassword ? 0.7 : 1,
-            }}
-          >
-            {savingPassword ? <ActivityIndicator color="#fff" /> : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="lock-closed-outline" size={17} color="#fff" />
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Actualizar contraseña</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+        <SectionCard title="Seguridad" icon="lock-closed-outline" color="#f59e0b">
+          <SettingRow
+            icon="key-outline" color="#f59e0b"
+            label="Cambiar contraseña"
+            description="Actualiza tu contraseña de acceso."
+            isLast onPress={() => setPassModal(true)}
+          />
         </SectionCard>
 
         {/* ── Wallet ── */}
@@ -500,6 +457,85 @@ export default function ConfiguracionScreen({ navigation }) {
         </SectionCard>
 
       </ScrollView>
+
+      {/* Modal cambiar contraseña */}
+      <Modal visible={passModal} transparent animationType="fade">
+        <View style={{
+          flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+          ...(Platform.OS === 'web' && { backdropFilter: 'blur(6px)' }),
+        }}>
+          <View style={{
+            backgroundColor: colors.backgroundAlt, borderRadius: 24, padding: 28,
+            width: '88%', maxWidth: 380, borderWidth: 1, borderColor: colors.border,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <Ionicons name="lock-closed-outline" size={20} color="#f59e0b" />
+              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 17 }}>Cambiar contraseña</Text>
+            </View>
+
+            {[
+              { label: 'Contraseña actual', key: 'current', show: showCurrent, setShow: setShowCurrent },
+              { label: 'Nueva contraseña',  key: 'next',    show: showNext,    setShow: setShowNext    },
+              { label: 'Confirmar nueva',   key: 'confirm', show: showConfirm, setShow: setShowConfirm },
+            ].map(({ label, key, show, setShow }, i, arr) => (
+              <View key={key} style={{ marginBottom: i < arr.length - 1 ? 12 : 16 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 }}>
+                  {label}
+                </Text>
+                <View style={{ position: 'relative' }}>
+                  <TextInput
+                    style={{
+                      backgroundColor: colors.surface, color: colors.text,
+                      borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+                      fontSize: 15, borderWidth: 1, borderColor: colors.border,
+                      paddingRight: 44,
+                      ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+                    }}
+                    value={passForm[key]}
+                    onChangeText={t => setPassForm(f => ({ ...f, [key]: t }))}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry={!show}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShow(v => !v)}
+                    style={{ position: 'absolute', right: 14, top: 0, bottom: 0, justifyContent: 'center' }}
+                  >
+                    <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              onPress={async () => {
+                await handleChangePassword();
+                if (!savingPassword) setPassModal(false);
+              }}
+              disabled={savingPassword}
+              style={{
+                backgroundColor: '#f59e0b', borderRadius: 12, paddingVertical: 13,
+                alignItems: 'center', marginBottom: 10, opacity: savingPassword ? 0.7 : 1,
+              }}
+            >
+              {savingPassword
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Actualizar contraseña</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setPassModal(false); setPassForm({ current: '', next: '', confirm: '' }); }}
+              style={{
+                paddingVertical: 12, borderRadius: 12,
+                backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal solicitar rol */}
       <Modal visible={roleModal} transparent animationType="fade">
