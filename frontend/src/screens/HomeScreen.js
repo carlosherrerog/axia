@@ -38,10 +38,10 @@ export default function HomeScreen() {
       fetchData();
       const ws = new WebSocket(`${WS_URL}/ws/admin`);
       
-      ws.onmessage = (event) => {
-        if (event.data === "update_marketplace") {
-          fetchData(); 
-        }
+      ws.onmessage = ({ data }) => {
+        let type = data;
+        try { type = JSON.parse(data)?.type ?? data; } catch {}
+        if (type === 'update_marketplace') fetchData();
       };
 
       return () => {
@@ -112,21 +112,20 @@ export default function HomeScreen() {
             : 'Autenticidad garantizada en blockchain · Certificado NFC'}
         </Text>
 
-        {/* Métricas rápidas */}
-        {watches.length > 0 && (
-          <View style={{ flexDirection: 'row', gap: 24, marginTop: 16 }}>
-            {[
-              { icon: 'shield-checkmark-outline', label: 'Verificados', value: watches.length },
-              { icon: 'people-outline', label: 'Vendedores', value: [...new Set(watches.map(w => w.owner_id))].length },
-            ].map(m => (
-              <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name={m.icon} size={14} color={colors.primaryLight} />
-                <Text style={{ color: colors.primaryLight, fontWeight: '700', fontSize: 14 }}>{m.value}</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12 }}>{m.label}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        {/* Métricas rápidas — siempre visibles */}
+        <View style={{ flexDirection: 'row', gap: 24, marginTop: 16 }}>
+          {[
+            { icon: 'shield-checkmark-outline', label: 'Verificados', value: watches.length },
+            { icon: 'people-outline', label: 'Vendedores', value: [...new Set(watches.map(w => w.owner_id))].length },
+            { icon: 'trending-up-outline', label: 'Subastas', value: watches.filter(w => w.auction_data).length },
+          ].map(m => (
+            <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name={m.icon} size={13} color={m.value > 0 ? colors.primaryLight : colors.textMuted} />
+              <Text style={{ color: m.value > 0 ? colors.primaryLight : colors.textMuted, fontWeight: '700', fontSize: 14 }}>{m.value}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{m.label}</Text>
+            </View>
+          ))}
+        </View>
       </View>
 
       <MarketplaceWatchSection watches={watches} navigation={navigation} />
