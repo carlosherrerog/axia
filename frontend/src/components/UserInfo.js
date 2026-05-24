@@ -81,7 +81,8 @@ export default function UserInfo({ loggedUser, showAlert, stats }) {
   if (!loggedUser) return null;
 
   const initial   = (loggedUser.username?.[0] || '?').toUpperCase();
-  const roles     = loggedUser.roles ?? [];
+  const baseRoles = loggedUser.roles ?? [];
+  const roles     = loggedUser.is_admin ? ['ADMIN', ...baseRoles] : baseRoles;
   const hasWallet = !!loggedUser.wallet_address;
   const addr      = loggedUser.wallet_address ?? '';
 
