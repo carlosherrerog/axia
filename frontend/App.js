@@ -287,6 +287,14 @@ function PublicDashboard() {
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [activeTab, setActiveTab] = useState('Marketplace');
 
+  useEffect(() => {
+    const unsubscribe = navigationRef.addListener('state', () => {
+      const route = navigationRef.getCurrentRoute();
+      if (route && ['Marketplace', 'Subastas'].includes(route.name)) setActiveTab(route.name);
+    });
+    return unsubscribe;
+  }, []);
+
   const handleTabPress = (name) => navigationRef.navigate(name);
 
   const loginButton = (
