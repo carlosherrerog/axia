@@ -98,8 +98,8 @@ export default function ConfiguracionScreen({ navigation }) {
     if (!passForm.current) {
       showAlert('Error', 'Introduce tu contraseña actual.', 'warning'); return;
     }
-    if (passForm.next.length < 8) {
-      showAlert('Error', 'La nueva contraseña debe tener al menos 8 caracteres.', 'warning'); return;
+    if (passForm.next.length < 6) {
+      showAlert('Error', 'La nueva contraseña debe tener al menos 6 caracteres.', 'warning'); return;
     }
     if (passForm.next !== passForm.confirm) {
       showAlert('Error', 'Las contraseñas nuevas no coinciden.', 'warning'); return;
@@ -315,7 +315,7 @@ export default function ConfiguracionScreen({ navigation }) {
           }}>
             <Ionicons name="information-circle-outline" size={15} color="#f59e0b" />
             <Text style={{ color: '#f59e0b', fontSize: 12, flex: 1 }}>
-              Mínimo 8 caracteres. Combina letras y números para mayor seguridad.
+              Mínimo 6 caracteres. Combina letras y números para mayor seguridad.
             </Text>
           </View>
 

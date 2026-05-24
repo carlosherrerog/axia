@@ -33,8 +33,8 @@ class UserCreate(BaseModel):
     @field_validator('password')
     @classmethod
     def password_min_length(cls, v):
-        if len(v) < 8:
-            raise ValueError('La contraseña debe tener al menos 8 caracteres')
+        if len(v) < 6:
+            raise ValueError('La contraseña debe tener al menos 6 caracteres')
         return v
 
 # REGISTRO [SERVIDOR]

@@ -586,8 +586,8 @@ def change_password(
 ):
     if not verify_password(current_password, current_user.password_hash):
         raise HTTPException(status_code=400, detail="La contraseña actual no es correcta.")
-    if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="La nueva contraseña debe tener al menos 8 caracteres.")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="La nueva contraseña debe tener al menos 6 caracteres.")
     current_user.password_hash = get_password_hash(new_password)
     db.commit()
     return {"detail": "Contraseña actualizada correctamente."}
