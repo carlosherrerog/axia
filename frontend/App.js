@@ -118,12 +118,6 @@ function DesktopSidebar({ hovered, setHovered, activeTab, onTabPress }) {
       color: theme.text,
       onPress: () => { setShowMoreMenu(false); navigationRef.navigate('Info'); },
     },
-    {
-      icon: 'settings-outline',
-      label: 'Configuración',
-      color: theme.text,
-      onPress: () => { setShowMoreMenu(false); navigationRef.navigate('Configuracion'); },
-    },
     { divider: true },
     {
       icon: 'log-out-outline',
