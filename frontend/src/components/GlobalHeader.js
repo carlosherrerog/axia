@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator,
-  Platform, useWindowDimensions, Animated, Modal, Image,
+  Platform, useWindowDimensions, Animated, Modal, Image, Pressable,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { ethers } from 'ethers';
 import api, { getToken, WS_URL } from '../api/api';
 import { roleColors, darkColors } from '../themes/styles';
 import { useTheme } from '../context/ThemeContext';
+import { NavTabContext } from '../context/NavTabContext';
 import MenuDropdown from './MenuDropDown';
 import AlertModal, { useAlert } from './AlertModal';
 
@@ -25,10 +26,12 @@ export default function GlobalHeader({
   showHamburger = false,
 }) {
   const theme = useTheme();
-  // forceDark: dashboards profesionales (Relojero, Fabricante) siempre en oscuro
   const colors    = forceDark ? darkColors : theme.colors;
   const { width } = useWindowDimensions();
-  const isMobile = width < 768;
+  const isMobile  = width < 768;
+
+  const { activeTab, onTabPress, tabs } = useContext(NavTabContext);
+  const showInlineTabs = !isMobile && tabs?.length > 0 && !showBack;
 
   const [localUser, setLocalUser]               = useState(loggedUser);
   const [internalCount, setInternalCount]       = useState(0);
@@ -234,10 +237,9 @@ export default function GlobalHeader({
         );
       })()}
 
-      {/* Cabecera principal  */}
+      {/* Cabecera principal */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
-        justifyContent: 'space-between',
         paddingHorizontal: 16,
         paddingTop: Platform.OS === 'ios' ? 54 : 20,
         paddingBottom: 14,
@@ -246,7 +248,7 @@ export default function GlobalHeader({
         borderBottomColor: colors.border,
       }}>
         {/* Logo AXIA o botón volver */}
-        <View style={{ flex: 1, marginRight: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 8 }}>
           {showBack ? (
             <>
               <TouchableOpacity
@@ -264,21 +266,53 @@ export default function GlobalHeader({
               </Text>
             </>
           ) : (
-            <>
-              {Platform.OS === 'web' ? (
-                <Image
-                  source={require('../../assets/axia-icons/axia-wordmark-purple.svg')}
-                  style={{ width: 110, height: 36 }}
-                  resizeMode="contain"
-                />
-              ) : (
-                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', letterSpacing: 2 }}>
-                  AXIA
-                </Text>
-              )}
-            </>
+            Platform.OS === 'web' ? (
+              <Image
+                source={require('../../assets/axia-icons/axia-wordmark-purple.svg')}
+                style={{ width: 110, height: 36 }}
+                resizeMode="contain"
+              />
+            ) : (
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: '800', letterSpacing: 2 }}>
+                AXIA
+              </Text>
+            )
           )}
         </View>
+
+        {/* Tabs inline — solo escritorio */}
+        {showInlineTabs ? (
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            {tabs.map(({ name, icon }) => {
+              const isFocused = activeTab === name;
+              return (
+                <Pressable
+                  key={name}
+                  onPress={() => onTabPress(name)}
+                  style={[{
+                    flexDirection: 'row', alignItems: 'center', gap: 6,
+                    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+                    backgroundColor: isFocused ? `${colors.primary}15` : 'transparent',
+                  }, Platform.OS === 'web' && { cursor: 'pointer' }]}
+                >
+                  <Ionicons
+                    name={isFocused ? icon : `${icon}-outline`}
+                    size={15}
+                    color={isFocused ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={{
+                    fontSize: 14, fontWeight: isFocused ? '700' : '500',
+                    color: isFocused ? colors.text : colors.textMuted,
+                  }}>
+                    {name}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
 
         {/* Controles a la derecha */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
