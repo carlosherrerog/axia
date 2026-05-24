@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   Platform, Modal, RefreshControl, Pressable, Image, useWindowDimensions,
@@ -468,6 +468,38 @@ export default function AdminScreen({ route, navigation }) {
   const [logisticsStatus,  setLogisticsStatus]  = useState(null);
   const [copiedLogistics,  setCopiedLogistics]  = useState(false);
   const [alert, setAlert] = useState({ visible: false, title: '', message: '', type: 'info' });
+  const [usdcBalance,      setUsdcBalance]      = useState(null);
+  const [polBalance,       setPolBalance]       = useState(null);
+  const [walletCopied,     setWalletCopied]     = useState(false);
+
+  const fmt = (v, dec = 2) =>
+    Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: dec });
+
+  const fetchWalletBalances = useCallback(async (address) => {
+    if (Platform.OS !== 'web' || !window.ethereum || !address) return;
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const pol = await provider.getBalance(address);
+      setPolBalance(fmt(ethers.formatEther(pol), 4));
+      const usdcAddress = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS;
+      if (usdcAddress) {
+        const contract = new ethers.Contract(
+          usdcAddress,
+          ['function balanceOf(address) view returns (uint256)'],
+          provider,
+        );
+        const usdc = await contract.balanceOf(address);
+        setUsdcBalance(fmt(ethers.formatUnits(usdc, 6), 2));
+      }
+    } catch (e) {
+      console.error('Admin wallet balance error:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loggedUser?.wallet_address) fetchWalletBalances(loggedUser.wallet_address);
+    else { setUsdcBalance(null); setPolBalance(null); }
+  }, [loggedUser?.wallet_address, fetchWalletBalances]);
 
   const showAlert = (title, message, type = 'error') =>
     setAlert({ visible: true, title, message, type });
@@ -709,8 +741,8 @@ export default function AdminScreen({ route, navigation }) {
             style={{
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
               marginTop: 12, paddingVertical: 10, borderRadius: 10,
-              backgroundColor: '#F6851B20',
-              borderWidth: 1, borderColor: '#F6851B40',
+              backgroundColor: '#F6851B18',
+              borderWidth: 1, borderColor: '#F6851B35',
             }}
           >
             {loadingWallet
@@ -722,17 +754,65 @@ export default function AdminScreen({ route, navigation }) {
             }
           </TouchableOpacity>
         ) : (
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: 6,
-            marginTop: 10, backgroundColor: '#10b98110', borderRadius: 8,
-            paddingHorizontal: 10, paddingVertical: 6,
-            borderWidth: 1, borderColor: '#10b98122',
-          }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' }} />
-            <Text style={{
-              flex: 1, color: colors.textSecondary, fontSize: 10,
-              fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-            }} numberOfLines={1}>{loggedUser.wallet_address}</Text>
+          <View style={{ marginTop: 12, gap: 8 }}>
+            {/* Dirección */}
+            <TouchableOpacity
+              onPress={async () => {
+                await Clipboard.setStringAsync(loggedUser.wallet_address);
+                setWalletCopied(true);
+                setTimeout(() => setWalletCopied(false), 2000);
+              }}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 8,
+                backgroundColor: '#10b98110', borderRadius: 8,
+                paddingHorizontal: 10, paddingVertical: 7,
+                borderWidth: 1, borderColor: '#10b98122',
+              }}
+            >
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' }} />
+              <Text style={{
+                flex: 1, color: colors.textSecondary, fontSize: 10,
+                fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+              }} numberOfLines={1}>{loggedUser.wallet_address}</Text>
+              <Ionicons
+                name={walletCopied ? 'checkmark' : 'copy-outline'}
+                size={12} color={walletCopied ? '#10b981' : colors.textMuted}
+              />
+            </TouchableOpacity>
+
+            {/* Balances */}
+            {(usdcBalance !== null || polBalance !== null) && (
+              <View style={{
+                flexDirection: 'row', gap: 8,
+                backgroundColor: colors.surface, borderRadius: 10,
+                borderWidth: 1, borderColor: colors.border,
+                padding: 10,
+              }}>
+                {/* USDC */}
+                <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.8 }}>
+                    USDC
+                  </Text>
+                  <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800', letterSpacing: -0.5 }}>
+                    {usdcBalance ?? '—'}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 9 }}>USD Coin</Text>
+                </View>
+
+                <View style={{ width: 1, backgroundColor: colors.border }} />
+
+                {/* POL */}
+                <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: '700', letterSpacing: 0.8 }}>
+                    POL
+                  </Text>
+                  <Text style={{ color: '#4ade80', fontSize: 16, fontWeight: '800', letterSpacing: -0.5 }}>
+                    {polBalance ?? '—'}
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 9 }}>Gas · Polygon</Text>
+                </View>
+              </View>
+            )}
           </View>
         )}
       </View>
