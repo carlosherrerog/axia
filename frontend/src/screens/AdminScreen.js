@@ -909,7 +909,6 @@ export default function AdminScreen({ route, navigation }) {
     { id: 'DEALER',      label: 'Dealers',     icon: 'storefront-outline', badge: stats.dealers     || null },
     { id: 'FABRICANTE',  label: 'Fabricantes', icon: 'business-outline',   badge: stats.fabricantes || null },
     { id: 'users',       label: 'Particulares', icon: 'people-outline',    badge: particulares.length || null },
-    { id: 'fees',        label: 'Comisiones',  icon: 'cash-outline',       badge: null },
   ];
 
   const renderContent = () => {
@@ -980,9 +979,6 @@ export default function AdminScreen({ route, navigation }) {
       });
     }
 
-    if (activeSection === 'fees') {
-      return <FeesCard colors={colors} />;
-    }
   };
 
   // ── Sidebar izquierdo ──────────────────────────────────────────────────────
@@ -1130,6 +1126,9 @@ export default function AdminScreen({ route, navigation }) {
           colors={colors}
         />
       )}
+
+      {/* Comisiones */}
+      <FeesCard colors={colors} />
     </View>
   );
 
@@ -1172,7 +1171,6 @@ export default function AdminScreen({ route, navigation }) {
               const on = activeSection === sec.id;
               const c  = sec.id === 'pending' ? '#f59e0b'
                 : sec.id === 'users' ? colors.primary
-                : sec.id === 'fees' ? '#8247e5'
                 : ROLE_META[sec.id]?.color || colors.primary;
               return (
                 <Pressable key={sec.id} onPress={() => setActiveSection(sec.id)}
@@ -1208,14 +1206,13 @@ export default function AdminScreen({ route, navigation }) {
                 width: 3, height: 16, borderRadius: 2,
                 backgroundColor: activeSection === 'pending' ? '#f59e0b'
                   : activeSection === 'users' ? colors.primary
-                  : activeSection === 'fees' ? '#8247e5'
                   : ROLE_META[activeSection]?.color || colors.primary,
               }} />
               <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>
                 {activeSection === 'pending' && `${allPending.length} solicitud${allPending.length !== 1 ? 'es' : ''} pendiente${allPending.length !== 1 ? 's' : ''}`}
                 {['RELOJERO','DEALER','FABRICANTE'].includes(activeSection) && `${users.filter(u => u.roles?.includes(activeSection)).length} ${ROLE_META[activeSection].label.toLowerCase()} activos`}
                 {activeSection === 'users' && `${particulares.length} particular${particulares.length !== 1 ? 'es' : ''}`}
-                {activeSection === 'fees' && 'Configuración de comisiones'}
+
               </Text>
             </View>
           )}
