@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { useFocusEffect, useNavigation, CommonActions } from '@react-navigation/native';
 import * as SecureStore from 'expo-secure-store';
 import api, { WS_URL } from '../api/api';
@@ -86,47 +85,6 @@ export default function HomeScreen() {
         onWalletChange={setLoggedUser}
         navigation={navigation}
       />
-
-      {/* ── Banner hero ─────────────────────────────────────────── */}
-      <View style={{
-        marginHorizontal: 20, marginTop: 18, marginBottom: 6,
-        backgroundColor: colors.backgroundAlt,
-        borderRadius: 16, borderWidth: 1, borderColor: colors.border,
-        padding: 20,
-        ...(Platform.OS === 'web' && {
-          background: `linear-gradient(135deg, ${colors.backgroundAlt} 0%, ${colors.surface} 100%)`,
-        }),
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-          <Ionicons name="diamond-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-          <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-            Alta Relojería · Blockchain
-          </Text>
-        </View>
-        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3, marginBottom: 4 }}>
-          Marketplace AXIA
-        </Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
-          {watches.length > 0
-            ? `${watches.length} ${watches.length === 1 ? 'reloj certificado' : 'relojes certificados'} disponibles — autenticidad garantizada en blockchain`
-            : 'Autenticidad garantizada en blockchain · Certificado NFC'}
-        </Text>
-
-        {/* Métricas rápidas — siempre visibles */}
-        <View style={{ flexDirection: 'row', gap: 24, marginTop: 16 }}>
-          {[
-            { icon: 'shield-checkmark-outline', label: 'Verificados', value: watches.length },
-            { icon: 'people-outline', label: 'Vendedores', value: [...new Set(watches.map(w => w.owner_id))].length },
-            { icon: 'trending-up-outline', label: 'Subastas', value: watches.filter(w => w.auction_data).length },
-          ].map(m => (
-            <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name={m.icon} size={13} color={m.value > 0 ? colors.primaryLight : colors.textMuted} />
-              <Text style={{ color: m.value > 0 ? colors.primaryLight : colors.textMuted, fontWeight: '700', fontSize: 14 }}>{m.value}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{m.label}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
 
       <MarketplaceWatchSection watches={watches} navigation={navigation} />
 
