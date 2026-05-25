@@ -489,52 +489,138 @@ export default function UserDashboardScreen({ route, navigation }) {
 
         {/* ── Tab: Subastas (solo dealers) ── */}
         {isDealer && activeTab === 'subastas' && (
-          <View style={{ paddingHorizontal: hPad, paddingBottom: 40 }}>
-            <TouchableOpacity
-              onPress={() => setCreateModal(true)}
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                backgroundColor: colors.primary, borderRadius: 14,
-                paddingVertical: 14, marginTop: 16, marginBottom: 24,
-              }}
-            >
-              <Ionicons name="add-circle-outline" size={20} color="#fff" />
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Nueva subasta</Text>
-            </TouchableOpacity>
-
+          <View style={{ paddingHorizontal: hPad, paddingBottom: 40, paddingTop: 16 }}>
             {auctionsLoading ? (
-              <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+              <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
             ) : (
               <>
-                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
-                  Mis subastas activas
-                </Text>
-                {myAuctions.length === 0 ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 24, backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 24 }}>
-                    <Ionicons name="hourglass-outline" size={36} color={colors.border} />
-                    <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: 13 }}>No tienes subastas activas</Text>
+                {/* Mis subastas */}
+                <View style={{
+                  backgroundColor: colors.backgroundAlt,
+                  borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+                  overflow: 'hidden', marginBottom: 16,
+                }}>
+                  <View style={{ height: 2, backgroundColor: '#f59e0b' }} />
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    paddingHorizontal: 14, paddingVertical: 12,
+                    borderBottomWidth: myAuctions.length > 0 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}>
+                    <View style={{
+                      width: 30, height: 30, borderRadius: 8,
+                      backgroundColor: '#f59e0b18', borderWidth: 1, borderColor: '#f59e0b40',
+                      alignItems: 'center', justifyContent: 'center', marginRight: 10,
+                    }}>
+                      <Ionicons name="hammer-outline" size={15} color="#f59e0b" />
+                    </View>
+                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, flex: 1 }}>
+                      Mis subastas
+                    </Text>
+                    {myAuctions.length > 0 && (
+                      <View style={{
+                        backgroundColor: '#f59e0b20', borderRadius: 20,
+                        paddingHorizontal: 9, paddingVertical: 3, marginRight: 10,
+                        borderWidth: 1, borderColor: '#f59e0b40',
+                      }}>
+                        <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '700' }}>
+                          {myAuctions.length} activa{myAuctions.length !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => setCreateModal(true)}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 5,
+                        backgroundColor: '#f59e0b15', borderRadius: 9,
+                        paddingHorizontal: 10, paddingVertical: 6,
+                        borderWidth: 1, borderColor: '#f59e0b35',
+                      }}
+                    >
+                      <Ionicons name="add" size={14} color="#f59e0b" />
+                      <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 12 }}>Nueva</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : (
-                  <View style={{ marginBottom: 24 }}>
-                    {myAuctions.map(a => (
-                      <DealerAuctionCard key={a.token_id} auction={a} navigation={navigation} colors={colors} />
-                    ))}
-                  </View>
-                )}
 
-                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
-                  Mis pujas activas
-                </Text>
-                {myActiveBids.length === 0 ? (
-                  <View style={{ alignItems: 'center', paddingVertical: 24, backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
-                    <Ionicons name="trending-up-outline" size={36} color={colors.border} />
-                    <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: 13 }}>No tienes pujas activas</Text>
+                  {myAuctions.length === 0 ? (
+                    <View style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20 }}>
+                      <Ionicons name="hourglass-outline" size={34} color={colors.border} style={{ marginBottom: 8 }} />
+                      <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>
+                        No tienes subastas activas
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setCreateModal(true)}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', gap: 6,
+                          backgroundColor: '#f59e0b15', borderRadius: 10,
+                          paddingHorizontal: 16, paddingVertical: 9,
+                          borderWidth: 1, borderColor: '#f59e0b35',
+                        }}
+                      >
+                        <Ionicons name="add-circle-outline" size={15} color="#f59e0b" />
+                        <Text style={{ color: '#f59e0b', fontWeight: '700', fontSize: 13 }}>Crear primera subasta</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={{ padding: 12 }}>
+                      {myAuctions.map(a => (
+                        <DealerAuctionCard key={a.token_id} auction={a} navigation={navigation} colors={colors} />
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Mis pujas */}
+                <View style={{
+                  backgroundColor: colors.backgroundAlt,
+                  borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+                  overflow: 'hidden',
+                }}>
+                  <View style={{ height: 2, backgroundColor: colors.primary }} />
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    paddingHorizontal: 14, paddingVertical: 12,
+                    borderBottomWidth: myActiveBids.length > 0 ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}>
+                    <View style={{
+                      width: 30, height: 30, borderRadius: 8,
+                      backgroundColor: `${colors.primary}18`, borderWidth: 1, borderColor: `${colors.primary}40`,
+                      alignItems: 'center', justifyContent: 'center', marginRight: 10,
+                    }}>
+                      <Ionicons name="trending-up-outline" size={15} color={colors.primary} />
+                    </View>
+                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, flex: 1 }}>
+                      Mis pujas
+                    </Text>
+                    {myActiveBids.length > 0 && (
+                      <View style={{
+                        backgroundColor: `${colors.primary}20`, borderRadius: 20,
+                        paddingHorizontal: 9, paddingVertical: 3,
+                        borderWidth: 1, borderColor: `${colors.primary}40`,
+                      }}>
+                        <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '700' }}>
+                          {myActiveBids.length} activa{myActiveBids.length !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    )}
                   </View>
-                ) : (
-                  myActiveBids.map(a => (
-                    <ActiveBidCard key={a.token_id} auction={a} navigation={navigation} colors={colors} />
-                  ))
-                )}
+
+                  {myActiveBids.length === 0 ? (
+                    <View style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20 }}>
+                      <Ionicons name="trending-up-outline" size={34} color={colors.border} style={{ marginBottom: 8 }} />
+                      <Text style={{ color: colors.textMuted, fontSize: 13 }}>
+                        No tienes pujas activas
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ padding: 12 }}>
+                      {myActiveBids.map(a => (
+                        <ActiveBidCard key={a.token_id} auction={a} navigation={navigation} colors={colors} />
+                      ))}
+                    </View>
+                  )}
+                </View>
               </>
             )}
           </View>
