@@ -46,7 +46,9 @@ export default function GlobalHeader({
   const [showBanner, setShowBanner] = useState(false);
   const [lastNotif, setLastNotif]   = useState(null);
   const translateY        = useRef(new Animated.Value(-100)).current;
-  const lastShownNotifId  = useRef(null);
+  const lastShownNotifId  = useRef(
+    Platform.OS === 'web' ? (parseInt(localStorage.getItem('lastShownNotifId') || '0', 10) || null) : null
+  );
   const pulseAnim         = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export default function GlobalHeader({
           const newest = res.data[0];
           if (newest.id !== lastShownNotifId.current) {
             lastShownNotifId.current = newest.id;
+            if (Platform.OS === 'web') localStorage.setItem('lastShownNotifId', String(newest.id));
             triggerBanner(newest);
           }
         }
