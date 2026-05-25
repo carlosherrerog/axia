@@ -26,6 +26,7 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 640;
+  const isMobile = width < 768;
 
   const [usdcBalance, setUsdcBalance] = useState('0.00');
   const [polBalance,  setPolBalance]  = useState('0.00');
@@ -105,41 +106,42 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
       {/* Fila superior: avatar + info + wallet status */}
       <View style={{
         flexDirection: 'row',
-        alignItems: isWide ? 'center' : 'flex-start',
-        padding: 18,
-        gap: 14,
+        alignItems: 'center',
+        padding: isMobile ? 12 : 18,
+        gap: isMobile ? 10 : 14,
       }}>
         {/* Avatar */}
         <View style={{
-          width: 54, height: 54, borderRadius: 27,
+          width: isMobile ? 40 : 54, height: isMobile ? 40 : 54,
+          borderRadius: isMobile ? 20 : 27,
           backgroundColor: colors.primary + '18',
           borderWidth: 2, borderColor: colors.primary + '55',
           alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: colors.primary }}>
+          <Text style={{ fontSize: isMobile ? 17 : 22, fontWeight: '700', color: colors.primary }}>
             {initial}
           </Text>
         </View>
 
-        {/* Nombre + email + roles */}
+        {/* Nombre + roles */}
         <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
-            <View>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, letterSpacing: -0.3 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: isMobile ? 14 : 16, fontWeight: '700', color: colors.text, letterSpacing: -0.3 }} numberOfLines={1}>
                 {loggedUser.username}
               </Text>
-              {loggedUser.full_name ? (
+              {!isMobile && loggedUser.full_name ? (
                 <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
                   {loggedUser.full_name}
                 </Text>
               ) : null}
-              {loggedUser.email ? (
+              {!isMobile && loggedUser.email ? (
                 <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>
                   {loggedUser.email}
                 </Text>
               ) : null}
-              {loggedUser.location ? (
+              {!isMobile && loggedUser.location ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <Ionicons name="location-outline" size={11} color={colors.textMuted} />
                   <Text style={{ color: colors.textMuted, fontSize: 11 }}>{loggedUser.location}</Text>
@@ -148,38 +150,43 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
             </View>
 
             {/* Badge wallet + botón configuración */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
               {hasWallet ? (
                 <View style={{
-                  flexDirection: 'row', alignItems: 'center', gap: 5,
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
                   backgroundColor: USDC_GREEN + '12',
                   borderWidth: 1, borderColor: USDC_GREEN + '35',
-                  borderRadius: 20, paddingHorizontal: 9, paddingVertical: 5,
+                  borderRadius: 20, paddingHorizontal: isMobile ? 7 : 9, paddingVertical: isMobile ? 3 : 5,
                 }}>
-                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: USDC_GREEN }} />
-                  <Text style={{ color: USDC_GREEN, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
-                    WALLET ACTIVA
-                  </Text>
+                  <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: USDC_GREEN }} />
+                  {!isMobile && (
+                    <Text style={{ color: USDC_GREEN, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
+                      WALLET ACTIVA
+                    </Text>
+                  )}
+                  {isMobile && (
+                    <Text style={{ color: USDC_GREEN, fontSize: 9, fontWeight: '700' }}>Wallet</Text>
+                  )}
                 </View>
               ) : null}
               {onSettings ? (
                 <TouchableOpacity
                   onPress={onSettings}
                   style={{
-                    width: 30, height: 30, borderRadius: 15,
+                    width: 28, height: 28, borderRadius: 14,
                     backgroundColor: colors.surface,
                     borderWidth: 1, borderColor: colors.border,
                     alignItems: 'center', justifyContent: 'center',
                   }}
                 >
-                  <Ionicons name="settings-outline" size={15} color={colors.textSecondary} />
+                  <Ionicons name="settings-outline" size={14} color={colors.textSecondary} />
                 </TouchableOpacity>
               ) : null}
             </View>
           </View>
 
           {/* Badges de rol */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 9 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: isMobile ? 6 : 9 }}>
             {(roles.length > 0 ? roles : ['PARTICULAR']).map(role => {
               const rc = roleColors[role] ?? roleColors.PARTICULAR;
               return (
@@ -187,7 +194,7 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
                   flexDirection: 'row', alignItems: 'center', gap: 4,
                   backgroundColor: rc + '14',
                   borderWidth: 1, borderColor: rc + '40',
-                  borderRadius: 20, paddingHorizontal: 9, paddingVertical: 4,
+                  borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3,
                 }}>
                   <Ionicons name={ROLE_ICONS[role] ?? 'person'} size={10} color={rc} />
                   <Text style={{ color: rc, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 }}>
@@ -206,24 +213,24 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
         <View style={{
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          paddingHorizontal: 18,
-          paddingTop: 14,
-          paddingBottom: 16,
+          paddingHorizontal: isMobile ? 12 : 18,
+          paddingTop: isMobile ? 10 : 14,
+          paddingBottom: isMobile ? 12 : 16,
         }}>
           {/* Dirección + enlace Polygonscan */}
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', gap: 6, marginBottom: isMobile ? 10 : 14 }}>
             <TouchableOpacity
               onPress={handleCopy}
               activeOpacity={0.7}
               style={{
-                flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
+                flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
                 backgroundColor: colors.surface,
                 borderRadius: 10,
-                paddingHorizontal: 12, paddingVertical: 9,
+                paddingHorizontal: 10, paddingVertical: isMobile ? 7 : 9,
                 borderWidth: 1, borderColor: colors.border,
               }}
             >
-              <Ionicons name="wallet-outline" size={13} color={colors.textMuted} />
+              <Ionicons name="wallet-outline" size={12} color={colors.textMuted} />
               <Text
                 numberOfLines={1}
                 style={{
@@ -234,11 +241,11 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
                   letterSpacing: 0.5,
                 }}
               >
-                {addr}
+                {isMobile ? `${addr.slice(0, 8)}…${addr.slice(-6)}` : addr}
               </Text>
               <Ionicons
                 name={copied ? 'checkmark' : 'copy-outline'}
-                size={13}
+                size={12}
                 color={copied ? USDC_GREEN : colors.textMuted}
               />
             </TouchableOpacity>
@@ -247,65 +254,69 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
               onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
               activeOpacity={0.7}
               style={{
-                flexDirection: 'row', alignItems: 'center', gap: 5,
+                flexDirection: 'row', alignItems: 'center', gap: 4,
                 backgroundColor: '#8b5cf612',
                 borderRadius: 10, borderWidth: 1, borderColor: '#8b5cf630',
-                paddingHorizontal: 10, paddingVertical: 9,
+                paddingHorizontal: 8, paddingVertical: isMobile ? 7 : 9,
               }}
             >
-              <Ionicons name="open-outline" size={13} color="#8b5cf6" />
-              <Text style={{ color: '#8b5cf6', fontSize: 11, fontWeight: '700' }}>Polygonscan</Text>
+              <Ionicons name="open-outline" size={12} color="#8b5cf6" />
+              {!isMobile && <Text style={{ color: '#8b5cf6', fontSize: 11, fontWeight: '700' }}>Polygonscan</Text>}
             </TouchableOpacity>
           </View>
 
-          {/* Saldos */}
+          {/* Saldos — fila compacta en móvil */}
           <View style={{ flexDirection: 'row', gap: 10 }}>
 
             {/* USDC */}
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+            <View style={{ flex: 1, flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'flex-start', gap: isMobile ? 8 : 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: isMobile ? 0 : 4 }}>
                 <View style={{
-                  width: 18, height: 18, borderRadius: 9,
+                  width: 16, height: 16, borderRadius: 8,
                   backgroundColor: USDC_GREEN + '20',
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ fontSize: 9, fontWeight: '900', color: USDC_GREEN }}>$</Text>
+                  <Text style={{ fontSize: 8, fontWeight: '900', color: USDC_GREEN }}>$</Text>
                 </View>
                 <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>
                   USDC
                 </Text>
               </View>
-              <Text style={{ fontSize: 24, fontWeight: '800', color: USDC_GREEN, letterSpacing: -0.8 }}>
+              <Text style={{ fontSize: isMobile ? 16 : 24, fontWeight: '800', color: USDC_GREEN, letterSpacing: -0.5 }}>
                 {usdcBalance}
               </Text>
-              <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
-                USD Coin · Polygon
-              </Text>
+              {!isMobile && (
+                <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                  USD Coin · Polygon
+                </Text>
+              )}
             </View>
 
             {/* Separador vertical */}
             <View style={{ width: 1, backgroundColor: colors.border, marginVertical: 2 }} />
 
             {/* POL */}
-            <View style={{ flex: 1, paddingLeft: 10 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+            <View style={{ flex: 1, paddingLeft: 10, flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'flex-start', gap: isMobile ? 8 : 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: isMobile ? 0 : 4 }}>
                 <View style={{
-                  width: 18, height: 18, borderRadius: 9,
+                  width: 16, height: 16, borderRadius: 8,
                   backgroundColor: POL_GREEN + '20',
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ fontSize: 9, fontWeight: '900', color: POL_GREEN }}>P</Text>
+                  <Text style={{ fontSize: 8, fontWeight: '900', color: POL_GREEN }}>P</Text>
                 </View>
                 <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>
                   POL
                 </Text>
               </View>
-              <Text style={{ fontSize: 24, fontWeight: '800', color: POL_GREEN, letterSpacing: -0.8 }}>
+              <Text style={{ fontSize: isMobile ? 16 : 24, fontWeight: '800', color: POL_GREEN, letterSpacing: -0.5 }}>
                 {polBalance}
               </Text>
-              <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
-                Token nativo · Gas
-              </Text>
+              {!isMobile && (
+                <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                  Token nativo · Gas
+                </Text>
+              )}
             </View>
 
           </View>
