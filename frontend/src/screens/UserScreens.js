@@ -256,19 +256,23 @@ export default function UserDashboardScreen({ route, navigation }) {
     try {
       const resUser = await api.get('/users/me');
       setLoggedUser(resUser.data);
-      await fetchMyCollection();
-      const isParticularUser = !resUser.data?.roles?.includes('DEALER');
-      if (isParticularUser && resUser.data?.wallet_address) {
-        const allRes = await api.get('/auctions');
-        const bids = allRes.data.filter(a =>
-          a.highest_bidder?.toLowerCase() === resUser.data.wallet_address.toLowerCase()
-        );
-        setMyBids(bids);
+      const isDealerUser = resUser.data?.roles?.includes('DEALER');
+      if (isDealerUser) {
+        await Promise.all([fetchMyCollection(), fetchAuctions()]);
+      } else {
+        await fetchMyCollection();
+        if (resUser.data?.wallet_address) {
+          const allRes = await api.get('/auctions');
+          const bids = allRes.data.filter(a =>
+            a.highest_bidder?.toLowerCase() === resUser.data.wallet_address.toLowerCase()
+          );
+          setMyBids(bids);
+        }
       }
     } catch (error) {
       console.error('Error cargando datos iniciales', error);
     }
-  }, [fetchMyCollection]);
+  }, [fetchMyCollection, fetchAuctions]);
 
   useEffect(() => {
     fetchInitialData();
@@ -294,10 +298,8 @@ export default function UserDashboardScreen({ route, navigation }) {
     return () => { if (ws) ws?.close(); };
   }, [fetchInitialData, loggedUser?.id]);
 
-  // Cargar subastas al entrar al tab o al recuperar el foco (volver de AuctionScreen)
-  useEffect(() => {
-    if (isDealer && activeTab === 'subastas') fetchAuctions();
-  }, [isDealer, activeTab]);
+  // Refrescar subastas al volver de AuctionScreen (foco recuperado)
+  // No se dispara al cambiar de tab porque los datos ya vienen de fetchInitialData
 
   useFocusEffect(useCallback(() => {
     if (isDealer && activeTab === 'subastas') fetchAuctions();
