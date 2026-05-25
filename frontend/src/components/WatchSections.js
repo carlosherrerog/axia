@@ -31,6 +31,8 @@ export default function WatchSections({
   const isDealer = (userRoles || []).includes('DEALER');
   const isParticular = !isDealer;
   const [activeTab, setActiveTab] = useState('collection');
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   // Lógica de rotación del mini-reloj
@@ -121,9 +123,11 @@ export default function WatchSections({
                 color={refreshing ? colors.primaryLight : colors.textSecondary}
               />
             </Animated.View>
-            <Text style={{ color: refreshing ? colors.primaryLight : colors.textSecondary, fontSize: 11 }}>
-              Actualizar
-            </Text>
+            {!isMobile && (
+              <Text style={{ color: refreshing ? colors.primaryLight : colors.textSecondary, fontSize: 11 }}>
+                Actualizar
+              </Text>
+            )}
           </TouchableOpacity>
 
           {walletAddress && (
@@ -328,15 +332,15 @@ export function MarketplaceWatchSection({ watches, navigation }) {
             ? `${watches.length} ${watches.length === 1 ? 'reloj certificado' : 'relojes certificados'} disponibles — autenticidad garantizada en blockchain`
             : 'Autenticidad garantizada en blockchain · Certificado NFC'}
         </Text>
-        <View style={{ flexDirection: 'row', gap: 24, marginTop: 16 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 16 }}>
           {[
             { icon: 'shield-checkmark-outline', label: 'Verificados', value: watches.length },
             { icon: 'people-outline', label: 'Vendedores', value: [...new Set(watches.map(w => w.owner_id))].length },
             { icon: 'trending-up-outline', label: 'Subastas', value: watches.filter(w => w.auction_data).length },
           ].map(m => (
-            <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
               <Ionicons name={m.icon} size={13} color={m.value > 0 ? colors.primaryLight : colors.textMuted} />
-              <Text style={{ color: m.value > 0 ? colors.primaryLight : colors.textMuted, fontWeight: '700', fontSize: 14 }}>{m.value}</Text>
+              <Text style={{ color: m.value > 0 ? colors.primaryLight : colors.textMuted, fontWeight: '700', fontSize: 13 }}>{m.value}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 12 }}>{m.label}</Text>
             </View>
           ))}

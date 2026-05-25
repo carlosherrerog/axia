@@ -354,9 +354,11 @@ export default function GlobalHeader({
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 10, paddingRight: 8, paddingVertical: 7 }}
                 >
                   <Ionicons name={walletCopied ? 'checkmark' : 'wallet-outline'} size={13} color="#10b981" />
-                  <Text numberOfLines={1} style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>
-                    {localUser.wallet_address.slice(0, 6)}…{localUser.wallet_address.slice(-4)}
-                  </Text>
+                  {!isMobile && (
+                    <Text numberOfLines={1} style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>
+                      {localUser.wallet_address.slice(0, 6)}…{localUser.wallet_address.slice(-4)}
+                    </Text>
+                  )}
                 </TouchableOpacity>
                 <View style={{ width: 1, height: 18, backgroundColor: '#10b98140' }} />
                 <TouchableOpacity onPress={() => setDisconnectVisible(true)} style={{ paddingHorizontal: 9, paddingVertical: 7 }}>
@@ -368,14 +370,16 @@ export default function GlobalHeader({
                 onPress={handleConnect}
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 6,
-                  paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+                  paddingHorizontal: isMobile ? 10 : 12, paddingVertical: 7, borderRadius: 20,
                   backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
                 }}
               >
                 <Ionicons name="wallet-outline" size={14} color={colors.textSecondary} />
-                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
-                  Conectar wallet
-                </Text>
+                {!isMobile && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
+                    Conectar wallet
+                  </Text>
+                )}
               </TouchableOpacity>
             )
           )}

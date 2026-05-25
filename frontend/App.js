@@ -59,8 +59,8 @@ function MobileBottomBar({ activeTab, onTabPress, tabs, extraRight }) {
   return (
     <View style={{
       position: 'absolute', bottom: 0, left: 0, right: 0,
-      height: Platform.OS === 'ios' ? 80 : 60,
-      paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+      height: Platform.OS === 'ios' ? 90 : 60,
+      paddingBottom: Platform.OS === 'ios' ? 34 : 0,
       flexDirection: 'row',
       backgroundColor: 'rgba(24,24,27,0.97)',
       borderTopWidth: 1, borderTopColor: theme.border,

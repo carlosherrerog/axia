@@ -158,15 +158,15 @@ export default function AuctionsScreen({ navigation }) {
               </Text>
 
               {/* Stats siempre visibles */}
-              <View style={{ flexDirection: 'row', gap: 24, marginTop: 16 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 16 }}>
                 {[
                   { icon: 'hammer-outline',       label: 'Activas',       value: auctions.length },
                   { icon: 'storefront-outline',    label: 'Vendedores',    value: sellersCount },
                   { icon: 'alert-circle-outline',  label: 'Cierran pronto',value: urgentCount },
                 ].map(m => (
-                  <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View key={m.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                     <Ionicons name={m.icon} size={13} color={m.value > 0 ? colors.primaryLight : colors.textMuted} />
-                    <Text style={{ color: m.value > 0 ? colors.primaryLight : colors.textMuted, fontWeight: '700', fontSize: 14 }}>{m.value}</Text>
+                    <Text style={{ color: m.value > 0 ? colors.primaryLight : colors.textMuted, fontWeight: '700', fontSize: 13 }}>{m.value}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>{m.label}</Text>
                   </View>
                 ))}
