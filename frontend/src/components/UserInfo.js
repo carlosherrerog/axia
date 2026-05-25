@@ -22,7 +22,7 @@ const POL_GREEN  = '#4ade80';
 const fmt = (value, dec = 2) =>
   Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: dec });
 
-export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
+export default function UserInfo({ loggedUser, showAlert, stats, onSettings, noMargin = false }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const isWide = width >= 640;
@@ -93,7 +93,7 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
 
   return (
     <View style={{
-      marginHorizontal: isMobile ? 16 : 8,
+      marginHorizontal: noMargin ? 0 : (isMobile ? 16 : 8),
       marginBottom: 12,
       borderRadius: 16,
       borderWidth: 1,
@@ -214,112 +214,136 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           paddingHorizontal: isMobile ? 12 : 18,
-          paddingTop: isMobile ? 10 : 14,
-          paddingBottom: isMobile ? 12 : 16,
+          paddingTop: isMobile ? 10 : 12,
+          paddingBottom: isMobile ? 12 : 12,
         }}>
-          {/* Dirección + enlace Polygonscan */}
-          <View style={{ flexDirection: 'row', gap: 6, marginBottom: isMobile ? 10 : 14 }}>
-            <TouchableOpacity
-              onPress={handleCopy}
-              activeOpacity={0.7}
-              style={{
-                flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
-                backgroundColor: colors.surface,
-                borderRadius: 10,
-                paddingHorizontal: 10, paddingVertical: isMobile ? 7 : 9,
-                borderWidth: 1, borderColor: colors.border,
-              }}
-            >
-              <Ionicons name="wallet-outline" size={12} color={colors.textMuted} />
-              <Text
-                numberOfLines={1}
+          {!isMobile ? (
+            /* Desktop: dirección + balances en una sola fila horizontal */
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity
+                onPress={handleCopy}
+                activeOpacity={0.7}
                 style={{
-                  flex: 1,
-                  color: colors.textSecondary,
-                  fontSize: 10,
-                  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-                  letterSpacing: 0.5,
+                  flexDirection: 'row', alignItems: 'center', gap: 5,
+                  backgroundColor: colors.surface, borderRadius: 8,
+                  paddingHorizontal: 10, paddingVertical: 6,
+                  borderWidth: 1, borderColor: colors.border,
                 }}
               >
-                {isMobile ? `${addr.slice(0, 8)}…${addr.slice(-6)}` : addr}
-              </Text>
-              <Ionicons
-                name={copied ? 'checkmark' : 'copy-outline'}
-                size={12}
-                color={copied ? USDC_GREEN : colors.textMuted}
-              />
-            </TouchableOpacity>
+                <Ionicons name="wallet-outline" size={11} color={colors.textMuted} />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: colors.textSecondary, fontSize: 11, maxWidth: 280,
+                    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                    letterSpacing: 0.3,
+                  }}
+                >
+                  {addr}
+                </Text>
+                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={11} color={copied ? USDC_GREEN : colors.textMuted} />
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
-              activeOpacity={0.7}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 4,
-                backgroundColor: '#8b5cf612',
-                borderRadius: 10, borderWidth: 1, borderColor: '#8b5cf630',
-                paddingHorizontal: 8, paddingVertical: isMobile ? 7 : 9,
-              }}
-            >
-              <Ionicons name="open-outline" size={12} color="#8b5cf6" />
-              {!isMobile && <Text style={{ color: '#8b5cf6', fontSize: 11, fontWeight: '700' }}>Polygonscan</Text>}
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  backgroundColor: '#8b5cf612', borderRadius: 8,
+                  borderWidth: 1, borderColor: '#8b5cf630',
+                  paddingHorizontal: 8, paddingVertical: 6,
+                }}
+              >
+                <Ionicons name="open-outline" size={11} color="#8b5cf6" />
+                <Text style={{ color: '#8b5cf6', fontSize: 11, fontWeight: '700' }}>Polygonscan</Text>
+              </TouchableOpacity>
 
-          {/* Saldos — fila compacta en móvil */}
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }} />
 
-            {/* USDC */}
-            <View style={{ flex: 1, flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'flex-start', gap: isMobile ? 8 : 0 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: isMobile ? 0 : 4 }}>
-                <View style={{
-                  width: 16, height: 16, borderRadius: 8,
-                  backgroundColor: USDC_GREEN + '20',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
+              {/* USDC */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: USDC_GREEN + '20', alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontSize: 8, fontWeight: '900', color: USDC_GREEN }}>$</Text>
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>
-                  USDC
-                </Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>USDC</Text>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: USDC_GREEN, letterSpacing: -0.5 }}>{usdcBalance}</Text>
               </View>
-              <Text style={{ fontSize: isMobile ? 16 : 24, fontWeight: '800', color: USDC_GREEN, letterSpacing: -0.5 }}>
-                {usdcBalance}
-              </Text>
-              {!isMobile && (
-                <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
-                  USD Coin · Polygon
-                </Text>
-              )}
-            </View>
 
-            {/* Separador vertical */}
-            <View style={{ width: 1, backgroundColor: colors.border, marginVertical: 2 }} />
+              <View style={{ width: 1, height: 22, backgroundColor: colors.border }} />
 
-            {/* POL */}
-            <View style={{ flex: 1, paddingLeft: 10, flexDirection: isMobile ? 'row' : 'column', alignItems: isMobile ? 'center' : 'flex-start', gap: isMobile ? 8 : 0 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: isMobile ? 0 : 4 }}>
-                <View style={{
-                  width: 16, height: 16, borderRadius: 8,
-                  backgroundColor: POL_GREEN + '20',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
+              {/* POL */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: POL_GREEN + '20', alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontSize: 8, fontWeight: '900', color: POL_GREEN }}>P</Text>
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>
-                  POL
-                </Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>POL</Text>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: POL_GREEN, letterSpacing: -0.5 }}>{polBalance}</Text>
               </View>
-              <Text style={{ fontSize: isMobile ? 16 : 24, fontWeight: '800', color: POL_GREEN, letterSpacing: -0.5 }}>
-                {polBalance}
-              </Text>
-              {!isMobile && (
-                <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
-                  Token nativo · Gas
-                </Text>
-              )}
             </View>
+          ) : (
+            /* Móvil: dirección + polygonscan arriba, balances abajo */
+            <>
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+                <TouchableOpacity
+                  onPress={handleCopy}
+                  activeOpacity={0.7}
+                  style={{
+                    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
+                    backgroundColor: colors.surface, borderRadius: 10,
+                    paddingHorizontal: 10, paddingVertical: 7,
+                    borderWidth: 1, borderColor: colors.border,
+                  }}
+                >
+                  <Ionicons name="wallet-outline" size={12} color={colors.textMuted} />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      flex: 1, color: colors.textSecondary, fontSize: 10,
+                      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {`${addr.slice(0, 8)}…${addr.slice(-6)}`}
+                  </Text>
+                  <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={12} color={copied ? USDC_GREEN : colors.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    backgroundColor: '#8b5cf612', borderRadius: 10,
+                    borderWidth: 1, borderColor: '#8b5cf630',
+                    paddingHorizontal: 8, paddingVertical: 7,
+                  }}
+                >
+                  <Ionicons name="open-outline" size={12} color="#8b5cf6" />
+                </TouchableOpacity>
+              </View>
 
-          </View>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: USDC_GREEN + '20', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 8, fontWeight: '900', color: USDC_GREEN }}>$</Text>
+                    </View>
+                    <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>USDC</Text>
+                  </View>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: USDC_GREEN, letterSpacing: -0.5 }}>{usdcBalance}</Text>
+                </View>
+                <View style={{ width: 1, backgroundColor: colors.border, marginVertical: 2 }} />
+                <View style={{ flex: 1, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: POL_GREEN + '20', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 8, fontWeight: '900', color: POL_GREEN }}>P</Text>
+                    </View>
+                    <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.textMuted }}>POL</Text>
+                  </View>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: POL_GREEN, letterSpacing: -0.5 }}>{polBalance}</Text>
+                </View>
+              </View>
+            </>
+          )}
         </View>
       ) : null}
 

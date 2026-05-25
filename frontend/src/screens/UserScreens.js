@@ -417,110 +417,69 @@ export default function UserDashboardScreen({ route, navigation }) {
 
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 100 }}>
 
-        {/* Layout: dos columnas en desktop, columna única en móvil */}
-        <View style={isDesktop ? {
-          flexDirection: 'row', alignItems: 'flex-start',
-          paddingHorizontal: hPad, paddingTop: 20, gap: 20,
-        } : {}}>
+        {/* ── Banner de perfil — ancho completo ── */}
+        <View style={{ paddingHorizontal: hPad, paddingTop: 16 }}>
+          <UserInfo
+            noMargin
+            loggedUser={loggedUser}
+            showAlert={showAlert}
+            onSettings={() => navigation.navigate('Configuracion')}
+            stats={myNfts.length > 0 ? [
+              { label: 'En colección', value: myNfts.length },
+              { label: 'En venta',     value: myNfts.filter(n => n.is_listed && !n.is_buyer).length },
+              { label: 'Comprando',    value: myNfts.filter(n => n.is_buyer).length },
+            ] : []}
+          />
+        </View>
 
-          {/* ── COLUMNA IZQUIERDA: perfil + nav dealer ── */}
-          <View style={isDesktop ? { width: 360, flexShrink: 0 } : { marginTop: 16 }}>
-            <UserInfo
-              loggedUser={loggedUser}
-              showAlert={showAlert}
-              onSettings={() => navigation.navigate('Configuracion')}
-              stats={myNfts.length > 0 ? [
-                { label: 'En colección', value: myNfts.length },
-                { label: 'En venta',     value: myNfts.filter(n => n.is_listed && !n.is_buyer).length },
-                { label: 'Comprando',    value: myNfts.filter(n => n.is_buyer).length },
-              ] : []}
-            />
-
-            {/* Tabs dealer — en sidebar cuando desktop */}
-            {isDealer && isDesktop && (
-              <View style={{
-                marginHorizontal: 16, marginTop: 4,
-                backgroundColor: colors.surface,
-                borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-                padding: 4,
-              }}>
-                {[
-                  { key: 'coleccion', label: 'Colección', icon: 'grid-outline' },
-                  { key: 'subastas',  label: 'Subastas',  icon: 'hammer-outline' },
-                ].map(tab => (
-                  <TouchableOpacity
-                    key={tab.key}
-                    onPress={() => setActiveTab(tab.key)}
-                    style={{
-                      flexDirection: 'row', alignItems: 'center', gap: 8,
-                      paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10,
-                      backgroundColor: activeTab === tab.key ? colors.primary : 'transparent',
-                      marginBottom: 2,
-                    }}
-                  >
-                    <Ionicons name={tab.icon} size={15} color={activeTab === tab.key ? '#fff' : colors.textSecondary} />
-                    <Text style={{ color: activeTab === tab.key ? '#fff' : colors.textSecondary, fontWeight: '600', fontSize: 14 }}>
-                      {tab.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+        {/* ── Tabs dealer (pills horizontales) ── */}
+        {isDealer && (
+          <View style={{
+            flexDirection: 'row', marginHorizontal: hPad, marginTop: 12, marginBottom: 4,
+            backgroundColor: colors.surface,
+            borderRadius: 12, borderWidth: 1, borderColor: colors.border,
+            padding: 4,
+          }}>
+            {[
+              { key: 'coleccion', label: 'Colección', icon: 'grid-outline' },
+              { key: 'subastas',  label: 'Subastas',  icon: 'hammer-outline' },
+            ].map(tab => (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={{
+                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                  paddingVertical: 10, borderRadius: 10, gap: 6,
+                  backgroundColor: activeTab === tab.key ? colors.primary : 'transparent',
+                }}
+              >
+                <Ionicons name={tab.icon} size={15} color={activeTab === tab.key ? '#fff' : colors.textSecondary} />
+                <Text style={{ color: activeTab === tab.key ? '#fff' : colors.textSecondary, fontWeight: '600', fontSize: 14 }}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
+        )}
 
-          {/* ── COLUMNA DERECHA: contenido principal ── */}
-          <View style={isDesktop ? { flex: 1, minWidth: 0 } : {}}>
+        {/* ── Tab: Colección ── */}
+        {(!isDealer || activeTab === 'coleccion') && (
+          <WatchSections
+            myNfts={myNfts}
+            walletAddress={loggedUser.wallet_address}
+            userRoles={loggedUser.roles}
+            onOpenImportModal={() => setImportModalVisible(true)}
+            removeNFT={removeNFT}
+            navigation={navigation}
+            onRefresh={handleManualRefresh}
+            refreshing={refreshing}
+            myBids={myBids}
+          />
+        )}
 
-            {/* Tabs dealer — encima del contenido cuando móvil */}
-            {isDealer && !isDesktop && (
-              <View style={{
-                flexDirection: 'row', marginHorizontal: 16, marginTop: 8, marginBottom: 4,
-                backgroundColor: colors.surface,
-                borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-                padding: 4,
-              }}>
-                {[
-                  { key: 'coleccion', label: 'Colección', icon: 'grid-outline' },
-                  { key: 'subastas',  label: 'Subastas',  icon: 'hammer-outline' },
-                ].map(tab => (
-                  <TouchableOpacity
-                    key={tab.key}
-                    onPress={() => setActiveTab(tab.key)}
-                    style={{
-                      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                      paddingVertical: 10, borderRadius: 10, gap: 6,
-                      backgroundColor: activeTab === tab.key ? colors.primary : 'transparent',
-                    }}
-                  >
-                    <Ionicons name={tab.icon} size={15} color={activeTab === tab.key ? '#fff' : colors.textSecondary} />
-                    <Text style={{ color: activeTab === tab.key ? '#fff' : colors.textSecondary, fontWeight: '600', fontSize: 14 }}>
-                      {tab.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {/* Tab: Colección */}
-            {(!isDealer || activeTab === 'coleccion') && (
-              <WatchSections
-                myNfts={myNfts}
-                walletAddress={loggedUser.wallet_address}
-                userRoles={loggedUser.roles}
-                onOpenImportModal={() => setImportModalVisible(true)}
-                removeNFT={removeNFT}
-                navigation={navigation}
-                onRefresh={handleManualRefresh}
-                refreshing={refreshing}
-                myBids={myBids}
-              />
-            )}
-
-            {/* Tab: Subastas (solo dealers) */}
-            {isDealer && activeTab === 'subastas' && (
-              <View style={{ paddingHorizontal: isDesktop ? 0 : 16, paddingBottom: 40 }}>
-
-            {/* Botón crear */}
+        {/* ── Tab: Subastas (solo dealers) ── */}
+        {isDealer && activeTab === 'subastas' && (
+          <View style={{ paddingHorizontal: hPad, paddingBottom: 40 }}>
             <TouchableOpacity
               onPress={() => setCreateModal(true)}
               style={{
@@ -537,56 +496,29 @@ export default function UserDashboardScreen({ route, navigation }) {
               <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
             ) : (
               <>
-                {/* Mis subastas activas */}
-                <Text style={{
-                  color: colors.textMuted, fontSize: 11, fontWeight: '700',
-                  letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10,
-                }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
                   Mis subastas activas
                 </Text>
-
                 {myAuctions.length === 0 ? (
-                  <View style={{
-                    alignItems: 'center', paddingVertical: 24,
-                    backgroundColor: colors.surface, borderRadius: 14,
-                    borderWidth: 1, borderColor: colors.border, marginBottom: 24,
-                  }}>
+                  <View style={{ alignItems: 'center', paddingVertical: 24, backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 24 }}>
                     <Ionicons name="hourglass-outline" size={36} color={colors.border} />
-                    <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: 13 }}>
-                      No tienes subastas activas
-                    </Text>
+                    <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: 13 }}>No tienes subastas activas</Text>
                   </View>
                 ) : (
                   <View style={{ marginBottom: 24 }}>
                     {myAuctions.map(a => (
-                      <DealerAuctionCard
-                        key={a.token_id}
-                        auction={a}
-                        navigation={navigation}
-                        colors={colors}
-                      />
+                      <DealerAuctionCard key={a.token_id} auction={a} navigation={navigation} colors={colors} />
                     ))}
                   </View>
                 )}
 
-                {/* Mis pujas activas */}
-                <Text style={{
-                  color: colors.textMuted, fontSize: 11, fontWeight: '700',
-                  letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10,
-                }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
                   Mis pujas activas
                 </Text>
-
                 {myActiveBids.length === 0 ? (
-                  <View style={{
-                    alignItems: 'center', paddingVertical: 24,
-                    backgroundColor: colors.surface, borderRadius: 14,
-                    borderWidth: 1, borderColor: colors.border,
-                  }}>
+                  <View style={{ alignItems: 'center', paddingVertical: 24, backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
                     <Ionicons name="trending-up-outline" size={36} color={colors.border} />
-                    <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: 13 }}>
-                      No tienes pujas activas
-                    </Text>
+                    <Text style={{ color: colors.textMuted, marginTop: 8, fontSize: 13 }}>No tienes pujas activas</Text>
                   </View>
                 ) : (
                   myActiveBids.map(a => (
@@ -597,9 +529,6 @@ export default function UserDashboardScreen({ route, navigation }) {
             )}
           </View>
         )}
-
-          </View>{/* fin columna derecha */}
-        </View>{/* fin contenedor dos columnas */}
 
       </ScrollView>
 

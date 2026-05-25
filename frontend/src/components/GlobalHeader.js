@@ -46,6 +46,19 @@ export default function GlobalHeader({
   const [lastNotif, setLastNotif]   = useState(null);
   const translateY        = useRef(new Animated.Value(-100)).current;
   const lastShownNotifId  = useRef(null);
+  const pulseAnim         = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!localUser?.wallet_address) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.5, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,   duration: 900, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [localUser?.wallet_address]);
 
   useEffect(() => { setLocalUser(loggedUser); }, [loggedUser]);
 
@@ -353,12 +366,21 @@ export default function GlobalHeader({
                   }}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 10, paddingRight: 8, paddingVertical: 7 }}
                 >
-                  <Ionicons name={walletCopied ? 'checkmark' : 'wallet-outline'} size={13} color="#10b981" />
-                  {!isMobile && (
-                    <Text numberOfLines={1} style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>
-                      {localUser.wallet_address.slice(0, 6)}…{localUser.wallet_address.slice(-4)}
-                    </Text>
+                  {walletCopied ? (
+                    <Ionicons name="checkmark" size={13} color="#10b981" />
+                  ) : (
+                    <Animated.View style={{
+                      width: 7, height: 7, borderRadius: 4,
+                      backgroundColor: '#10b981',
+                      transform: [{ scale: pulseAnim }],
+                    }} />
                   )}
+                  <Text numberOfLines={1} style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>
+                    {isMobile
+                      ? `${localUser.wallet_address.slice(0, 6)}…${localUser.wallet_address.slice(-4)}`
+                      : `${localUser.wallet_address.slice(0, 6)}…${localUser.wallet_address.slice(-4)}`
+                    }
+                  </Text>
                 </TouchableOpacity>
                 <View style={{ width: 1, height: 18, backgroundColor: '#10b98140' }} />
                 <TouchableOpacity onPress={() => setDisconnectVisible(true)} style={{ paddingHorizontal: 9, paddingVertical: 7 }}>
