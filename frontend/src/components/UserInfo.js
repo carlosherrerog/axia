@@ -245,7 +245,7 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings, noM
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
+                onPress={() => Linking.openURL(`https://amoy.polygonscan.com/address/${addr}`)}
                 activeOpacity={0.7}
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -308,7 +308,7 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings, noM
                   <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={12} color={copied ? USDC_GREEN : colors.textMuted} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => Linking.openURL(`https://polygonscan.com/address/${addr}`)}
+                  onPress={() => Linking.openURL(`https://amoy.polygonscan.com/address/${addr}`)}
                   activeOpacity={0.7}
                   style={{
                     flexDirection: 'row', alignItems: 'center', gap: 4,

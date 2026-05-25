@@ -18,20 +18,36 @@ El proyecto es un monorepo con tres servicios independientes desplegables:
 
 **Despliegue en producción:**
 - Frontend: Vercel
-- Backend: Railway (PostgreSQL)
-- Blockchain: Polygon mainnet
+- Backend: Render (PostgreSQL via Supabase)
+- Blockchain: Polygon Amoy (testnet — ver nota abajo)
 
-## Contratos inteligentes (Polygon mainnet)
+## Contratos inteligentes
+
+> **Nota sobre la red:** Los contratos están desplegados originalmente en **Polygon mainnet**, lo que demuestra la viabilidad del sistema en producción real. Para las pruebas y la demostración del TFG se utiliza **Polygon Amoy** (testnet), que permite operar sin coste económico real manteniendo un entorno técnicamente idéntico. Ambos despliegues coexisten; la aplicación activa apunta a Amoy.
+
+### Polygon Amoy — testnet (activo)
 
 | Contrato | Dirección | Función |
 |---|---|---|
-| WatchNFT | `0x8725a60F432EDCaA3dF1d7987e99B9C18c465988` | ERC-721 — gemelos digitales, integración NFC |
-| WatchMarketplace | `0x57057749e6aF1b21070FA2A4e5D4359AA2711735` | Listados, escrow, compraventas P2P y Dealer |
-| WatchAuction | `0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6` | Subastas con precio mínimo y puja inglesa |
-| WatchSignature | `0x967187957d31d0912aE57cad1B51F764339AaEe6` | Verificación de firmas EIP-712 |
-| MockUSDC | `0xbBfCa1b8404Dc43238C4A359E8454632f00c292F` | Stablecoin de prueba (6 decimales, ERC-20) |
+| WatchNFT | `0xbBfCa1b8404Dc43238C4A359E8454632f00c292F` | ERC-721 — gemelos digitales, integración NFC |
+| WatchMarketplace | `0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6` | Listados, escrow, compraventas P2P y Dealer |
+| WatchAuction | `0x701EAa91aeB8588694B116C004D1EaAC7f55F2F2` | Subastas con precio mínimo y puja inglesa |
+| WatchSignature | `0x57057749e6aF1b21070FA2A4e5D4359AA2711735` | Verificación de firmas EIP-712 |
+| MockUSDC | `0x967187957d31d0912aE57cad1B51F764339AaEe6` | Stablecoin de prueba (6 decimales, ERC-20) |
 
-Todos los contratos están verificados y auditables en [Polygonscan](https://polygonscan.com).
+Verificables en [Amoy Polygonscan](https://amoy.polygonscan.com).
+
+### Polygon mainnet (desplegado, no activo en esta demo)
+
+| Contrato | Dirección |
+|---|---|
+| WatchNFT | `0x8725a60F432EDCaA3dF1d7987e99B9C18c465988` |
+| WatchMarketplace | `0x57057749e6aF1b21070FA2A4e5D4359AA2711735` |
+| WatchAuction | `0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6` |
+| WatchSignature | `0x967187957d31d0912aE57cad1B51F764339AaEe6` |
+| MockUSDC | `0xbBfCa1b8404Dc43238C4A359E8454632f00c292F` |
+
+Verificables en [Polygonscan](https://polygonscan.com).
 
 ## Roles y flujos de negocio
 
@@ -89,11 +105,11 @@ Cada reloj físico lleva un chip NFC NTAG424 DNA que almacena una URL de deep li
 | Frontend | React Native 0.81, Expo 54, React Navigation, ethers.js 6 |
 | Backend | FastAPI, SQLAlchemy, Alembic, web3.py, JWT, bcrypt |
 | Base de datos | PostgreSQL (producción) / SQLite (desarrollo local) |
-| Blockchain | Solidity 0.8.28, Hardhat, OpenZeppelin, Polygon mainnet |
+| Blockchain | Solidity 0.8.28, Hardhat, OpenZeppelin, Polygon (mainnet + Amoy testnet) |
 | Pagos | ERC-20 MockUSDC (6 decimales) |
 | Almacenamiento | IPFS via Pinata (metadatos e imágenes de los NFTs) |
 | Notificaciones | WebSockets (FastAPI) — tiempo real para marketplace y subastas |
-| Nodo RPC | Alchemy (Polygon mainnet) |
+| Nodo RPC | Alchemy (Polygon mainnet + Amoy) |
 
 ## Estructura del repositorio
 

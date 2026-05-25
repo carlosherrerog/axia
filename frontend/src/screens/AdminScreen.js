@@ -138,7 +138,7 @@ function StatCard({ icon, value, label, color, colors }) {
 }
 
 // ─── Marketplace Control ──────────────────────────────────────────────────────
-function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLogistics, onCopyLogistics, colors, onRefresh }) {
+function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLogistics, onCopyLogistics, colors, onRefresh, onBalanceRefresh }) {
   const active = !paused;
   const statusColor = active ? '#10b981' : '#f43f5e';
 
@@ -158,6 +158,7 @@ function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLog
       setEditLogistics(false);
       setAlertL({ type: 'success', msg: 'Sistema logístico actualizado.' });
       onRefresh?.();
+      onBalanceRefresh?.();
     } catch (e) {
       setAlertL({ type: 'error', msg: e.response?.data?.detail || 'Error al guardar.' });
     } finally { setSavingL(false); }
@@ -169,6 +170,7 @@ function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLog
       await api.post('/admin/set-auction-contract', { address: auctionDraft });
       setEditAuction(false);
       setAlertA({ type: 'success', msg: 'Contrato de subastas actualizado.' });
+      onBalanceRefresh?.();
     } catch (e) {
       setAlertA({ type: 'error', msg: e.response?.data?.detail || 'Error al guardar.' });
     } finally { setSavingA(false); }
@@ -323,7 +325,7 @@ function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLog
 }
 
 // ─── Fees Card ────────────────────────────────────────────────────────────────
-function FeesCard({ colors }) {
+function FeesCard({ colors, onBalanceRefresh }) {
   const [fees, setFees]           = useState(null);
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
@@ -379,6 +381,7 @@ function FeesCard({ colors }) {
       await fetchFees();
       setEditing(false);
       setAlert({ type: 'success', msg: 'Comisiones actualizadas correctamente.' });
+      onBalanceRefresh?.();
     } catch (e) {
       setAlert({ type: 'error', msg: e.response?.data?.detail || 'Error al guardar.' });
     } finally {
@@ -393,6 +396,7 @@ function FeesCard({ colors }) {
       await fetchFees();
       setEditRecipient(false);
       setAlert({ type: 'success', msg: 'Wallet destinataria actualizada.' });
+      onBalanceRefresh?.();
     } catch (e) {
       setAlert({ type: 'error', msg: e.response?.data?.detail || 'Error al guardar.' });
     } finally {
@@ -813,7 +817,7 @@ function ActiveUserCard({ u, roleColor, onRevoke, colors }) {
 }
 
 // ─── Pantalla principal ───────────────────────────────────────────────────────
-const EXPLORER_BASE = 'https://polygonscan.com/address/';
+const EXPLORER_BASE = 'https://amoy.polygonscan.com/address/';
 
 const CONTRACTS = [
   {
@@ -821,7 +825,7 @@ const CONTRACTS = [
     label: 'WatchNFT',
     icon: 'disc-outline',
     color: '#8b5cf6',
-    address: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0x8725a60F432EDCaA3dF1d7987e99B9C18c465988',
+    address: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F',
     desc: 'ERC-721 · Autenticación de relojes',
   },
   {
@@ -829,7 +833,7 @@ const CONTRACTS = [
     label: 'Marketplace',
     icon: 'storefront-outline',
     color: '#3b82f6',
-    address: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x57057749e6aF1b21070FA2A4e5D4359AA2711735',
+    address: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6',
     desc: 'Escrow · Compraventa y liquidaciones',
   },
   {
@@ -837,7 +841,7 @@ const CONTRACTS = [
     label: 'WatchAuction',
     icon: 'hammer-outline',
     color: '#f59e0b',
-    address: process.env.EXPO_PUBLIC_AUCTION_ADDRESS || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6',
+    address: process.env.EXPO_PUBLIC_AUCTION_ADDRESS || '0x701EAa91aeB8588694B116C004D1EaAC7f55F2F2',
     desc: 'Subastas con puja mínima',
   },
   {
@@ -845,7 +849,7 @@ const CONTRACTS = [
     label: 'Signature',
     icon: 'shield-checkmark-outline',
     color: '#10b981',
-    address: process.env.EXPO_PUBLIC_SIGNATURE_VERIFIER_ADDRESS || '0x967187957d31d0912aE57cad1B51F764339AaEe6',
+    address: process.env.EXPO_PUBLIC_SIGNATURE_VERIFIER_ADDRESS || '0x57057749e6aF1b21070FA2A4e5D4359AA2711735',
     desc: 'Verificación de seguridad NFC',
   },
   {
@@ -853,7 +857,7 @@ const CONTRACTS = [
     label: 'MockUSDC',
     icon: 'cash-outline',
     color: '#22c55e',
-    address: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F',
+    address: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x967187957d31d0912aE57cad1B51F764339AaEe6',
     desc: 'Stablecoin de pagos (USDC)',
   },
 ];
@@ -1083,6 +1087,7 @@ export default function AdminScreen({ route, navigation }) {
         );
       }
       fetchAll(false);
+      if (loggedUser?.wallet_address) fetchWalletBalances(loggedUser.wallet_address);
     } catch (e) {
       showAlert('Error', e.response?.data?.detail || 'No se pudo procesar la acción.', 'error');
     }
@@ -1098,6 +1103,7 @@ export default function AdminScreen({ route, navigation }) {
         data.paused ? 'Las transacciones han sido bloqueadas.' : 'El marketplace vuelve a estar operativo.',
         data.paused ? 'warning' : 'success',
       );
+      if (loggedUser?.wallet_address) fetchWalletBalances(loggedUser.wallet_address);
     } catch (e) {
       showAlert('Error', e.response?.data?.detail || 'No se pudo cambiar el estado.', 'error');
     } finally {
@@ -1370,11 +1376,15 @@ export default function AdminScreen({ route, navigation }) {
           }}
           colors={colors}
           onRefresh={() => fetchAll(false)}
+          onBalanceRefresh={() => loggedUser?.wallet_address && fetchWalletBalances(loggedUser.wallet_address)}
         />
       )}
 
       {/* Comisiones */}
-      <FeesCard colors={colors} />
+      <FeesCard
+        colors={colors}
+        onBalanceRefresh={() => loggedUser?.wallet_address && fetchWalletBalances(loggedUser.wallet_address)}
+      />
     </View>
   );
 

@@ -314,7 +314,7 @@ function renderBlock(block, i, section, colors, copiedAddress, onCopy) {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL(`https://polygonscan.com/address/${block.address}`)}
+            onPress={() => Linking.openURL(`https://amoy.polygonscan.com/address/${block.address}`)}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 5,
               backgroundColor: '#8b5cf612',

@@ -495,7 +495,7 @@ export default function GlobalHeader({
 
               {/* Opción: Polygonscan */}
               <TouchableOpacity
-                onPress={() => { Linking.openURL(`https://polygonscan.com/address/${localUser.wallet_address}`); setWalletMenuVisible(false); }}
+                onPress={() => { Linking.openURL(`https://amoy.polygonscan.com/address/${localUser.wallet_address}`); setWalletMenuVisible(false); }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}
                 activeOpacity={0.7}
               >
