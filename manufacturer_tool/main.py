@@ -734,7 +734,7 @@ class LoginFrame(tk.Frame):
                     pass
                 self.after(0, lambda: self._set_error(msg))
             except Exception as e:
-                self.after(0, lambda: self._set_error(str(e)))
+                self.after(0, lambda msg=str(e): self._set_error(msg))
 
         threading.Thread(target=do_login, daemon=True).start()
 
@@ -1330,7 +1330,7 @@ class StockTab(tk.Frame):
             try:
                 fn()
             except Exception as e:
-                self.after(0, lambda: messagebox.showerror("Error", str(e)))
+                self.after(0, lambda msg=str(e): messagebox.showerror("Error", msg))
             finally:
                 self.after(0, lambda: self.status_label.config(text=""))
         threading.Thread(target=worker, daemon=True).start()
