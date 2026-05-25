@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Platform, Linking, Modal,
+  ActivityIndicator, Platform, Linking, Modal, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
@@ -130,6 +130,8 @@ function SettingRow({ icon, color, label, description, onPress, right, danger, i
 
 export default function ConfiguracionScreen({ navigation }) {
   const { colors } = useTheme();
+  const { width }  = useWindowDimensions();
+  const isDesktop  = width >= 900;
   const { alertProps, showAlert } = useAlert();
 
   const [loggedUser, setLoggedUser]         = useState(null);
@@ -254,7 +256,11 @@ export default function ConfiguracionScreen({ navigation }) {
         onWalletChange={setLoggedUser}
       />
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{
+        padding: 20, paddingBottom: 100,
+        maxWidth: isDesktop ? 700 : undefined,
+        alignSelf: 'center', width: '100%',
+      }}>
 
         {/* Volver */}
         <TouchableOpacity
