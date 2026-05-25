@@ -155,12 +155,22 @@ function ActiveBidCard({ auction, navigation, colors }) {
   );
 }
 
-//  Pantalla principal 
+//  Pantalla principal
+function getStoredUser() {
+  try {
+    if (Platform.OS === 'web') {
+      const raw = localStorage.getItem('userData');
+      return raw ? JSON.parse(raw) : null;
+    }
+  } catch {}
+  return null;
+}
+
 export default function UserDashboardScreen({ route, navigation }) {
-  const user = route?.params?.userData || {};
+  const user = route?.params?.userData || getStoredUser() || {};
   const { colors } = useTheme();
 
-  // Estado general 
+  // Estado general
   const [loggedUser, setLoggedUser]       = useState(user);
   const [myNfts, setMyNfts]               = useState([]);
   const [importModalVisible, setImportModalVisible] = useState(false);
