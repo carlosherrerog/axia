@@ -124,8 +124,8 @@ function UserDashboard() {
   return (
     <NavTabContext.Provider value={{ activeTab, onTabPress: handleTabPress, tabs: TABS }}>
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
-        <View style={{ flex: 1, position: 'relative', alignItems: 'center' }}>
-          <View style={{ flex: 1, width: '100%', maxWidth: 1280 }}>
+        <View style={{ flex: 1, position: 'relative' }}>
+          <View style={{ flex: 1, width: '100%' }}>
             <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
               <Stack.Screen name="Marketplace"         component={HomeScreen} />
               <Stack.Screen name="Subastas"            component={AuctionsScreen} />
@@ -176,8 +176,8 @@ function PublicDashboard() {
   return (
     <NavTabContext.Provider value={{ activeTab, onTabPress: handleTabPress, tabs: PUBLIC_TABS }}>
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
-        <View style={{ flex: 1, position: 'relative', alignItems: 'center' }}>
-          <View style={{ flex: 1, width: '100%', maxWidth: 1280 }}>
+        <View style={{ flex: 1, position: 'relative' }}>
+          <View style={{ flex: 1, width: '100%' }}>
             <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
               <Stack.Screen name="Marketplace"   component={HomeScreen} />
               <Stack.Screen name="Subastas"      component={AuctionsScreen} />
@@ -204,7 +204,7 @@ function PublicDashboard() {
 function WatchmakerDashboard() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <View style={{ flex: 1, width: '100%', maxWidth: 1280, alignSelf: 'center', paddingBottom: Platform.select({ ios: 110, android: 100, web: 0 }) }}>
+      <View style={{ flex: 1, width: '100%', paddingBottom: Platform.select({ ios: 110, android: 100, web: 0 }) }}>
         <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
           <Stack.Screen name="WatchmakerScreen" component={WatchmakerScreen} />
           <Stack.Screen name="Notificaciones"   component={NotificationsScreen} />
@@ -221,7 +221,7 @@ function WatchmakerDashboard() {
 function ManufacturerDashboard() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <View style={{ flex: 1, width: '100%', maxWidth: 1280, alignSelf: 'center', paddingBottom: Platform.select({ ios: 110, android: 100, web: 0 }) }}>
+      <View style={{ flex: 1, width: '100%', paddingBottom: Platform.select({ ios: 110, android: 100, web: 0 }) }}>
         <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
           <Stack.Screen name="ManufacturerScreen" component={ManufacturerScreen} />
           <Stack.Screen name="WatchScreen"        component={WatchScreen} />

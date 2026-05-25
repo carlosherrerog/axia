@@ -93,9 +93,9 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
 
   return (
     <View style={{
-      marginHorizontal: 16,
-      marginBottom: 16,
-      borderRadius: 18,
+      marginHorizontal: isMobile ? 16 : 8,
+      marginBottom: 12,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.backgroundAlt,
