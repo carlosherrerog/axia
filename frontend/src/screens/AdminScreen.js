@@ -837,6 +837,7 @@ function ActiveUserCard({ u, roleColor, onRevoke, colors }) {
 
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 const EXPLORER_BASE = 'https://amoy.polygonscan.com/address/';
+const AMOY_RPC      = 'https://rpc-amoy.polygon.technology';
 
 const CONTRACTS = [
   {
@@ -1022,21 +1023,19 @@ export default function AdminScreen({ route, navigation }) {
     Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: dec });
 
   const fetchWalletBalances = useCallback(async (address) => {
-    if (Platform.OS !== 'web' || !window.ethereum || !address) return;
+    if (!address) return;
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.JsonRpcProvider(AMOY_RPC);
       const pol = await provider.getBalance(address);
       setPolBalance(fmt(ethers.formatEther(pol), 4));
-      const usdcAddress = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS;
-      if (usdcAddress) {
-        const contract = new ethers.Contract(
-          usdcAddress,
-          ['function balanceOf(address) view returns (uint256)'],
-          provider,
-        );
-        const usdc = await contract.balanceOf(address);
-        setUsdcBalance(fmt(ethers.formatUnits(usdc, 6), 2));
-      }
+      const usdcAddress = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x967187957d31d0912aE57cad1B51F764339AaEe6';
+      const contract = new ethers.Contract(
+        usdcAddress,
+        ['function balanceOf(address) view returns (uint256)'],
+        provider,
+      );
+      const usdc = await contract.balanceOf(address);
+      setUsdcBalance(fmt(ethers.formatUnits(usdc, 6), 2));
     } catch (e) {
       console.error('Admin wallet balance error:', e);
     }
