@@ -159,33 +159,16 @@ export default function ManufacturerScreen({ navigation }) {
           width: '100%',
         }}>
 
-          {/* Cabecera: título + cerrar sesión */}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-            <View>
-              <Text style={{ color: colors.text, fontSize: 22, fontWeight: 'bold' }}>
-                Panel de Fabricante
+          {/* Cabecera */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: colors.text, fontSize: 22, fontWeight: 'bold' }}>
+              Panel de Fabricante
+            </Text>
+            {loggedUser?.username ? (
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
+                {loggedUser.username}
               </Text>
-              {loggedUser?.username ? (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
-                  {loggedUser.username}
-                </Text>
-              ) : null}
-            </View>
-            <TouchableOpacity
-              onPress={() => {
-                if (Platform.OS === 'web') localStorage.clear();
-                navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Login' }] });
-              }}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 5,
-                paddingHorizontal: 10, paddingVertical: 6,
-                backgroundColor: '#f43f5e18',
-                borderRadius: 8, borderWidth: 1, borderColor: '#f43f5e40',
-              }}
-            >
-              <Ionicons name="log-out-outline" size={15} color="#f43f5e" />
-              <Text style={{ color: '#f43f5e', fontSize: 12, fontWeight: '600' }}>Cerrar sesión</Text>
-            </TouchableOpacity>
+            ) : null}
           </View>
 
           {/* Tarjetas de estadísticas */}
@@ -230,33 +213,33 @@ export default function ManufacturerScreen({ navigation }) {
             </View>
           )}
 
-          {/* Fila de filtros + botón importar (cuando ya hay relojes) */}
-          {hasWatches && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-              <View style={{ flexDirection: 'row', gap: 8, flex: 1, flexWrap: 'wrap' }}>
-                {[
-                  { key: 'all',    label: 'Todos' },
-                  { key: 'listed', label: 'En venta' },
-                  { key: 'stock',  label: 'Stock disponible' },
-                ].map(tab => (
-                  <TouchableOpacity
-                    key={tab.key}
-                    onPress={() => setActiveTab(tab.key)}
-                    style={{
-                      paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-                      backgroundColor: activeTab === tab.key ? colors.primary : colors.surface,
-                      borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
-                    }}
-                  >
-                    <Text style={{
-                      color: activeTab === tab.key ? '#FFF' : colors.textSecondary,
-                      fontSize: 13, fontWeight: activeTab === tab.key ? '600' : '400',
-                    }}>
-                      {tab.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          {/* Fila de filtros + botón importar */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <View style={{ flexDirection: 'row', gap: 8, flex: 1, flexWrap: 'wrap' }}>
+              {[
+                { key: 'all',    label: 'Todos' },
+                { key: 'listed', label: 'En venta' },
+                { key: 'stock',  label: 'Stock disponible' },
+              ].map(tab => (
+                <TouchableOpacity
+                  key={tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  style={{
+                    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                    backgroundColor: activeTab === tab.key ? colors.primary : colors.surface,
+                    borderWidth: 1, borderColor: activeTab === tab.key ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{
+                    color: activeTab === tab.key ? '#FFF' : colors.textSecondary,
+                    fontSize: 13, fontWeight: activeTab === tab.key ? '600' : '400',
+                  }}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {hasWatches && (
               <TouchableOpacity
                 onPress={() => setImportModalVisible(true)}
                 style={{
@@ -269,8 +252,8 @@ export default function ManufacturerScreen({ navigation }) {
                 <Ionicons name="download-outline" size={15} color={colors.primaryLight} />
                 <Text style={{ color: colors.primaryLight, fontSize: 13, fontWeight: '600' }}>Importar</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
 
           {/* Lista de relojes / estado vacío */}
           {filteredWatches.length === 0 ? (
