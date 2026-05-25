@@ -310,7 +310,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
     <View>
       {/* ── Banner hero ── */}
       <View style={{
-        marginHorizontal: 20, marginTop: 18, marginBottom: 14,
+        marginTop: 18, marginBottom: 14,
         backgroundColor: colors.backgroundAlt,
         borderRadius: 16, borderWidth: 1, borderColor: colors.border,
         padding: 20,
@@ -348,7 +348,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
       </View>
 
       {/* ── Barra de búsqueda ── */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+      <View style={{ marginBottom: 10 }}>
         <View style={{
           flexDirection: 'row', alignItems: 'center',
           backgroundColor: colors.backgroundAlt,
@@ -377,7 +377,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
       {/* ── Filtros + Ordenación ── */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 20, marginBottom: 14,
+        marginBottom: 14,
         justifyContent: 'space-between', flexWrap: 'wrap', gap: 8,
       }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -428,7 +428,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
 
       {/* ── Contador de resultados ── */}
       {watches.length > 0 && (
-        <View style={{ paddingHorizontal: 20, marginBottom: 6 }}>
+        <View style={{ marginBottom: 6 }}>
           <Text style={{ color: colors.textMuted, fontSize: 12 }}>
             {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
             {hasActiveFilters && filtered.length !== watches.length ? ` de ${watches.length}` : ''}

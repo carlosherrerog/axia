@@ -49,9 +49,9 @@ const TABS = [
 ];
 
 const PUBLIC_TABS = [
-  { name: 'Marketplace', icon: 'home',               label: 'Mercado'      },
-  { name: 'Subastas',    icon: 'hammer',             label: 'Subastas'     },
-  { name: 'Info',        icon: 'information-circle', label: 'Información', webOnly: true },
+  { name: 'Marketplace', icon: 'home',               label: 'Mercado'   },
+  { name: 'Subastas',    icon: 'hammer',             label: 'Subastas'  },
+  { name: 'Info',        icon: 'information-circle', label: 'Info'      },
 ];
 
 // BARRA INFERIOR MÓVIL — plana con etiquetas
@@ -173,20 +173,6 @@ function PublicDashboard() {
     navigationRef.navigate(name);
   };
 
-  const loginTabButton = (
-    <Pressable
-      onPress={() => navigationRef.navigate('Login')}
-      style={[{
-        flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3,
-      }, Platform.OS === 'web' && { cursor: 'pointer' }]}
-    >
-      <Ionicons name="log-in-outline" size={22} color={theme.primaryLight} />
-      <Text style={{ fontSize: 10, fontWeight: '600', color: theme.primaryLight }}>
-        Entrar
-      </Text>
-    </Pressable>
-  );
-
   return (
     <NavTabContext.Provider value={{ activeTab, onTabPress: handleTabPress, tabs: PUBLIC_TABS }}>
       <View style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -206,7 +192,6 @@ function PublicDashboard() {
               activeTab={activeTab}
               onTabPress={handleTabPress}
               tabs={PUBLIC_TABS}
-              extraRight={loginTabButton}
             />
           )}
         </View>
