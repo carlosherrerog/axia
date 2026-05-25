@@ -10,22 +10,22 @@ warnings.filterwarnings('ignore', message='The log with transaction hash')
 import os
 import sys
 import json
+import math
 import platform
 import threading
 import requests
 from pathlib import Path
 from dotenv import load_dotenv, set_key
-from tkinter import filedialog, messagebox
 
 # --- Paths (compatibles con PyInstaller) ---------------------------------
 if getattr(sys, "frozen", False):
-    BASE_DIR   = Path(sys.executable).parent
+    BASE_DIR = Path(sys.executable).parent
     BUNDLE_DIR = Path(sys._MEIPASS)
 else:
-    BASE_DIR   = Path(__file__).parent
+    BASE_DIR = Path(__file__).parent
     BUNDLE_DIR = BASE_DIR
 
-ABI_DIR  = BUNDLE_DIR / "abi"
+ABI_DIR = BUNDLE_DIR / "abi"
 ENV_FILE = BASE_DIR / ".env"
 
 load_dotenv(ENV_FILE)
@@ -44,17 +44,33 @@ except ImportError:
     NFC_AVAILABLE = False
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageTk
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
-import customtkinter as ctk
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
+
+ICONS = {}  # {name: PhotoImage} — cargado en AxiaMfgApp.__init__
+
+def _load_icons():
+    global ICONS
+    if not PIL_AVAILABLE:
+        return
+    icons_dir = BUNDLE_DIR / "icons"
+    for name in ("logo", "mint", "stock", "settings", "wallet", "logout"):
+        path = icons_dir / f"{name}.png"
+        if path.exists():
+            try:
+                img = Image.open(path)
+                ICONS[name] = ImageTk.PhotoImage(img)
+            except Exception as e:
+                print(f"Icon load error ({name}): {e}")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PALETA AXIA
+# PALETA AXIA  (misma que frontend/src/themes/styles.js → darkColors)
 # ─────────────────────────────────────────────────────────────────────────────
 C = {
     "bg":        "#07070e",
@@ -75,26 +91,24 @@ C = {
 
 _OS = platform.system()
 if _OS == "Windows":
-    _SANS, _MONO = "Segoe UI",      "Consolas"
+    _SANS, _MONO = "Segoe UI", "Consolas"
 elif _OS == "Darwin":
-    _SANS, _MONO = "Helvetica Neue","Menlo"
+    _SANS, _MONO = "Helvetica Neue", "Menlo"
 else:
-    _SANS, _MONO = "DejaVu Sans",   "DejaVu Sans Mono"
+    _SANS, _MONO = "DejaVu Sans", "DejaVu Sans Mono"
 
-def _font(size, weight="normal", mono=False):
-    family = _MONO if mono else _SANS
-    return (family, size, weight) if weight != "normal" else (family, size)
+FONT_TITLE  = (_SANS, 20, "bold")
+FONT_HEAD   = (_SANS, 13, "bold")
+FONT_SUBHEAD= (_SANS, 11, "bold")
+FONT_BODY   = (_SANS, 10)
+FONT_SMALL  = (_SANS,  9)
+FONT_MONO   = (_MONO,  9)
 
-FONT_TITLE   = _font(20, "bold")
-FONT_HEAD    = _font(13, "bold")
-FONT_SUBHEAD = _font(11, "bold")
-FONT_BODY    = _font(10)
-FONT_SMALL   = _font(9)
-FONT_MONO    = _font(9, mono=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────────────────────
+# Valores de producción — Polygon Amoy + backend Render
 DEFAULTS = {
     "API_URL":             "https://axia-8ivf.onrender.com",
     "RPC_URL":             "https://rpc-amoy.polygon.technology",
@@ -123,6 +137,7 @@ PINATA_SECRET_KEY=
 """
 
 def _bootstrap_env():
+    """Crea un .env pre-configurado en el primer arranque si no existe."""
     if not ENV_FILE.exists():
         ENV_FILE.write_text(ENV_TEMPLATE.format(**DEFAULTS), encoding="utf-8")
         load_dotenv(ENV_FILE)
@@ -218,6 +233,7 @@ class ApiClient:
                              json={"price_usdc": price_usdc, "tx_hash": tx_hash}).json()
 
     def get_user_by_wallet(self, address: str):
+        """Devuelve el usuario AXIA para esa wallet, o None si no está registrado."""
         try:
             return self._request("get", f"/users/by-wallet/{address}").json()
         except Exception:
@@ -302,9 +318,9 @@ class BlockchainClient:
         }
 
     def _sign_and_send(self, tx, private_key):
-        signed  = self.w3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
-        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        signed   = self.w3.eth.account.sign_transaction(tx, private_key)
+        tx_hash  = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt  = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
         if receipt.status != 1:
             raise RuntimeError("Transacción revertida en la blockchain.")
         return tx_hash.hex(), receipt
@@ -315,18 +331,20 @@ class BlockchainClient:
             token_id = self.nft.functions.getTokenByNFC(hash_uid).call()
             return (False, 0) if token_id == 0 else (True, token_id)
         except Exception:
+            # El contrato revierte con NFCNotRegistered cuando el chip no está vinculado
             return False, 0
 
     def mint_watch(self, brand, model, serial, year, uid_str, token_uri, recipient):
-        sender, pk   = self._credentials()
-        hash_uid     = self.w3.keccak(text=uid_str)
-        recipient_cs = self.w3.to_checksum_address(recipient)
+        sender, pk    = self._credentials()
+        hash_uid      = self.w3.keccak(text=uid_str)
+        recipient_cs  = self.w3.to_checksum_address(recipient)
         fn = self.nft.functions.mintWatch(
             brand, model, serial, int(year), hash_uid, token_uri, recipient_cs
         )
         opts = self._tx_opts(sender)
         opts["gas"] = int(fn.estimate_gas({"from": sender}) * 1.3)
-        tx_hash, receipt = self._sign_and_send(fn.build_transaction(opts), pk)
+        tx = fn.build_transaction(opts)
+        tx_hash, receipt = self._sign_and_send(tx, pk)
         logs = self.nft.events.WatchMinted().process_receipt(receipt)
         if not logs:
             raise RuntimeError("No se encontró el evento WatchMinted en el recibo.")
@@ -360,6 +378,8 @@ class BlockchainClient:
 
 
 bc = BlockchainClient()
+
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -409,157 +429,165 @@ def read_nfc_uid() -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ICONOS (CTkImage)
+# WIDGETS HELPER
 # ─────────────────────────────────────────────────────────────────────────────
-ICONS = {}
+def _apply_scrollbar_style(root: tk.Tk):
+    s = ttk.Style(root)
+    s.theme_use("clam")
+    s.configure("Slim.Vertical.TScrollbar",
+        gripcount=0, background=C["surface2"], darkcolor=C["surface2"],
+        lightcolor=C["surface2"], troughcolor=C["bg_alt"],
+        bordercolor=C["bg_alt"], arrowcolor=C["muted"],
+        relief="flat", arrowsize=10,
+    )
+    s.map("Slim.Vertical.TScrollbar",
+        background=[("active", C["border"])],
+        arrowcolor=[("active", C["text2"])],
+    )
 
-def _load_icons():
-    global ICONS
-    if not PIL_AVAILABLE:
-        return
-    icons_dir = BUNDLE_DIR / "icons"
-    sizes = {
-        "logo": 32, "logo_big": 48,
-        "mint": 20, "stock": 20, "settings": 20, "wallet": 20, "logout": 20,
-    }
-    for name, sz in sizes.items():
-        fname = "logo" if name == "logo_big" else name
-        path  = icons_dir / f"{fname}.png"
-        if path.exists():
-            try:
-                img = Image.open(path).resize((sz, sz), Image.LANCZOS).convert("RGBA")
-                ICONS[name] = ctk.CTkImage(light_image=img, dark_image=img, size=(sz, sz))
-            except Exception as e:
-                print(f"Icon load error ({name}): {e}")
-        else:
-            # buscar cualquier PNG en la carpeta con ese nombre
-            for ext in (".png", ".PNG"):
-                alt = icons_dir / f"{fname}{ext}"
-                if alt.exists():
-                    try:
-                        img = Image.open(alt).resize((sz, sz), Image.LANCZOS).convert("RGBA")
-                        ICONS[name] = ctk.CTkImage(light_image=img, dark_image=img, size=(sz, sz))
-                    except Exception:
-                        pass
-                    break
+_scroll_target = None  # canvas sobre el que está el ratón
 
+def _bind_scroll_to(widget, canvas):
+    """Propaga los eventos de scroll de widget y sus hijos al canvas dado."""
+    def _scroll(event):
+        canvas.yview_scroll(-1 if (event.num == 4 or event.delta > 0) else 1, "units")
+    widget.bind("<MouseWheel>", _scroll, add="+")
+    widget.bind("<Button-4>",   _scroll, add="+")
+    widget.bind("<Button-5>",   _scroll, add="+")
+    for child in widget.winfo_children():
+        _bind_scroll_to(child, canvas)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# HELPERS DE WIDGETS
-# ─────────────────────────────────────────────────────────────────────────────
-def separator(parent):
-    return ctk.CTkFrame(parent, height=1, fg_color=C["border"], corner_radius=0)
+def scrollable(parent):
+    """Devuelve (outer_frame, inner_frame) con scrollbar fina y scroll de ratón."""
+    outer = tk.Frame(parent, bg=C["bg"])
+    canvas = tk.Canvas(outer, bg=C["bg"], highlightthickness=0)
+    vsb    = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview,
+                           style="Slim.Vertical.TScrollbar")
+    canvas.configure(yscrollcommand=vsb.set)
+    vsb.pack(side="right", fill="y")
+    canvas.pack(side="left", fill="both", expand=True)
 
-def section_label(parent, text, padx=24):
-    lbl = ctk.CTkLabel(parent, text=text, font=FONT_SUBHEAD,
-                       text_color=C["primary_h"], fg_color="transparent")
-    lbl.pack(anchor="w", padx=padx, pady=(14, 3))
-    return lbl
+    inner = tk.Frame(canvas, bg=C["bg"])
+    win   = canvas.create_window((0, 0), window=inner, anchor="nw")
 
-def card(parent, padx=24, pady=4, corner_radius=8):
-    f = ctk.CTkFrame(parent, fg_color=C["surface"],
-                     border_color=C["border"], border_width=1,
-                     corner_radius=corner_radius)
-    f.pack(fill="x", padx=padx, pady=pady, ipadx=14, ipady=12)
+    def _on_frame_configure(e):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+        _bind_scroll_to(inner, canvas)
+
+    inner.bind("<Configure>",  _on_frame_configure)
+    canvas.bind("<Configure>", lambda e: canvas.itemconfig(win, width=e.width))
+
+    def _scroll(event):
+        canvas.yview_scroll(-1 if (event.num == 4 or event.delta > 0) else 1, "units")
+    canvas.bind("<MouseWheel>", _scroll)
+    canvas.bind("<Button-4>",   _scroll)
+    canvas.bind("<Button-5>",   _scroll)
+
+    return outer, inner
+
+def styled_frame(parent, bg=None, **kw):
+    return tk.Frame(parent, bg=bg or C["bg_alt"], **kw)
+
+def styled_label(parent, text, font=FONT_BODY, fg=None, bg=None, **kw):
+    return tk.Label(parent, text=text, font=font,
+                    fg=fg or C["text"], bg=bg or C["bg_alt"], **kw)
+
+def styled_entry(parent, textvariable=None, width=30, show=None):
+    e = tk.Entry(parent, textvariable=textvariable, width=width,
+                 font=FONT_BODY, fg=C["text"], bg=C["surface"],
+                 insertbackground=C["text"], relief="flat",
+                 highlightthickness=1, highlightbackground=C["border"],
+                 highlightcolor=C["primary"])
+    if show:
+        e.config(show=show)
+    return e
+
+def styled_button(parent, text, command, color=None, fg="#ffffff", width=None):
+    kw = dict(text=text, command=command, font=FONT_BODY,
+              fg=fg, bg=color or C["primary"],
+              activeforeground=fg, activebackground=C["primary_h"],
+              relief="flat", cursor="hand2", padx=14, pady=7)
+    if width:
+        kw["width"] = width
+    return tk.Button(parent, **kw)
+
+def card_frame(parent, padx=28):
+    """Frame tipo tarjeta con borde fino."""
+    f = tk.Frame(parent, bg=C["surface"],
+                 highlightthickness=1, highlightbackground=C["border"])
+    f.pack(fill="x", padx=padx, pady=4, ipadx=16, ipady=12)
     return f
 
-def lbl(parent, text, font=None, color=None, bg="transparent", **kw):
-    return ctk.CTkLabel(parent, text=text,
-                        font=font or FONT_BODY,
-                        text_color=color or C["text"],
-                        fg_color=bg, **kw)
+def separator(parent, bg=None):
+    return tk.Frame(parent, bg=bg or C["border"], height=1)
 
-def entry(parent, textvariable=None, width=300, show="", placeholder=""):
-    return ctk.CTkEntry(parent,
-                        textvariable=textvariable,
-                        width=width,
-                        fg_color=C["surface"],
-                        border_color=C["border"],
-                        text_color=C["text"],
-                        font=FONT_BODY,
-                        show=show,
-                        placeholder_text=placeholder)
-
-def btn(parent, text, command, color=None, hover=None, fg="#ffffff",
-        width=120, height=34, corner_radius=6, icon=None, anchor="center", font=None):
-    kw = dict(
-        text=text, command=command,
-        fg_color=color or C["primary"],
-        hover_color=hover or C["primary_h"],
-        text_color=fg,
-        font=font or FONT_BODY,
-        width=width, height=height,
-        corner_radius=corner_radius,
-        cursor="hand2",
-    )
-    if icon:
-        kw["image"]    = icon
-        kw["compound"] = "left"
-        kw["anchor"]   = anchor
-    return ctk.CTkButton(parent, **kw)
+def section_label(parent, text, padx=28):
+    tk.Label(parent, text=text, font=FONT_SUBHEAD,
+             fg=C["primary_h"], bg=C["bg"]).pack(anchor="w", padx=padx, pady=(14, 3))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DIÁLOGOS
 # ─────────────────────────────────────────────────────────────────────────────
-class ConnectWalletDialog(ctk.CTkToplevel):
+class ConnectWalletDialog(tk.Toplevel):
     def __init__(self, parent, expected_address=None):
         super().__init__(parent)
-        self.result           = None
+        self.result = None
         self.expected_address = (expected_address or "").lower()
 
         self.title("Conectar Wallet")
-        self.geometry("540x400")
-        self.configure(fg_color=C["bg_alt"])
+        self.geometry("520x390")
+        self.configure(bg=C["bg_alt"])
         self.resizable(False, False)
         self.grab_set()
-        self.lift()
 
-        f = ctk.CTkFrame(self, fg_color="transparent")
+        f = styled_frame(self, C["bg_alt"])
         f.pack(fill="both", expand=True, padx=28, pady=24)
 
-        lbl(f, "⬡  Vincular Wallet", font=FONT_HEAD).pack(anchor="w")
-        lbl(f, "Pega la clave privada de la wallet que registraste\n"
-               "en la web/app AXIA. Se guardará en tu .env local.",
-            font=FONT_SMALL, color=C["text2"]).pack(anchor="w", pady=(4, 16))
+        tk.Label(f, text="⬡  Vincular Wallet",
+                 font=FONT_HEAD, fg=C["text"], bg=C["bg_alt"]).pack(anchor="w")
+        tk.Label(f, text="Pega la clave privada de la wallet que registraste\n"
+                         "en la web/app AXIA. Se guardará en tu .env local.",
+                 font=FONT_SMALL, fg=C["text2"], bg=C["bg_alt"],
+                 justify="left").pack(anchor="w", pady=(4, 16))
 
-        lbl(f, "Private key", font=FONT_SMALL, color=C["text2"]).pack(anchor="w")
-        self.pk_var = ctk.StringVar()
-        self.pk_entry = entry(f, self.pk_var, width=460, show="•")
-        self.pk_entry.pack(fill="x", pady=(2, 12))
+        tk.Label(f, text="Private key", font=FONT_SMALL,
+                 fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
+        self.pk_var = tk.StringVar()
+        entry = styled_entry(f, self.pk_var, 56, show="•")
+        entry.pack(fill="x", pady=(2, 12))
         self.pk_var.trace_add("write", lambda *_: self._update_preview())
 
-        lbl(f, "Dirección derivada", font=FONT_SMALL, color=C["text2"]).pack(anchor="w")
-        self.preview_var = ctk.StringVar(value="—")
-        self.preview_lbl = ctk.CTkLabel(f, textvariable=self.preview_var,
-                                        font=FONT_MONO, text_color=C["muted"],
-                                        fg_color="transparent")
+        tk.Label(f, text="Dirección derivada", font=FONT_SMALL,
+                 fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
+        self.preview_var = tk.StringVar(value="—")
+        self.preview_lbl = tk.Label(f, textvariable=self.preview_var,
+                                    font=FONT_MONO, fg=C["muted"], bg=C["bg_alt"])
         self.preview_lbl.pack(anchor="w", pady=(2, 6))
 
         if self.expected_address:
-            lbl(f, f"Wallet registrada en AXIA: {self.expected_address}",
-                font=FONT_SMALL, color=C["muted"]).pack(anchor="w", pady=(0, 8))
+            tk.Label(f, text=f"Wallet registrada en AXIA: {self.expected_address}",
+                     font=FONT_SMALL, fg=C["muted"], bg=C["bg_alt"]).pack(anchor="w", pady=(0, 8))
 
-        self.warn_var = ctk.StringVar(value="")
-        ctk.CTkLabel(f, textvariable=self.warn_var, font=FONT_SMALL,
-                     text_color=C["warning"], fg_color="transparent",
-                     wraplength=480).pack(anchor="w")
+        self.warn_var = tk.StringVar(value="")
+        tk.Label(f, textvariable=self.warn_var, font=FONT_SMALL, fg=C["warning"],
+                 bg=C["bg_alt"], wraplength=460, justify="left").pack(anchor="w")
 
-        btn_row = ctk.CTkFrame(f, fg_color="transparent")
+        btn_row = styled_frame(f, C["bg_alt"])
         btn_row.pack(fill="x", pady=(20, 0))
-        btn(btn_row, "Cancelar", self.destroy,
-            color=C["surface"], hover=C["surface2"], fg=C["text2"]).pack(side="left")
-        self.ok_btn = btn(btn_row, "Vincular", self._confirm)
+        styled_button(btn_row, "Cancelar", self.destroy,
+                      color=C["surface"]).pack(side="left")
+        self.ok_btn = styled_button(btn_row, "Vincular", self._confirm, C["primary"])
         self.ok_btn.pack(side="right")
-        self.ok_btn.configure(state="disabled")
+        self.ok_btn.config(state="disabled")
 
     def _update_preview(self):
         pk = self.pk_var.get().strip()
         if not pk:
             self.preview_var.set("—")
-            self.preview_lbl.configure(text_color=C["muted"])
+            self.preview_lbl.config(fg=C["muted"])
             self.warn_var.set("")
-            self.ok_btn.configure(state="disabled")
+            self.ok_btn.config(state="disabled")
             return
         if not WEB3_AVAILABLE:
             self.warn_var.set("web3.py no disponible.")
@@ -567,17 +595,17 @@ class ConnectWalletDialog(ctk.CTkToplevel):
         try:
             addr = Web3().eth.account.from_key(pk).address
             self.preview_var.set(addr)
-            self.ok_btn.configure(state="normal")
+            self.ok_btn.config(state="normal")
             if self.expected_address and addr.lower() != self.expected_address:
-                self.preview_lbl.configure(text_color=C["warning"])
+                self.preview_lbl.config(fg=C["warning"])
                 self.warn_var.set("⚠  Esta wallet NO coincide con la registrada en AXIA.")
             else:
-                self.preview_lbl.configure(text_color=C["success"])
+                self.preview_lbl.config(fg=C["success"])
                 self.warn_var.set("")
         except Exception:
             self.preview_var.set("Clave inválida")
-            self.preview_lbl.configure(text_color=C["error"])
-            self.ok_btn.configure(state="disabled")
+            self.preview_lbl.config(fg=C["error"])
+            self.ok_btn.config(state="disabled")
 
     def _confirm(self):
         pk = self.pk_var.get().strip()
@@ -588,79 +616,84 @@ class ConnectWalletDialog(ctk.CTkToplevel):
         self.destroy()
 
 
-class AssignDialog(ctk.CTkToplevel):
+class AssignDialog(tk.Toplevel):
     def __init__(self, parent, token_id, brand, model):
         super().__init__(parent)
         self.result   = None
         self.token_id = token_id
 
         self.title("Asignar Reloj")
-        self.geometry("480x260")
-        self.configure(fg_color=C["bg_alt"])
+        self.geometry("460x240")
+        self.configure(bg=C["bg_alt"])
         self.resizable(False, False)
         self.grab_set()
-        self.lift()
 
-        f = ctk.CTkFrame(self, fg_color="transparent")
+        f = styled_frame(self, C["bg_alt"])
         f.pack(fill="both", expand=True, padx=24, pady=24)
 
         watch_title = f"{brand} {model}"
         if len(watch_title) > 28:
             watch_title = watch_title[:26] + "…"
-        lbl(f, f"Asignar #{token_id}", font=FONT_HEAD).pack(anchor="w")
-        lbl(f, watch_title, color=C["text2"]).pack(anchor="w", pady=(0, 4))
-        lbl(f, "Wallet del destinatario (0x...)", font=FONT_SMALL,
-            color=C["text2"]).pack(anchor="w", pady=(8, 2))
-        self.wallet_var = ctk.StringVar()
-        entry(f, self.wallet_var, width=420).pack(fill="x", pady=(0, 16))
+        tk.Label(f, text=f"Asignar #{token_id}",
+                 font=FONT_HEAD, fg=C["text"], bg=C["bg_alt"]).pack(anchor="w")
+        tk.Label(f, text=watch_title,
+                 font=FONT_BODY, fg=C["text2"], bg=C["bg_alt"],
+                 wraplength=390).pack(anchor="w", pady=(0, 4))
+        styled_label(f, "Wallet del destinatario (0x...)",
+                     font=FONT_SMALL, fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w", pady=(8, 2))
+        self.wallet_var = tk.StringVar()
+        styled_entry(f, self.wallet_var, width=48).pack(fill="x", pady=(0, 16))
 
-        row = ctk.CTkFrame(f, fg_color="transparent")
-        row.pack(fill="x")
-        btn(row, "Cancelar", self.destroy,
-            color=C["surface"], hover=C["surface2"], fg=C["text2"]).pack(side="left")
-        btn(row, "Asignar en Blockchain", self._confirm).pack(side="right")
+        btn_row = styled_frame(f, C["bg_alt"])
+        btn_row.pack(fill="x")
+        styled_button(btn_row, "Cancelar", self.destroy,
+                      color=C["surface"]).pack(side="left")
+        styled_button(btn_row, "Asignar en Blockchain",
+                      self._confirm, C["primary"]).pack(side="right")
 
     def _confirm(self):
         wallet = self.wallet_var.get().strip()
         if not wallet.startswith("0x") or len(wallet) != 42:
-            messagebox.showerror("Error", "Dirección inválida.")
+            messagebox.showerror("Error", "Dirección inválida.", parent=self)
             return
         self.result = wallet
         self.destroy()
 
 
-class ListForSaleDialog(ctk.CTkToplevel):
+class ListForSaleDialog(tk.Toplevel):
     def __init__(self, parent, token_id, brand, model):
         super().__init__(parent)
         self.result   = None
         self.token_id = token_id
 
         self.title("Poner a la Venta")
-        self.geometry("420x240")
-        self.configure(fg_color=C["bg_alt"])
+        self.geometry("400x220")
+        self.configure(bg=C["bg_alt"])
         self.resizable(False, False)
         self.grab_set()
-        self.lift()
 
-        f = ctk.CTkFrame(self, fg_color="transparent")
+        f = styled_frame(self, C["bg_alt"])
         f.pack(fill="both", expand=True, padx=24, pady=24)
 
         watch_title = f"{brand} {model}"
         if len(watch_title) > 28:
             watch_title = watch_title[:26] + "…"
-        lbl(f, f"Publicar #{token_id}", font=FONT_HEAD).pack(anchor="w")
-        lbl(f, watch_title, color=C["text2"]).pack(anchor="w", pady=(0, 4))
-        lbl(f, "Precio en USDC", font=FONT_SMALL,
-            color=C["text2"]).pack(anchor="w", pady=(8, 2))
-        self.price_var = ctk.StringVar()
-        entry(f, self.price_var, width=200).pack(anchor="w", pady=(0, 16))
+        tk.Label(f, text=f"Publicar #{token_id}",
+                 font=FONT_HEAD, fg=C["text"], bg=C["bg_alt"]).pack(anchor="w")
+        tk.Label(f, text=watch_title,
+                 font=FONT_BODY, fg=C["text2"], bg=C["bg_alt"],
+                 wraplength=340).pack(anchor="w", pady=(0, 4))
+        styled_label(f, "Precio en USDC",
+                     font=FONT_SMALL, fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w", pady=(8, 2))
+        self.price_var = tk.StringVar()
+        styled_entry(f, self.price_var, width=20).pack(anchor="w", pady=(0, 16))
 
-        row = ctk.CTkFrame(f, fg_color="transparent")
-        row.pack(fill="x")
-        btn(row, "Cancelar", self.destroy,
-            color=C["surface"], hover=C["surface2"], fg=C["text2"]).pack(side="left")
-        btn(row, "Publicar en Marketplace", self._confirm,
-            color=C["success"], hover="#0ea271").pack(side="right")
+        btn_row = styled_frame(f, C["bg_alt"])
+        btn_row.pack(fill="x")
+        styled_button(btn_row, "Cancelar", self.destroy,
+                      color=C["surface"]).pack(side="left")
+        styled_button(btn_row, "Publicar en Marketplace",
+                      self._confirm, C["success"]).pack(side="right")
 
     def _confirm(self):
         try:
@@ -668,7 +701,7 @@ class ListForSaleDialog(ctk.CTkToplevel):
             if price <= 0:
                 raise ValueError
         except ValueError:
-            messagebox.showerror("Error", "Introduce un precio válido.")
+            messagebox.showerror("Error", "Introduce un precio válido.", parent=self)
             return
         self.result = price
         self.destroy()
@@ -677,79 +710,78 @@ class ListForSaleDialog(ctk.CTkToplevel):
 # ─────────────────────────────────────────────────────────────────────────────
 # PANTALLA LOGIN
 # ─────────────────────────────────────────────────────────────────────────────
-class LoginFrame(ctk.CTkFrame):
+class LoginFrame(tk.Frame):
     def __init__(self, parent, on_success):
-        super().__init__(parent, fg_color=C["bg"], corner_radius=0)
-        self.on_success    = on_success
-        self._retrying     = False
-        self._retry_after  = None
+        super().__init__(parent, bg=C["bg"])
+        self.on_success = on_success
         self._build()
 
     def _build(self):
         self.pack(fill="both", expand=True)
-
-        center = ctk.CTkFrame(self, fg_color="transparent")
+        center = styled_frame(self, C["bg"])
         center.place(relx=0.5, rely=0.5, anchor="center")
 
-        # Logo + título
-        logo_row = ctk.CTkFrame(center, fg_color="transparent")
+        logo_row = tk.Frame(center, bg=C["bg"])
         logo_row.pack(pady=(0, 4))
-        if "logo_big" in ICONS:
-            ctk.CTkLabel(logo_row, image=ICONS["logo_big"], text="",
-                         fg_color="transparent").pack(side="left", padx=(0, 10))
-        ctk.CTkLabel(logo_row, text="AXIA",
-                     font=(_SANS, 30, "bold"),
-                     text_color=C["primary"], fg_color="transparent").pack(side="left")
+        if "logo" in ICONS:
+            # Escalar el logo a 48x48 para el login
+            try:
+                img_big = Image.open(BUNDLE_DIR / "icons" / "logo.png").resize((48, 48), Image.LANCZOS)
+                ICONS["logo_big"] = ImageTk.PhotoImage(img_big)
+                tk.Label(logo_row, image=ICONS["logo_big"], bg=C["bg"]).pack(side="left", padx=(0, 10))
+            except Exception:
+                pass
+        tk.Label(logo_row, text="AXIA", font=(_SANS, 30, "bold"),
+                 fg=C["primary"], bg=C["bg"]).pack(side="left")
+        tk.Label(center, text="Manufacturer Tool",
+                 font=(_SANS, 12), fg=C["text2"], bg=C["bg"]).pack(pady=(0, 28))
 
-        lbl(center, "Manufacturer Tool", font=_font(12),
-            color=C["text2"]).pack(pady=(0, 28))
+        card = styled_frame(center, C["bg_alt"])
+        card.configure(highlightthickness=1, highlightbackground=C["border"])
+        card.pack(ipadx=32, ipady=24)
 
-        # Card de login
-        card_frame = ctk.CTkFrame(center, fg_color=C["bg_alt"],
-                                  border_color=C["border"], border_width=1,
-                                  corner_radius=12)
-        card_frame.pack(ipadx=32, ipady=24)
+        styled_label(card, "Iniciar sesión", font=FONT_HEAD,
+                     bg=C["bg_alt"]).pack(pady=(0, 18))
 
-        lbl(card_frame, "Iniciar sesión", font=FONT_HEAD).pack(pady=(0, 18))
+        styled_label(card, "Usuario o correo", font=FONT_SMALL,
+                     fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
+        self.id_var = tk.StringVar()
+        styled_entry(card, self.id_var, 34).pack(pady=(2, 10))
 
-        lbl(card_frame, "Usuario o correo", font=FONT_SMALL,
-            color=C["text2"]).pack(anchor="w")
-        self.id_var = ctk.StringVar()
-        entry(card_frame, self.id_var, width=320).pack(pady=(2, 10))
+        styled_label(card, "Contraseña", font=FONT_SMALL,
+                     fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
+        self.pw_var = tk.StringVar()
+        styled_entry(card, self.pw_var, 34, show="•").pack(pady=(2, 4))
 
-        lbl(card_frame, "Contraseña", font=FONT_SMALL,
-            color=C["text2"]).pack(anchor="w")
-        self.pw_var = ctk.StringVar()
-        entry(card_frame, self.pw_var, width=320, show="•").pack(pady=(2, 4))
+        self.status_label = tk.Label(card, text="", font=FONT_SMALL,
+                                     fg=C["text2"], bg=C["bg_alt"])
+        self.status_label.pack(pady=(0, 2))
 
-        self.status_var = ctk.StringVar(value="")
-        ctk.CTkLabel(card_frame, textvariable=self.status_var,
-                     font=FONT_SMALL, text_color=C["text2"],
-                     fg_color="transparent").pack(pady=(0, 2))
+        self.err_label = tk.Label(card, text="", font=FONT_SMALL,
+                                  fg=C["error"], bg=C["bg_alt"])
+        self.err_label.pack(pady=(0, 8))
 
-        self.err_var = ctk.StringVar(value="")
-        ctk.CTkLabel(card_frame, textvariable=self.err_var,
-                     font=FONT_SMALL, text_color=C["error"],
-                     fg_color="transparent").pack(pady=(0, 8))
+        self.btn = styled_button(card, "Entrar", self._login, width=20)
+        self.btn.pack(pady=(0, 4))
 
-        self.login_btn = btn(card_frame, "Entrar", self._login, width=200, height=38)
-        self.login_btn.pack(pady=(0, 4))
+        tk.Label(card, text="Solo usuarios con rol FABRICANTE pueden acceder.",
+                 font=FONT_SMALL, fg=C["muted"], bg=C["bg_alt"]).pack(pady=(8, 0))
 
-        lbl(card_frame, "Solo usuarios con rol FABRICANTE pueden acceder.",
-            font=FONT_SMALL, color=C["muted"]).pack(pady=(8, 0))
+        card.bind_all("<Return>", lambda e: self._login())
 
-        self.winfo_toplevel().bind("<Return>", lambda e: self._login())
+        self._retrying    = False
+        self._retry_after = None
 
     def _login(self):
         ident = self.id_var.get().strip()
         pw    = self.pw_var.get()
         if not ident or not pw:
-            self.err_var.set("Completa todos los campos.")
+            self.err_label.config(text="Completa todos los campos.")
             return
         self._stop_retry()
-        self.login_btn.configure(state="disabled", text="Conectando…")
-        self.err_var.set("")
-        self.status_var.set("")
+        self.btn.config(state="disabled", text="Conectando…")
+        self.err_label.config(text="")
+        self.status_label.config(text="")
         self._try_login(ident, pw)
 
     def _try_login(self, ident, pw):
@@ -760,6 +792,7 @@ class LoginFrame(ctk.CTkFrame):
                 api.login(ident, pw)
                 self.after(0, self.on_success)
             except requests.HTTPError as e:
+                # Error real de credenciales — mostrar en rojo y parar
                 msg = "Credenciales incorrectas."
                 try:
                     msg = e.response.json().get("detail", msg)
@@ -767,6 +800,7 @@ class LoginFrame(ctk.CTkFrame):
                     pass
                 self.after(0, lambda m=msg: self._set_error(m))
             except (requests.ConnectionError, requests.Timeout):
+                # Servidor no disponible — reintentar silenciosamente
                 self.after(0, self._schedule_retry_ui)
             except Exception as e:
                 self.after(0, lambda msg=str(e): self._set_error(msg))
@@ -774,6 +808,7 @@ class LoginFrame(ctk.CTkFrame):
         threading.Thread(target=do_login, daemon=True).start()
 
     def _schedule_retry_ui(self):
+        """Muestra el estado 'conectando' y reintenta en 4 segundos."""
         if not self._retrying:
             return
         self._animate_dots(0)
@@ -782,8 +817,9 @@ class LoginFrame(ctk.CTkFrame):
         if not self._retrying:
             return
         dots = "." * (tick % 4)
-        self.status_var.set(f"Servidor no disponible, reintentando{dots}")
+        self.status_label.config(text=f"Servidor no disponible, reintentando{dots}")
         if tick % 16 == 0 and tick > 0:
+            # Cada ~4 segundos (16 ticks × 250 ms) reintentar
             ident = self.id_var.get().strip()
             pw    = self.pw_var.get()
             self._try_login(ident, pw)
@@ -798,109 +834,103 @@ class LoginFrame(ctk.CTkFrame):
 
     def _set_error(self, msg):
         self._stop_retry()
-        self.status_var.set("")
-        self.err_var.set(msg)
-        self.login_btn.configure(state="normal", text="Entrar")
+        self.status_label.config(text="")
+        self.err_label.config(text=msg)
+        self.btn.config(state="normal", text="Entrar")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PANTALLA PRINCIPAL
 # ─────────────────────────────────────────────────────────────────────────────
-class MainFrame(ctk.CTkFrame):
+class MainFrame(tk.Frame):
     def __init__(self, parent, on_logout):
-        super().__init__(parent, fg_color=C["bg"], corner_radius=0)
-        self.on_logout     = on_logout
-        self._current_tab  = None
-        self._nav_buttons  = {}
+        super().__init__(parent, bg=C["bg"])
+        self.on_logout    = on_logout
+        self._current_tab = None
         self._build()
 
     def _build(self):
         self.pack(fill="both", expand=True)
 
         # ── Cabecera ──────────────────────────────────────────────────────
-        self.header = ctk.CTkFrame(self, fg_color=C["bg_alt"], height=52,
-                                   corner_radius=0)
+        self.header = tk.Frame(self, bg=C["bg_alt"], height=52)
         self.header.pack(fill="x", side="top")
         self.header.pack_propagate(False)
 
-        # Logo
-        logo_f = ctk.CTkFrame(self.header, fg_color="transparent")
-        logo_f.pack(side="left", padx=(16, 0))
+        # Logo + título
+        logo_frame = tk.Frame(self.header, bg=C["bg_alt"])
+        logo_frame.pack(side="left", padx=(16, 0))
         if "logo" in ICONS:
-            ctk.CTkLabel(logo_f, image=ICONS["logo"], text="",
-                         fg_color="transparent").pack(side="left", padx=(0, 8))
-        ctk.CTkLabel(logo_f, text="AXIA",
-                     font=(_SANS, 15, "bold"),
-                     text_color=C["primary"], fg_color="transparent").pack(side="left")
-        ctk.CTkLabel(logo_f, text=" Manufacturer", font=_font(13),
-                     text_color=C["text2"], fg_color="transparent").pack(side="left")
+            tk.Label(logo_frame, image=ICONS["logo"], bg=C["bg_alt"]).pack(side="left", padx=(0, 8))
+        tk.Label(logo_frame, text="AXIA", font=(_SANS, 15, "bold"),
+                 fg=C["primary"], bg=C["bg_alt"]).pack(side="left")
+        tk.Label(logo_frame, text=" Manufacturer", font=(_SANS, 13),
+                 fg=C["text2"], bg=C["bg_alt"]).pack(side="left")
 
-        # Usuario
         user_info = api.user or {}
         if user_info.get("username"):
-            ctk.CTkFrame(self.header, fg_color=C["border"],
-                         width=1, corner_radius=0).pack(side="left", fill="y",
-                                                        padx=14, pady=10)
-            lbl(self.header, user_info.get("username", ""),
-                bg=C["bg_alt"]).pack(side="left")
+            tk.Frame(self.header, bg=C["border"], width=1).pack(side="left", fill="y", padx=14, pady=10)
+            tk.Label(self.header, text=user_info.get("username", ""),
+                     font=FONT_BODY, fg=C["text"], bg=C["bg_alt"]
+                     ).pack(side="left")
 
         # Chip de red
-        api_host  = get_cfg("API_URL").replace("https://","").replace("http://","").split("/")[0]
+        api_host  = get_cfg("API_URL").replace("https://", "").replace("http://", "").split("/")[0]
         net_color = C["success"] if "onrender.com" in get_cfg("API_URL") else C["warning"]
-        net_f = ctk.CTkFrame(self.header, fg_color="transparent")
-        net_f.pack(side="left", padx=14)
-        ctk.CTkLabel(net_f, text="●", font=FONT_SMALL,
-                     text_color=net_color, fg_color="transparent").pack(side="left")
-        ctk.CTkLabel(net_f, text=f"  Amoy · {api_host}", font=FONT_SMALL,
-                     text_color=C["text2"], fg_color="transparent").pack(side="left")
+        net_frame = tk.Frame(self.header, bg=C["bg_alt"])
+        net_frame.pack(side="left", padx=14)
+        tk.Label(net_frame, text="●", font=FONT_SMALL, fg=net_color, bg=C["bg_alt"]).pack(side="left")
+        tk.Label(net_frame, text=f"  Amoy · {api_host}", font=FONT_SMALL,
+                 fg=C["text2"], bg=C["bg_alt"]).pack(side="left")
 
-        # Cerrar sesión
-        logout_kw = {"image": ICONS["logout"]} if "logout" in ICONS else {}
-        ctk.CTkButton(self.header, text=" Salir", compound="left",
-                      font=FONT_SMALL, text_color=C["error"],
-                      fg_color="transparent", hover_color=C["surface"],
-                      cursor="hand2", width=70, height=32,
-                      command=self.on_logout, **logout_kw
-                      ).pack(side="right", padx=16)
+        # Cerrar sesión (derecha)
+        logout_kw = dict(image=ICONS["logout"]) if "logout" in ICONS else {}
+        tk.Button(self.header, text=" Salir", compound="left",
+                  font=FONT_SMALL, fg=C["error"], bg=C["bg_alt"],
+                  activeforeground=C["error"], activebackground=C["surface"],
+                  relief="flat", cursor="hand2", command=self.on_logout,
+                  **logout_kw
+                  ).pack(side="right", padx=16)
 
         # Chip de wallet
-        self.wallet_container = ctk.CTkFrame(self.header, fg_color="transparent")
+        self.wallet_container = tk.Frame(self.header, bg=C["bg_alt"])
         self.wallet_container.pack(side="right", padx=6)
         self._refresh_wallet_header()
 
         separator(self).pack(fill="x", side="top")
 
         # ── Cuerpo ────────────────────────────────────────────────────────
-        body = ctk.CTkFrame(self, fg_color=C["bg"], corner_radius=0)
+        body = tk.Frame(self, bg=C["bg"])
         body.pack(fill="both", expand=True)
 
         # Sidebar
-        self.sidebar = ctk.CTkFrame(body, fg_color=C["bg_alt"],
-                                    width=210, corner_radius=0)
+        self.sidebar = tk.Frame(body, bg=C["bg_alt"], width=210)
         self.sidebar.pack(fill="y", side="left")
         self.sidebar.pack_propagate(False)
-        separator(self.sidebar).pack(fill="x")
+        separator(self.sidebar, C["border"]).pack(fill="x")
 
+        self._nav_buttons = {}
         for key, label, icon_key in [
-            ("mint",     "Mintear Reloj", "mint"),
-            ("stock",    "Mi Stock",      "stock"),
-            ("settings", "Configuración", "settings"),
+            ("mint",     "Mintear Reloj",  "mint"),
+            ("stock",    "Mi Stock",       "stock"),
+            ("settings", "Configuración",  "settings"),
         ]:
-            icon = ICONS.get(icon_key)
-            b = ctk.CTkButton(
-                self.sidebar, text=f"  {label}",
-                image=icon, compound="left" if icon else "none",
-                anchor="w", font=FONT_BODY,
-                fg_color=C["bg_alt"], hover_color=C["surface2"],
-                text_color=C["text"], corner_radius=0, height=46,
-                command=lambda k=key: self.show_tab(k)
-            )
-            b.pack(fill="x")
-            separator(self.sidebar).pack(fill="x")
-            self._nav_buttons[key] = b
+            img = ICONS.get(icon_key)
+            btn = tk.Button(self.sidebar,
+                            text=f"   {label}",
+                            image=img, compound="left" if img else "none",
+                            font=FONT_BODY, anchor="w",
+                            fg=C["text"], bg=C["bg_alt"],
+                            activeforeground=C["primary"],
+                            activebackground=C["surface2"],
+                            relief="flat", cursor="hand2",
+                            command=lambda k=key: self.show_tab(k))
+            btn.pack(fill="x", ipady=12)
+            separator(self.sidebar, C["border"]).pack(fill="x")
+            self._nav_buttons[key] = btn
 
         # Área de contenido
-        self.content = ctk.CTkFrame(body, fg_color=C["bg"], corner_radius=0)
+        self.content = tk.Frame(body, bg=C["bg"])
         self.content.pack(fill="both", expand=True, side="left")
 
         self._tabs = {
@@ -910,19 +940,19 @@ class MainFrame(ctk.CTkFrame):
         }
         self.show_tab("mint")
 
+    # ── Tabs ──────────────────────────────────────────────────────────────
     def show_tab(self, key):
         if self._current_tab:
             self._tabs[self._current_tab].pack_forget()
-            self._nav_buttons[self._current_tab].configure(
-                fg_color=C["bg_alt"], text_color=C["text"])
+            self._nav_buttons[self._current_tab].config(bg=C["bg_alt"], fg=C["text"])
         self._current_tab = key
-        self._nav_buttons[key].configure(
-            fg_color=C["surface2"], text_color=C["primary"])
+        self._nav_buttons[key].config(bg=C["surface2"], fg=C["primary"])
         tab = self._tabs[key]
         tab.pack(fill="both", expand=True)
         if hasattr(tab, "on_show"):
             tab.on_show()
 
+    # ── Wallet header ─────────────────────────────────────────────────────
     def _refresh_wallet_header(self):
         for w in self.wallet_container.winfo_children():
             w.destroy()
@@ -934,29 +964,30 @@ class MainFrame(ctk.CTkFrame):
             short    = f"{addr[:6]}…{addr[-4:]}"
             mismatch = expected and addr.lower() != expected.lower()
             color    = C["warning"] if mismatch else C["success"]
-            pill     = ctk.CTkFrame(self.wallet_container, fg_color="transparent")
+            pill     = tk.Frame(self.wallet_container, bg=C["bg_alt"])
             pill.pack(side="left")
             if "wallet" in ICONS:
-                ctk.CTkLabel(pill, image=ICONS["wallet"], text="",
-                             fg_color="transparent").pack(side="left", padx=(0, 4))
-            ctk.CTkLabel(pill, text="●", font=FONT_SMALL,
-                         text_color=color, fg_color="transparent").pack(side="left")
-            ctk.CTkLabel(pill, text=f" {short}", font=FONT_MONO,
-                         text_color=C["text"], fg_color="transparent").pack(side="left", padx=(2, 4))
-            ctk.CTkButton(pill, text="Cambiar", font=FONT_SMALL,
-                          text_color=C["text2"], fg_color="transparent",
-                          hover_color=C["surface"], width=60, height=26,
-                          command=self._open_connect_dialog).pack(side="left")
+                tk.Label(pill, image=ICONS["wallet"], bg=C["bg_alt"]).pack(side="left", padx=(0, 4))
+            tk.Label(pill, text="●", font=FONT_SMALL, fg=color,
+                     bg=C["bg_alt"]).pack(side="left")
+            tk.Label(pill, text=f" {short}", font=FONT_MONO,
+                     fg=C["text"], bg=C["bg_alt"]).pack(side="left", padx=(2, 4))
+            tk.Button(pill, text="Cambiar", font=FONT_SMALL,
+                      fg=C["text2"], bg=C["bg_alt"],
+                      activeforeground=C["primary"], activebackground=C["surface"],
+                      relief="flat", cursor="hand2",
+                      command=self._open_connect_dialog).pack(side="left")
             if mismatch:
-                ctk.CTkLabel(self.wallet_container, text="  ⚠ no coincide",
-                             font=FONT_SMALL, text_color=C["warning"],
-                             fg_color="transparent").pack(side="left")
+                tk.Label(self.wallet_container, text="  ⚠ no coincide",
+                         font=FONT_SMALL, fg=C["warning"],
+                         bg=C["bg_alt"]).pack(side="left")
         else:
-            ctk.CTkLabel(self.wallet_container, text="Sin wallet",
-                         font=FONT_SMALL, text_color=C["warning"],
-                         fg_color="transparent").pack(side="left", padx=(0, 6))
-            btn(self.wallet_container, "Conectar wallet",
-                self._open_connect_dialog, width=130, height=30).pack(side="left")
+            tk.Label(self.wallet_container, text="Sin wallet",
+                     font=FONT_SMALL, fg=C["warning"], bg=C["bg_alt"]
+                     ).pack(side="left", padx=(0, 6))
+            styled_button(self.wallet_container, "Conectar wallet",
+                          self._open_connect_dialog,
+                          color=C["primary"]).pack(side="left")
 
     def _open_connect_dialog(self):
         expected = (api.user or {}).get("wallet_address")
@@ -972,121 +1003,108 @@ class MainFrame(ctk.CTkFrame):
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB: MINTEAR
 # ─────────────────────────────────────────────────────────────────────────────
-class MintTab(ctk.CTkFrame):
+class MintTab(tk.Frame):
     def __init__(self, parent):
-        super().__init__(parent, fg_color=C["bg"], corner_radius=0)
-        self.img_path   = ""
-        self.uid_var    = ctk.StringVar(value="—")
-        self.uid_status = ctk.StringVar(value="")
+        super().__init__(parent, bg=C["bg"])
+        self.img_path  = ""
+        self.uid_var   = tk.StringVar(value="—")
+        self.uid_status= tk.StringVar(value="")
         self._build()
 
     def _build(self):
-        scroll = ctk.CTkScrollableFrame(
-            self, fg_color=C["bg"],
-            scrollbar_button_color=C["surface2"],
-            scrollbar_button_hover_color=C["border"],
-            corner_radius=0,
-        )
-        scroll.pack(fill="both", expand=True)
-        inner = scroll
+        outer, inner = scrollable(self)
+        outer.pack(fill="both", expand=True)
 
-        lbl(inner, "Mintear Nuevo Reloj", font=FONT_TITLE).pack(
-            anchor="w", padx=24, pady=(22, 2))
-        lbl(inner, "Registro del gemelo digital en blockchain",
-            color=C["text2"]).pack(anchor="w", padx=24)
-        separator(inner).pack(fill="x", padx=24, pady=14)
+        # Título
+        tk.Label(inner, text="Mintear Nuevo Reloj",
+                 font=FONT_TITLE, fg=C["text"], bg=C["bg"]).pack(anchor="w", padx=28, pady=(22, 2))
+        tk.Label(inner, text="Registro del gemelo digital en blockchain",
+                 font=FONT_BODY, fg=C["text2"], bg=C["bg"]).pack(anchor="w", padx=28)
+        separator(inner).pack(fill="x", padx=28, pady=14)
 
         # 1 · NFC
         section_label(inner, "1 · Chip NFC")
-        nfc_card = card(inner)
-
-        uid_row = ctk.CTkFrame(nfc_card, fg_color="transparent")
-        uid_row.pack(fill="x", pady=(0, 8))
-        lbl(uid_row, "UID detectado:", color=C["text2"]).pack(side="left")
-        self.uid_label = ctk.CTkLabel(uid_row, textvariable=self.uid_var,
-                                      font=FONT_MONO, text_color=C["primary"],
-                                      fg_color="transparent")
+        nfc_card = card_frame(inner)
+        row = tk.Frame(nfc_card, bg=C["surface"])
+        row.pack(fill="x", pady=(0, 8))
+        tk.Label(row, text="UID detectado:", font=FONT_BODY,
+                 fg=C["text2"], bg=C["surface"]).pack(side="left")
+        self.uid_label = tk.Label(row, textvariable=self.uid_var,
+                                  font=FONT_MONO, fg=C["primary"], bg=C["surface"])
         self.uid_label.pack(side="left", padx=8)
-        ctk.CTkLabel(uid_row, textvariable=self.uid_status,
-                     font=FONT_SMALL, text_color=C["muted"],
-                     fg_color="transparent").pack(side="left")
+        tk.Label(row, textvariable=self.uid_status,
+                 font=FONT_SMALL, fg=C["muted"], bg=C["surface"]).pack(side="left")
 
-        btn_row = ctk.CTkFrame(nfc_card, fg_color="transparent")
+        btn_row = tk.Frame(nfc_card, bg=C["surface"])
         btn_row.pack(fill="x")
-        btn(btn_row, "● Leer UID", self._read_nfc,
-            color=C["surface2"], hover=C["border"],
-            fg=C["text"], width=110).pack(side="left", padx=(0, 8))
-        btn(btn_row, "Verificar estado", self._verify_nfc,
-            color=C["surface2"], hover=C["border"],
-            fg=C["text"], width=130).pack(side="left")
+        styled_button(btn_row, "● Leer UID", self._read_nfc,
+                      color=C["surface2"]).pack(side="left", padx=(0, 8))
+        styled_button(btn_row, "Verificar estado", self._verify_nfc,
+                      color=C["surface2"]).pack(side="left")
 
         if not NFC_AVAILABLE:
-            lbl(nfc_card, "⚠  pyscard no instalado — introduce el UID manualmente",
-                font=FONT_SMALL, color=C["warning"]).pack(anchor="w", pady=(8, 0))
-            entry(nfc_card, self.uid_var, width=380).pack(fill="x", pady=(4, 0))
+            tk.Label(nfc_card, text="⚠  pyscard no instalado — introduce el UID manualmente",
+                     font=FONT_SMALL, fg=C["warning"], bg=C["surface"]).pack(anchor="w", pady=(8, 0))
+            styled_entry(nfc_card, self.uid_var, 36).pack(fill="x", pady=(4, 0))
 
         # 2 · Datos
         section_label(inner, "2 · Datos del Reloj")
-        form_card = card(inner)
+        form_card = card_frame(inner)
         self._entries = {}
-        for label_text, key in [
-            ("Marca",          "brand"),
-            ("Modelo",         "model"),
-            ("Nº de Serie",    "serial"),
-            ("Año de fabric.", "year"),
+        for label, key, _ in [
+            ("Marca",         "brand",  ""),
+            ("Modelo",        "model",  ""),
+            ("Nº de Serie",   "serial", ""),
+            ("Año de fabric.","year",   ""),
         ]:
-            row = ctk.CTkFrame(form_card, fg_color="transparent")
-            row.pack(fill="x", pady=3)
-            ctk.CTkLabel(row, text=label_text, font=FONT_BODY,
-                         text_color=C["text2"], fg_color="transparent",
-                         width=120, anchor="w").pack(side="left")
-            var = ctk.StringVar()
-            entry(row, var, width=340).pack(side="left", fill="x", expand=True)
+            r = tk.Frame(form_card, bg=C["surface"])
+            r.pack(fill="x", pady=3)
+            tk.Label(r, text=label, font=FONT_BODY, fg=C["text2"],
+                     bg=C["surface"], width=16, anchor="w").pack(side="left")
+            var = tk.StringVar()
+            styled_entry(r, var, 32).pack(side="left", fill="x", expand=True)
             self._entries[key] = var
 
         # 3 · Destinatario
         section_label(inner, "3 · Destinatario (opcional)")
-        dest_card = card(inner)
-        lbl(dest_card, "Wallet del propietario inicial  (vacío = tu propio stock)",
-            font=FONT_SMALL, color=C["text2"]).pack(anchor="w", pady=(0, 4))
-        self.dest_var = ctk.StringVar()
-        entry(dest_card, self.dest_var, width=480).pack(fill="x")
+        dest_card = card_frame(inner)
+        tk.Label(dest_card, text="Wallet del propietario inicial  (vacío = tu propio stock)",
+                 font=FONT_SMALL, fg=C["text2"], bg=C["surface"]).pack(anchor="w", pady=(0, 4))
+        self.dest_var = tk.StringVar()
+        styled_entry(dest_card, self.dest_var, 52).pack(fill="x")
 
         # 4 · Imagen
         section_label(inner, "4 · Imagen del Reloj")
-        img_card = card(inner)
-        img_row  = ctk.CTkFrame(img_card, fg_color="transparent")
+        img_card = card_frame(inner)
+        img_row  = tk.Frame(img_card, bg=C["surface"])
         img_row.pack(fill="x")
-        btn(img_row, "Seleccionar imagen", self._select_image,
-            color=C["surface2"], hover=C["border"], fg=C["text"],
-            width=160).pack(side="left")
-        self.img_name_lbl = ctk.CTkLabel(img_row, text="(ninguna)",
-                                         font=FONT_SMALL, text_color=C["muted"],
-                                         fg_color="transparent")
-        self.img_name_lbl.pack(side="left", padx=12)
+        styled_button(img_row, "Seleccionar imagen", self._select_image,
+                      color=C["surface2"]).pack(side="left")
+        self.img_name_label = tk.Label(img_row, text="(ninguna)",
+                                       font=FONT_SMALL, fg=C["muted"], bg=C["surface"])
+        self.img_name_label.pack(side="left", padx=12)
         if PIL_AVAILABLE:
-            self.img_preview = ctk.CTkLabel(img_card, text="",
-                                            fg_color="transparent")
+            self.img_preview = tk.Label(img_card, bg=C["surface"])
             self.img_preview.pack(pady=(8, 0))
 
         # Botón Mint
-        separator(inner).pack(fill="x", padx=24, pady=14)
-        self.mint_btn = ctk.CTkButton(
-            inner, text="⬡  MINTEAR RELOJ EN BLOCKCHAIN",
-            command=self._start_mint,
-            font=(_SANS, 12, "bold"),
-            fg_color=C["primary"], hover_color=C["primary_h"],
-            text_color="#ffffff", height=50, corner_radius=8,
-        )
-        self.mint_btn.pack(fill="x", padx=24, pady=(0, 8))
+        separator(inner).pack(fill="x", padx=28, pady=14)
+        self.mint_btn = tk.Button(inner, text="⬡  MINTEAR RELOJ EN BLOCKCHAIN",
+                                  command=self._start_mint,
+                                  font=("Segoe UI", 12, "bold"),
+                                  fg="#ffffff", bg=C["primary"],
+                                  activeforeground="#ffffff",
+                                  activebackground=C["primary_h"],
+                                  relief="flat", cursor="hand2")
+        self.mint_btn.pack(fill="x", padx=28, pady=(0, 8), ipady=12)
 
-        self.log_var = ctk.StringVar(value="")
-        self.log_lbl = ctk.CTkLabel(inner, textvariable=self.log_var,
-                                    font=FONT_SMALL, text_color=C["text2"],
-                                    fg_color="transparent",
-                                    wraplength=700, justify="left")
-        self.log_lbl.pack(anchor="w", padx=24, pady=(0, 28))
+        self.log_var   = tk.StringVar(value="")
+        self.log_label = tk.Label(inner, textvariable=self.log_var,
+                                  font=FONT_SMALL, fg=C["text2"], bg=C["bg"],
+                                  wraplength=680, justify="left")
+        self.log_label.pack(anchor="w", padx=28, pady=(0, 28))
 
+    # ── NFC ───────────────────────────────────────────────────────────────
     def _read_nfc(self):
         if not NFC_AVAILABLE:
             self.uid_status.set("pyscard no disponible")
@@ -1095,11 +1113,11 @@ class MintTab(ctk.CTkFrame):
             uid = read_nfc_uid()
             self.uid_var.set(uid)
             self.uid_status.set("")
-            self.uid_label.configure(text_color=C["success"])
+            self.uid_label.config(fg=C["success"])
         except Exception as e:
             self.uid_var.set("Error")
             self.uid_status.set(str(e))
-            self.uid_label.configure(text_color=C["error"])
+            self.uid_label.config(fg=C["error"])
 
     def _verify_nfc(self):
         uid = self.uid_var.get().strip()
@@ -1120,34 +1138,34 @@ class MintTab(ctk.CTkFrame):
         except Exception as e:
             messagebox.showerror("Error blockchain", str(e))
 
+    # ── Imagen ────────────────────────────────────────────────────────────
     def _select_image(self):
         path = filedialog.askopenfilename(
             filetypes=[("Imágenes", "*.jpg *.jpeg *.png *.webp"), ("Todos", "*.*")])
         if path:
             self.img_path = path
-            self.img_name_lbl.configure(text=os.path.basename(path),
-                                        text_color=C["success"])
+            self.img_name_label.config(text=os.path.basename(path), fg=C["success"])
             if PIL_AVAILABLE:
                 try:
                     img = Image.open(path)
                     img.thumbnail((160, 160))
-                    photo = ctk.CTkImage(light_image=img, dark_image=img,
-                                         size=(img.width, img.height))
-                    self.img_preview.configure(image=photo)
+                    photo = ImageTk.PhotoImage(img)
+                    self.img_preview.config(image=photo)
                     self.img_preview.image = photo
                 except Exception:
                     pass
 
+    # ── Mint ──────────────────────────────────────────────────────────────
     def _start_mint(self):
-        uid    = self.uid_var.get().strip()
-        brand  = self._entries["brand"].get().strip()
-        model  = self._entries["model"].get().strip()
-        serial = self._entries["serial"].get().strip()
-        year   = self._entries["year"].get().strip()
-        dest   = self.dest_var.get().strip()
+        uid   = self.uid_var.get().strip()
+        brand = self._entries["brand"].get().strip()
+        model = self._entries["model"].get().strip()
+        serial= self._entries["serial"].get().strip()
+        year  = self._entries["year"].get().strip()
+        dest  = self.dest_var.get().strip()
 
         if not all([uid, brand, model, serial, year]):
-            messagebox.showwarning("Faltan datos", "Completa todos los campos.")
+            messagebox.showwarning("Faltan datos", "Completa todos los campos del formulario.")
             return
         if not self.img_path:
             messagebox.showwarning("Sin imagen", "Selecciona una imagen para el reloj.")
@@ -1155,6 +1173,7 @@ class MintTab(ctk.CTkFrame):
         if uid in ("—", "Error"):
             messagebox.showwarning("Sin UID", "Lee el UID del chip NFC primero.")
             return
+
         sender = bc.wallet_address
         if not sender:
             messagebox.showerror("Wallet no conectada",
@@ -1162,8 +1181,10 @@ class MintTab(ctk.CTkFrame):
             return
 
         recipient = dest if (dest and dest.startswith("0x") and len(dest) == 42) else sender
-        self.mint_btn.configure(state="disabled", text="Procesando…")
+
+        self.mint_btn.config(state="disabled", text="Procesando…")
         self._log("Comprobando saldo…", C["text2"])
+
         threading.Thread(
             target=self._mint_worker,
             args=(uid, brand, model, serial, year, recipient),
@@ -1175,20 +1196,24 @@ class MintTab(ctk.CTkFrame):
             if not WEB3_AVAILABLE:
                 raise RuntimeError("web3.py no está instalado.")
 
+            # 0. Comprobar que el UID no está ya registrado en la blockchain
             self._log("Verificando UID en blockchain…", C["text2"])
             registered, existing_token = bc.get_nfc_status(uid)
             if registered:
                 self._log(
                     f"✗  UID ya registrado — Token #{existing_token}\n"
                     f"   Este chip NFC ya está vinculado a un reloj existente.",
-                    C["error"])
+                    C["error"]
+                )
                 return
 
+            # 1. Subir imagen a Pinata
             self._log("Subiendo imagen a IPFS…", C["text2"])
             img_cid = upload_image_pinata(self.img_path)
             img_url = f"ipfs://{img_cid}"
             self._log("Imagen subida. Generando metadata…", C["text2"])
 
+            # 2. Subir metadata JSON
             from datetime import datetime as _dt, timezone as _tz
             mint_iso = _dt.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             metadata = {
@@ -1196,23 +1221,26 @@ class MintTab(ctk.CTkFrame):
                 "description": f"Autenticidad AXIA. Serial: {serial}",
                 "image":       img_url,
                 "attributes":  [
-                    {"trait_type": "Brand",               "value": brand},
-                    {"trait_type": "Model",               "value": model},
-                    {"trait_type": "Serial",              "value": serial},
-                    {"trait_type": "Year",                "value": int(year)},
-                    {"trait_type": "Fecha de Fabr.",      "value": mint_iso},
-                    {"trait_type": "Ultima Verificacion", "value": mint_iso},
+                    {"trait_type": "Brand",              "value": brand},
+                    {"trait_type": "Model",              "value": model},
+                    {"trait_type": "Serial",             "value": serial},
+                    {"trait_type": "Year",               "value": int(year)},
+                    {"trait_type": "Fecha de Fabr.",     "value": mint_iso},
+                    {"trait_type": "Ultima Verificacion","value": mint_iso},
                 ],
             }
             meta_cid  = upload_json_pinata(metadata, f"axia_{uid.replace(':','')}.json")
             token_uri = f"ipfs://{meta_cid}"
             self._log("Metadata lista. Firmando transacción blockchain…", C["text2"])
 
+            # 3. Mint en blockchain
             tx_hash, token_id = bc.mint_watch(
-                brand, model, serial, int(year), uid, token_uri, recipient)
+                brand, model, serial, int(year), uid, token_uri, recipient
+            )
             hash_uid = "0x" + bc.w3.keccak(text=uid).hex()
             self._log(f"Minteado — Token #{token_id}. Registrando en AXIA…", C["success"])
 
+            # 4. Registrar en el backend
             api.register_minted({
                 "token_id":      int(token_id),
                 "brand":         brand,
@@ -1231,19 +1259,20 @@ class MintTab(ctk.CTkFrame):
                 f"   Token ID: #{token_id}\n"
                 f"   TX Hash:  {tx_hash[:20]}…\n"
                 f"   Propietario: {recipient[:12]}…",
-                C["success"])
+                C["success"]
+            )
             self.after(0, self._reset_form)
 
         except Exception as e:
             self._log(f"✗  Error: {e}", C["error"])
         finally:
-            self.after(0, lambda: self.mint_btn.configure(
+            self.after(0, lambda: self.mint_btn.config(
                 state="normal", text="⬡  MINTEAR RELOJ EN BLOCKCHAIN"))
 
     def _log(self, msg, color=None):
         self.after(0, lambda: (
             self.log_var.set(msg),
-            self.log_lbl.configure(text_color=color or C["text2"])
+            self.log_label.config(fg=color or C["text2"])
         ))
 
     def _reset_form(self):
@@ -1252,47 +1281,41 @@ class MintTab(ctk.CTkFrame):
         self.uid_var.set("—")
         self.dest_var.set("")
         self.img_path = ""
-        self.img_name_lbl.configure(text="(ninguna)", text_color=C["muted"])
+        self.img_name_label.config(text="(ninguna)", fg=C["muted"])
         if PIL_AVAILABLE and hasattr(self, "img_preview"):
-            self.img_preview.configure(image=None)
+            self.img_preview.config(image="")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB: MI STOCK
 # ─────────────────────────────────────────────────────────────────────────────
-class StockTab(ctk.CTkFrame):
+class StockTab(tk.Frame):
     def __init__(self, parent):
-        super().__init__(parent, fg_color=C["bg"], corner_radius=0)
+        super().__init__(parent, bg=C["bg"])
         self._build()
 
     def on_show(self):
         self._load()
 
     def _build(self):
-        top = ctk.CTkFrame(self, fg_color="transparent")
+        top = tk.Frame(self, bg=C["bg"])
         top.pack(fill="x", padx=24, pady=(18, 8))
-        lbl(top, "Mi Stock de Relojes", font=FONT_TITLE).pack(side="left")
-        btn(top, "↻ Actualizar", self._load,
-            color=C["surface2"], hover=C["border"],
-            fg=C["text"], width=110).pack(side="right")
-
+        tk.Label(top, text="Mi Stock de Relojes",
+                 font=FONT_TITLE, fg=C["text"], bg=C["bg"]).pack(side="left")
+        styled_button(top, "↻ Actualizar", self._load,
+                      color=C["surface2"]).pack(side="right")
         separator(self).pack(fill="x", padx=24)
 
-        self.status_lbl = ctk.CTkLabel(self, text="", font=FONT_BODY,
-                                       text_color=C["text2"], fg_color="transparent")
-        self.status_lbl.pack(pady=4)
+        self.status_label = tk.Label(self, text="",
+                                     font=FONT_BODY, fg=C["text2"], bg=C["bg"])
+        self.status_label.pack(pady=4)
 
-        self.scroll = ctk.CTkScrollableFrame(
-            self, fg_color=C["bg"],
-            scrollbar_button_color=C["surface2"],
-            scrollbar_button_hover_color=C["border"],
-            corner_radius=0,
-        )
-        self.scroll.pack(fill="both", expand=True)
+        outer, self.list_frame = scrollable(self)
+        outer.pack(fill="both", expand=True)
 
     def _load(self):
-        self.status_lbl.configure(text="Cargando stock…", text_color=C["text2"])
-        for w in self.scroll.winfo_children():
+        self.status_label.config(text="Cargando stock…", fg=C["text2"])
+        for w in self.list_frame.winfo_children():
             w.destroy()
         threading.Thread(target=self._fetch, daemon=True).start()
 
@@ -1301,27 +1324,26 @@ class StockTab(ctk.CTkFrame):
             watches = api.get_stock()
             self.after(0, lambda: self._render(watches))
         except Exception as e:
-            self.after(0, lambda msg=str(e):
-                self.status_lbl.configure(text=f"Error: {msg}", text_color=C["error"]))
+            self.after(0, lambda msg=str(e): self.status_label.config(
+                text=f"Error: {msg}", fg=C["error"]))
 
     def _render(self, watches):
-        self.status_lbl.configure(text="")
-        for w in self.scroll.winfo_children():
+        self.status_label.config(text="")
+        for w in self.list_frame.winfo_children():
             w.destroy()
         if not watches:
-            lbl(self.scroll, "No hay relojes en tu stock.",
-                color=C["text2"]).pack(pady=48)
+            tk.Label(self.list_frame, text="No hay relojes en tu stock.",
+                     font=FONT_BODY, fg=C["text2"], bg=C["bg"]).pack(pady=48)
             return
         for item in watches:
-            self._watch_row(self.scroll, item.get("watch", item))
+            self._watch_row(self.list_frame, item.get("watch", item))
 
     def _watch_row(self, parent, w):
-        row = ctk.CTkFrame(parent, fg_color=C["bg_alt"],
-                           border_color=C["border"], border_width=1,
-                           corner_radius=8)
-        row.pack(fill="x", padx=16, pady=4, ipadx=14, ipady=10)
+        row = tk.Frame(parent, bg=C["bg_alt"],
+                       highlightthickness=1, highlightbackground=C["border"])
+        row.pack(fill="x", padx=20, pady=4, ipadx=14, ipady=10)
 
-        info = ctk.CTkFrame(row, fg_color="transparent")
+        info = tk.Frame(row, bg=C["bg_alt"])
         info.pack(side="left", fill="x", expand=True)
 
         token_id = w.get("token_id") or w.get("id", "?")
@@ -1330,26 +1352,26 @@ class StockTab(ctk.CTkFrame):
         serial   = w.get("serial_number", "")
         listed   = w.get("is_listed", False)
 
-        lbl(info, f"{brand} {model}", font=FONT_SUBHEAD).pack(anchor="w")
-        lbl(info, f"Token #{token_id}  ·  S/N: {serial}",
-            font=FONT_SMALL, color=C["text2"]).pack(anchor="w")
-        lbl(info, "En venta" if listed else "En stock",
-            font=FONT_SMALL,
-            color=C["warning"] if listed else C["success"]).pack(anchor="w")
+        tk.Label(info, text=f"{brand} {model}",
+                 font=FONT_SUBHEAD, fg=C["text"], bg=C["bg_alt"]).pack(anchor="w")
+        tk.Label(info, text=f"Token #{token_id}  ·  S/N: {serial}",
+                 font=FONT_SMALL, fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
+        tk.Label(info, text="En venta" if listed else "En stock",
+                 font=FONT_SMALL,
+                 fg=C["warning"] if listed else C["success"],
+                 bg=C["bg_alt"]).pack(anchor="w")
 
-        actions = ctk.CTkFrame(row, fg_color="transparent")
+        actions = tk.Frame(row, bg=C["bg_alt"])
         actions.pack(side="right")
         if not listed:
-            btn(actions, "Poner a la venta",
-                lambda tid=token_id, b=brand, m=model:
-                    self._list_for_sale(tid, b, m),
-                color=C["success"], hover="#0ea271",
-                width=130, height=30).pack(side="right", padx=(4, 0))
-        btn(actions, "Asignar",
-            lambda tid=token_id, b=brand, m=model:
-                self._assign(tid, b, m),
-            color=C["surface2"], hover=C["border"],
-            fg=C["text"], width=80, height=30).pack(side="right", padx=(4, 0))
+            styled_button(actions, "Poner a la venta",
+                          lambda tid=token_id, b=brand, m=model:
+                              self._list_for_sale(tid, b, m),
+                          color=C["success"]).pack(side="right", padx=(4, 0))
+        styled_button(actions, "Asignar",
+                      lambda tid=token_id, b=brand, m=model:
+                          self._assign(tid, b, m),
+                      color=C["surface2"]).pack(side="right", padx=(4, 0))
 
     def _assign(self, token_id, brand, model):
         if not bc.wallet_address:
@@ -1414,23 +1436,23 @@ class StockTab(ctk.CTkFrame):
         ))
 
     def _run_in_thread(self, msg, fn):
-        self.status_lbl.configure(text=msg, text_color=C["text2"])
+        self.status_label.config(text=msg, fg=C["text2"])
         def worker():
             try:
                 fn()
             except Exception as e:
                 self.after(0, lambda msg=str(e): messagebox.showerror("Error", msg))
             finally:
-                self.after(0, lambda: self.status_lbl.configure(text=""))
+                self.after(0, lambda: self.status_label.config(text=""))
         threading.Thread(target=worker, daemon=True).start()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB: CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────────────────────
-class SettingsTab(ctk.CTkFrame):
+class SettingsTab(tk.Frame):
     def __init__(self, parent):
-        super().__init__(parent, fg_color=C["bg"], corner_radius=0)
+        super().__init__(parent, bg=C["bg"])
         self._entries = {}
         self._build()
 
@@ -1438,74 +1460,68 @@ class SettingsTab(ctk.CTkFrame):
         self._refresh_wallet_status()
 
     def _build(self):
-        scroll = ctk.CTkScrollableFrame(
-            self, fg_color=C["bg"],
-            scrollbar_button_color=C["surface2"],
-            scrollbar_button_hover_color=C["border"],
-            corner_radius=0,
-        )
-        scroll.pack(fill="both", expand=True)
-        inner = scroll
+        outer, inner = scrollable(self)
+        outer.pack(fill="both", expand=True)
 
-        lbl(inner, "Configuración", font=FONT_TITLE).pack(
-            anchor="w", padx=24, pady=(22, 2))
-        lbl(inner, "Necesitas tu private key y las claves de Pinata para mintear.",
-            color=C["text2"]).pack(anchor="w", padx=24)
-        separator(inner).pack(fill="x", padx=24, pady=12)
+        tk.Label(inner, text="Configuración",
+                 font=FONT_TITLE, fg=C["text"], bg=C["bg"]).pack(anchor="w", padx=28, pady=(22, 2))
+        tk.Label(inner, text="Necesitas tu private key y las claves de Pinata para mintear.",
+                 font=FONT_BODY, fg=C["text2"], bg=C["bg"]).pack(anchor="w", padx=28)
+        separator(inner).pack(fill="x", padx=28, pady=12)
 
         # Wallet
         section_label(inner, "Wallet del fabricante")
-        wallet_card = card(inner)
-        self.wallet_status_var = ctk.StringVar()
-        self._wallet_lbl = ctk.CTkLabel(wallet_card, textvariable=self.wallet_status_var,
-                                        font=FONT_MONO, text_color=C["text"],
-                                        fg_color="transparent")
+        wallet_card = card_frame(inner)
+        self.wallet_status_var = tk.StringVar()
+        self._wallet_lbl = tk.Label(wallet_card, textvariable=self.wallet_status_var,
+                                    font=FONT_MONO, fg=C["text"], bg=C["surface"])
         self._wallet_lbl.pack(anchor="w")
-        lbl(wallet_card,
-            "Se deriva automáticamente de tu PRIVATE_KEY.\n"
-            "Debe coincidir con la wallet que vinculaste en la web/app AXIA.",
-            font=FONT_SMALL, color=C["muted"],
-            wraplength=600).pack(anchor="w", pady=(6, 0))
+        tk.Label(wallet_card,
+                 text="Se deriva automáticamente de tu PRIVATE_KEY.\n"
+                      "Debe coincidir con la wallet que vinculaste en la web/app AXIA.",
+                 font=FONT_SMALL, fg=C["muted"], bg=C["surface"],
+                 wraplength=600, justify="left").pack(anchor="w", pady=(6, 0))
 
+        # Grupos de configuración
         groups = [
             ("Credenciales", [
-                ("PRIVATE_KEY",        "Clave privada",      True),
+                ("PRIVATE_KEY",       "Clave privada",      "0xTuClavePrivada",    True),
             ]),
             ("Pinata IPFS", [
-                ("PINATA_API_KEY",     "API Key",            False),
-                ("PINATA_SECRET_KEY",  "Secret Key",         True),
+                ("PINATA_API_KEY",    "API Key",            "",                    False),
+                ("PINATA_SECRET_KEY", "Secret Key",         "",                    True),
             ]),
             ("Red y contratos (opcional)", [
-                ("API_URL",             "URL del backend",    False),
-                ("RPC_URL",             "RPC URL",            False),
-                ("WATCH_NFT_ADDRESS",   "Dirección WatchNFT", False),
-                ("MARKETPLACE_ADDRESS", "Marketplace",        False),
-                ("USDC_ADDRESS",        "MockUSDC / USDC",    False),
+                ("API_URL",             "URL del backend",   DEFAULTS["API_URL"],   False),
+                ("RPC_URL",             "RPC URL",           DEFAULTS["RPC_URL"],   False),
+                ("WATCH_NFT_ADDRESS",   "Dirección WatchNFT",DEFAULTS["WATCH_NFT_ADDRESS"], False),
+                ("MARKETPLACE_ADDRESS", "Marketplace",       DEFAULTS["MARKETPLACE_ADDRESS"], False),
+                ("USDC_ADDRESS",        "MockUSDC / USDC",   DEFAULTS["USDC_ADDRESS"], False),
             ]),
         ]
 
         for group_title, fields in groups:
             section_label(inner, group_title)
-            grp_card = card(inner)
-            for env_key, label_text, secret in fields:
-                row = ctk.CTkFrame(grp_card, fg_color="transparent")
+            grp_card = card_frame(inner)
+            for env_key, label, placeholder, secret in fields:
+                row = tk.Frame(grp_card, bg=C["surface"])
                 row.pack(fill="x", pady=4)
-                ctk.CTkLabel(row, text=label_text, font=FONT_SMALL,
-                             text_color=C["text2"], fg_color="transparent",
-                             width=160, anchor="w").pack(side="left")
-                current = os.getenv(env_key, "") or DEFAULTS.get(env_key, "")
-                var = ctk.StringVar(value=current)
-                e   = entry(row, var, width=380, show="•" if secret else "")
+                tk.Label(row, text=label, font=FONT_SMALL, fg=C["text2"],
+                         bg=C["surface"], width=24, anchor="w").pack(side="left")
+                current = os.getenv(env_key, "") or (placeholder if env_key in DEFAULTS else "")
+                var = tk.StringVar(value=current)
+                e   = styled_entry(row, var, 44)
+                if secret:
+                    e.config(show="•")
                 e.pack(side="left", fill="x", expand=True)
                 self._entries[env_key] = var
 
-        separator(inner).pack(fill="x", padx=24, pady=14)
-        self.save_status = ctk.StringVar(value="")
-        btn(inner, "Guardar configuración", self._save,
-            width=200, height=38).pack(anchor="w", padx=24, pady=(0, 6))
-        ctk.CTkLabel(inner, textvariable=self.save_status,
-                     font=FONT_SMALL, text_color=C["success"],
-                     fg_color="transparent").pack(anchor="w", padx=24, pady=(0, 28))
+        separator(inner).pack(fill="x", padx=28, pady=14)
+        self.save_status = tk.StringVar(value="")
+        styled_button(inner, "Guardar configuración", self._save,
+                      C["primary"]).pack(anchor="w", padx=28, pady=(0, 6))
+        tk.Label(inner, textvariable=self.save_status, font=FONT_SMALL,
+                 fg=C["success"], bg=C["bg"]).pack(anchor="w", padx=28, pady=(0, 28))
 
         self._refresh_wallet_status()
 
@@ -1513,10 +1529,10 @@ class SettingsTab(ctk.CTkFrame):
         addr = derived_wallet_address()
         if addr:
             self.wallet_status_var.set(f"●  {addr}")
-            self._wallet_lbl.configure(text_color=C["success"])
+            self._wallet_lbl.config(fg=C["success"])
         else:
             self.wallet_status_var.set("⚠  Sin wallet (introduce tu private key abajo)")
-            self._wallet_lbl.configure(text_color=C["warning"])
+            self._wallet_lbl.config(fg=C["warning"])
 
     def _save(self):
         for key, var in self._entries.items():
@@ -1535,13 +1551,14 @@ class SettingsTab(ctk.CTkFrame):
 # ─────────────────────────────────────────────────────────────────────────────
 # APP PRINCIPAL
 # ─────────────────────────────────────────────────────────────────────────────
-class AxiaMfgApp(ctk.CTk):
+class AxiaMfgApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("AXIA · Manufacturer Tool")
         self.geometry("1080x720")
         self.minsize(860, 560)
-        self.configure(fg_color=C["bg"])
+        self.configure(bg=C["bg"])
+        _apply_scrollbar_style(self)
 
         ico = BASE_DIR / "axia.ico"
         if ico.exists():
