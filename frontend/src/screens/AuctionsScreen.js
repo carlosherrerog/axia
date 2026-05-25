@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, ActivityIndicator, RefreshControl,
-  TouchableOpacity, useWindowDimensions, Platform,
+  TouchableOpacity, useWindowDimensions, Platform, Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,82 @@ const HOW_AUCTIONS_WORK = [
     desc: 'Al cerrar la subasta, el contrato transfiere el reloj al ganador y liquida el pago en USDC.',
   },
 ];
+
+function HowAuctionsWork({ isMobile, colors }) {
+  const [open, setOpen] = useState(false);
+  const anim = useRef(new Animated.Value(0)).current;
+  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const maxH   = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 600] });
+
+  const toggle = () => {
+    Animated.spring(anim, { toValue: open ? 0 : 1, useNativeDriver: false, bounciness: 0, speed: 20 }).start();
+    setOpen(o => !o);
+  };
+
+  const steps = (
+    <View style={{ paddingTop: 10, paddingBottom: 10 }}>
+      {HOW_AUCTIONS_WORK.map(step => (
+        <View key={step.title} style={{
+          flexDirection: 'row', alignItems: 'flex-start', gap: 14,
+          backgroundColor: colors.backgroundAlt,
+          borderRadius: 12, borderWidth: 1, borderColor: colors.border,
+          padding: 16, marginBottom: 10,
+        }}>
+          <View style={{
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: step.color + '18', borderWidth: 1, borderColor: step.color + '35',
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Ionicons name={step.icon} size={17} color={step.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginBottom: 3 }}>{step.title}</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18 }}>{step.desc}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
+  if (!isMobile) {
+    return (
+      <View style={{ paddingTop: 24, paddingBottom: 10 }}>
+        <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
+          Cómo funcionan las subastas
+        </Text>
+        {steps}
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ paddingTop: 16, paddingBottom: 10 }}>
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          backgroundColor: colors.backgroundAlt,
+          borderRadius: 12, borderWidth: 1, borderColor: open ? colors.primary + '40' : colors.border,
+          paddingHorizontal: 14, paddingVertical: 12,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="help-circle-outline" size={16} color={colors.primary} />
+          <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>
+            ¿Cómo funcionan las subastas?
+          </Text>
+        </View>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+        </Animated.View>
+      </TouchableOpacity>
+      <Animated.View style={{ maxHeight: maxH, overflow: 'hidden' }}>
+        {steps}
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function AuctionsScreen({ navigation }) {
   const { colors } = useTheme();
@@ -223,35 +299,7 @@ export default function AuctionsScreen({ navigation }) {
             </Text>
           </View>
         }
-        ListFooterComponent={
-          isMobile ? null : (
-            <View style={{ paddingTop: 24, paddingBottom: 10 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
-                Cómo funcionan las subastas
-              </Text>
-              {HOW_AUCTIONS_WORK.map(step => (
-                <View key={step.title} style={{
-                  flexDirection: 'row', alignItems: 'flex-start', gap: 14,
-                  backgroundColor: colors.backgroundAlt,
-                  borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-                  padding: 16, marginBottom: 10,
-                }}>
-                  <View style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    backgroundColor: step.color + '18', borderWidth: 1, borderColor: step.color + '35',
-                    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <Ionicons name={step.icon} size={17} color={step.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginBottom: 3 }}>{step.title}</Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18 }}>{step.desc}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )
-        }
+        ListFooterComponent={<HowAuctionsWork isMobile={isMobile} colors={colors} />}
       />
 
       <AlertModal {...alertProps} />
