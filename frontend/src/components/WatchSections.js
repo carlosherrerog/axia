@@ -265,6 +265,82 @@ const HOW_IT_WORKS = [
   },
 ];
 
+function HowAxiaWorks({ isMobile, colors }) {
+  const [open, setOpen] = useState(false);
+  const anim = useRef(new Animated.Value(0)).current;
+  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+  const maxH   = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 600] });
+
+  const toggle = () => {
+    Animated.spring(anim, { toValue: open ? 0 : 1, useNativeDriver: false, bounciness: 0, speed: 20 }).start();
+    setOpen(o => !o);
+  };
+
+  const steps = (
+    <View style={{ paddingTop: 10, paddingBottom: 10 }}>
+      {HOW_IT_WORKS.map(step => (
+        <View key={step.title} style={{
+          flexDirection: 'row', alignItems: 'flex-start', gap: 14,
+          backgroundColor: colors.backgroundAlt,
+          borderRadius: 12, borderWidth: 1, borderColor: colors.border,
+          padding: 16, marginBottom: 10,
+        }}>
+          <View style={{
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: step.color + '18', borderWidth: 1, borderColor: step.color + '35',
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <Ionicons name={step.icon} size={17} color={step.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginBottom: 3 }}>{step.title}</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18 }}>{step.desc}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+
+  if (!isMobile) {
+    return (
+      <View style={{ paddingTop: 24, paddingBottom: 10 }}>
+        <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
+          Cómo funciona AXIA
+        </Text>
+        {steps}
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ paddingTop: 16, paddingBottom: 10 }}>
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          backgroundColor: colors.backgroundAlt,
+          borderRadius: 12, borderWidth: 1, borderColor: open ? colors.primary + '40' : colors.border,
+          paddingHorizontal: 14, paddingVertical: 12,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="help-circle-outline" size={16} color={colors.primary} />
+          <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>
+            ¿Cómo funciona AXIA?
+          </Text>
+        </View>
+        <Animated.View style={{ transform: [{ rotate }] }}>
+          <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+        </Animated.View>
+      </TouchableOpacity>
+      <Animated.View style={{ maxHeight: maxH, overflow: 'hidden' }}>
+        {steps}
+      </Animated.View>
+    </View>
+  );
+}
+
 export function MarketplaceWatchSection({ watches, navigation }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -522,33 +598,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
             </View>
           )
         }
-        ListFooterComponent={
-          <View style={{ paddingTop: 24, paddingBottom: 10 }}>
-            <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 }}>
-              Cómo funciona AXIA
-            </Text>
-            {HOW_IT_WORKS.map(step => (
-              <View key={step.title} style={{
-                flexDirection: 'row', alignItems: 'flex-start', gap: 14,
-                backgroundColor: colors.backgroundAlt,
-                borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-                padding: 16, marginBottom: 10,
-              }}>
-                <View style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  backgroundColor: step.color + '18', borderWidth: 1, borderColor: step.color + '35',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <Ionicons name={step.icon} size={17} color={step.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, marginBottom: 3 }}>{step.title}</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18 }}>{step.desc}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        }
+        ListFooterComponent={<HowAxiaWorks isMobile={isMobile} colors={colors} />}
       />
     </View>
   );
