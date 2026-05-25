@@ -124,6 +124,8 @@ export default function AuctionsScreen({ navigation }) {
   const { alertProps } = useAlert();
 
   const isMobile = width < 768;
+  const isDesktop = width >= 768;
+  const hPad = isDesktop ? Math.round(width * 0.03) : 16;
 
   let cols = 2;
   if (width >= 1200) cols = 5;
@@ -196,7 +198,7 @@ export default function AuctionsScreen({ navigation }) {
         numColumns={cols}
         key={`auction-grid-${cols}`}
         columnWrapperStyle={cols > 1 ? { gap: 20, justifyContent: 'flex-start' } : undefined}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: hPad, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

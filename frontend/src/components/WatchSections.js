@@ -344,6 +344,8 @@ function HowAxiaWorks({ isMobile, colors }) {
 export function MarketplaceWatchSection({ watches, navigation }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const isDesktop = width >= 768;
+  const hPad = isDesktop ? Math.round(width * 0.03) : 16;
   const [search, setSearch]   = useState('');
   const [filter, setFilter]   = useState('all');
   const [sortBy, setSortBy]   = useState('recent');
@@ -523,7 +525,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
         keyExtractor={(item) => (item.token_id || item.id).toString()}
         numColumns={cols}
         columnWrapperStyle={{ justifyContent: 'flex-start', gap: 20 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, paddingTop: 14 }}
+        contentContainerStyle={{ paddingHorizontal: hPad, paddingBottom: 100, paddingTop: 14 }}
         ListHeaderComponent={ListHeader}
         renderItem={({ item }) => (
           <View style={{ width: 210, marginBottom: 25 }}>

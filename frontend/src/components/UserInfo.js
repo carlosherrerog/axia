@@ -132,19 +132,19 @@ export default function UserInfo({ loggedUser, showAlert, stats, onSettings }) {
                 {loggedUser.username}
               </Text>
               {!isMobile && loggedUser.full_name ? (
-                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }} numberOfLines={1} ellipsizeMode="tail">
                   {loggedUser.full_name}
                 </Text>
               ) : null}
               {!isMobile && loggedUser.email ? (
-                <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }} numberOfLines={1} ellipsizeMode="tail">
                   {loggedUser.email}
                 </Text>
               ) : null}
               {!isMobile && loggedUser.location ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <Ionicons name="location-outline" size={11} color={colors.textMuted} />
-                  <Text style={{ color: colors.textMuted, fontSize: 11 }}>{loggedUser.location}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 11 }} numberOfLines={1} ellipsizeMode="tail">{loggedUser.location}</Text>
                 </View>
               ) : null}
             </View>

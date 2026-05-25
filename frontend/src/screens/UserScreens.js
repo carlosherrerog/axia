@@ -189,6 +189,7 @@ export default function UserDashboardScreen({ route, navigation }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isDealer = loggedUser?.roles?.includes('DEALER');
+  const hPad = isDesktop ? Math.round(width * 0.03) : 16;
 
   const showConfirm = (title, message, onConfirmCallback, btnText = 'Confirmar') => {
     setConfirmCallback(() => onConfirmCallback);
@@ -419,7 +420,7 @@ export default function UserDashboardScreen({ route, navigation }) {
         {/* Layout: dos columnas en desktop, columna única en móvil */}
         <View style={isDesktop ? {
           flexDirection: 'row', alignItems: 'flex-start',
-          paddingHorizontal: 20, paddingTop: 20, gap: 20,
+          paddingHorizontal: hPad, paddingTop: 20, gap: 20,
         } : {}}>
 
           {/* ── COLUMNA IZQUIERDA: perfil + nav dealer ── */}
