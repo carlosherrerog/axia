@@ -82,14 +82,41 @@ FONT_MONO   = ("Consolas", 10)
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURACIÓN
 # ─────────────────────────────────────────────────────────────────────────────
-# RPC por defecto → Hardhat local. En producción sobrescribir en .env
+# Valores de producción — Polygon Amoy + backend Render
 DEFAULTS = {
-    "API_URL":             "http://localhost:8000",
-    "RPC_URL":             "http://127.0.0.1:8545",
-    "WATCH_NFT_ADDRESS":   "0x8725a60F432EDCaA3dF1d7987e99B9C18c465988",
-    "MARKETPLACE_ADDRESS": "0x57057749e6aF1b21070FA2A4e5D4359AA2711735",
-    "USDC_ADDRESS":        "0xbBfCa1b8404Dc43238C4A359E8454632f00c292F",
+    "API_URL":             "https://axia-8ivf.onrender.com",
+    "RPC_URL":             "https://rpc-amoy.polygon.technology",
+    "WATCH_NFT_ADDRESS":   "0xbBfCa1b8404Dc43238C4A359E8454632f00c292F",
+    "MARKETPLACE_ADDRESS": "0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6",
+    "USDC_ADDRESS":        "0x967187957d31d0912aE57cad1B51F764339AaEe6",
 }
+
+ENV_TEMPLATE = """\
+# AXIA Manufacturer Tool — Configuración
+# Rellena PRIVATE_KEY, PINATA_API_KEY y PINATA_SECRET_KEY.
+# El resto de valores ya están preconfigurados para Polygon Amoy.
+
+API_URL={API_URL}
+RPC_URL={RPC_URL}
+WATCH_NFT_ADDRESS={WATCH_NFT_ADDRESS}
+MARKETPLACE_ADDRESS={MARKETPLACE_ADDRESS}
+USDC_ADDRESS={USDC_ADDRESS}
+
+# Tu clave privada (nunca la compartas)
+PRIVATE_KEY=
+
+# Claves de tu cuenta Pinata (https://app.pinata.cloud/developers/api-keys)
+PINATA_API_KEY=
+PINATA_SECRET_KEY=
+"""
+
+def _bootstrap_env():
+    """Crea un .env pre-configurado en el primer arranque si no existe."""
+    if not ENV_FILE.exists():
+        ENV_FILE.write_text(ENV_TEMPLATE.format(**DEFAULTS), encoding="utf-8")
+        load_dotenv(ENV_FILE)
+
+_bootstrap_env()
 
 def get_cfg(key, default=""):
     val = os.getenv(key)
@@ -99,7 +126,7 @@ def get_cfg(key, default=""):
 
 def save_cfg(key, value):
     if not ENV_FILE.exists():
-        ENV_FILE.touch()
+        ENV_FILE.write_text(ENV_TEMPLATE.format(**DEFAULTS), encoding="utf-8")
     set_key(str(ENV_FILE), key, value)
     os.environ[key] = value
 
@@ -743,6 +770,15 @@ class MainFrame(tk.Frame):
                  font=FONT_BODY, fg=C["text"], bg=C["bg_alt"]
                  ).pack(side="left", padx=(6, 0))
 
+        # Chip de red: muestra entorno activo
+        api_host = get_cfg("API_URL").replace("https://", "").replace("http://", "").split("/")[0]
+        net_color = C["success"] if "onrender.com" in get_cfg("API_URL") else C["warning"]
+        net_frame = tk.Frame(self.header, bg=C["bg_alt"])
+        net_frame.pack(side="left", padx=16)
+        tk.Label(net_frame, text="●", font=FONT_SMALL, fg=net_color, bg=C["bg_alt"]).pack(side="left")
+        tk.Label(net_frame, text=f" Amoy · {api_host}", font=FONT_SMALL,
+                 fg=C["text2"], bg=C["bg_alt"]).pack(side="left")
+
         # Cerrar sesión (derecha)
         tk.Button(self.header, text="Cerrar sesión", font=FONT_SMALL,
                   fg=C["error"], bg=C["bg_alt"],
@@ -1247,6 +1283,15 @@ class StockTab(tk.Frame):
                 f"La wallet {new_owner[:10]}… pertenece a un Relojero.\n\n"
                 "Los relojeros no pueden recibir relojes como propietarios en AXIA.\n"
                 "Elige otro destinatario."
+            ))
+            return
+        if not user:
+            self.after(0, lambda: messagebox.showerror(
+                "Destinatario no registrado",
+                f"La wallet {new_owner[:10]}…{new_owner[-6:]} no está registrada en AXIA.\n\n"
+                "El destinatario debe crear una cuenta en la app AXIA y vincular\n"
+                "esta wallet antes de poder recibir el reloj.\n\n"
+                "La transacción blockchain NO se ha ejecutado."
             ))
             return
         tx_hash = bc.transfer_nft(token_id, new_owner)
