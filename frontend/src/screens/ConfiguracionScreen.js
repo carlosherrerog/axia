@@ -258,7 +258,7 @@ export default function ConfiguracionScreen({ navigation }) {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{
         padding: 20, paddingBottom: 100,
-        maxWidth: isDesktop ? 700 : undefined,
+        maxWidth: isDesktop ? 1000 : undefined,
         alignSelf: 'center', width: '100%',
       }}>
 
