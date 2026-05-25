@@ -2,9 +2,10 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList,
   ActivityIndicator, RefreshControl, ScrollView,
-  useWindowDimensions, Modal, TextInput, Platform,
+  useWindowDimensions, Modal, TextInput, Platform, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
 import api, { getToken, WS_URL } from '../api/api';
 import GlobalHeader from '../components/GlobalHeader';
@@ -35,6 +36,7 @@ export default function ManufacturerScreen({ navigation }) {
   const [loading, setLoading]         = useState(true);
   const [refreshing, setRefreshing]   = useState(false);
   const [activeTab, setActiveTab]     = useState('all');
+  const [infoExpanded, setInfoExpanded] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -178,6 +180,14 @@ export default function ManufacturerScreen({ navigation }) {
             <StatCard icon="warning-outline"  label="Alterados"      value={altered.length} color="#f43f5e"             colors={colors} />
             <StatCard icon="layers-outline"   label="Total Mintados" value={mintedCount}    color={colors.primaryLight} colors={colors} />
           </View>
+
+          {/* Sección: configuración de la herramienta */}
+          <ToolConfigSection
+            loggedUser={loggedUser}
+            expanded={infoExpanded}
+            onToggle={() => setInfoExpanded(v => !v)}
+            colors={colors}
+          />
 
           {/* Banner de minteo: solo cuando no hay relojes aún */}
           {!hasWatches && (
@@ -387,6 +397,161 @@ export default function ManufacturerScreen({ navigation }) {
         cancelLabel="Cancelar"
         onCancel={() => setConfirmAlert(s => ({ ...s, visible: false }))}
       />
+    </View>
+  );
+}
+
+const AMOY_RPC   = 'https://rpc-amoy.polygon.technology';
+const BACKEND_URL = 'https://axia-8ivf.onrender.com';
+
+function ToolConfigSection({ loggedUser, expanded, onToggle, colors }) {
+  const [copied, setCopied] = useState(null);
+
+  const copy = async (key, value) => {
+    if (!value) return;
+    await Clipboard.setStringAsync(value);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1800);
+  };
+
+  const rows = [
+    { key: 'API_URL',             label: 'API_URL',             value: BACKEND_URL,                                                       secret: false },
+    { key: 'RPC_URL',             label: 'RPC_URL',             value: AMOY_RPC,                                                          secret: false },
+    { key: 'WATCH_NFT_ADDRESS',   label: 'WATCH_NFT_ADDRESS',   value: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS   || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F', secret: false },
+    { key: 'MARKETPLACE_ADDRESS', label: 'MARKETPLACE_ADDRESS', value: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6', secret: false },
+    { key: 'USDC_ADDRESS',        label: 'USDC_ADDRESS',        value: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x967187957d31d0912aE57cad1B51F764339AaEe6', secret: false },
+    { key: 'wallet',              label: 'Tu wallet en AXIA',   value: loggedUser?.wallet_address || null,                                 secret: false, note: !loggedUser?.wallet_address ? 'No tienes wallet vinculada aún' : null },
+  ];
+
+  return (
+    <View style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 20 }}>
+      <View style={{ height: 2, backgroundColor: colors.primary }} />
+
+      {/* Cabecera colapsable */}
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.7}
+        style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          paddingHorizontal: 16, paddingVertical: 14,
+          backgroundColor: colors.surface,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Ionicons name="terminal-outline" size={18} color={colors.primaryLight} />
+          <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }}>
+            Configuración de la herramienta
+          </Text>
+          <View style={{
+            backgroundColor: `${colors.primary}20`, borderRadius: 10,
+            paddingHorizontal: 7, paddingVertical: 2,
+          }}>
+            <Text style={{ color: colors.primaryLight, fontSize: 10, fontWeight: '700' }}>
+              manufacturer_tool
+            </Text>
+          </View>
+        </View>
+        <Ionicons
+          name={expanded ? 'chevron-up' : 'chevron-down'}
+          size={16} color={colors.textSecondary}
+        />
+      </TouchableOpacity>
+
+      {/* Contenido expandible */}
+      {expanded && (
+        <View style={{ backgroundColor: colors.backgroundAlt, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 16 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginTop: 10, marginBottom: 14 }}>
+            Copia estos valores al archivo <Text style={{ color: colors.primaryLight, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>.env</Text> de la herramienta de escritorio para configurarla.
+            {'\n'}La <Text style={{ color: colors.primaryLight, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }}>PRIVATE_KEY</Text> y las claves de <Text style={{ color: colors.primaryLight }}>Pinata</Text> debes añadirlas tú manualmente (no se muestran por seguridad).
+          </Text>
+
+          {rows.map(({ key, label, value, note }) => (
+            <View key={key} style={{
+              flexDirection: 'row', alignItems: 'center',
+              paddingVertical: 9, borderTopWidth: 1, borderTopColor: colors.border,
+              gap: 10,
+            }}>
+              <Text style={{
+                color: colors.textSecondary, fontSize: 11, fontWeight: '600',
+                width: 160, flexShrink: 0,
+                fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+              }}>
+                {label}
+              </Text>
+              <View style={{ flex: 1 }}>
+                {value ? (
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: colors.text, fontSize: 11,
+                      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                    }}
+                  >
+                    {value}
+                  </Text>
+                ) : (
+                  <Text style={{ color: colors.textMuted, fontSize: 11, fontStyle: 'italic' }}>
+                    {note}
+                  </Text>
+                )}
+              </View>
+              {value ? (
+                <TouchableOpacity
+                  onPress={() => copy(key, value)}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    paddingHorizontal: 8, paddingVertical: 4,
+                    backgroundColor: copied === key ? '#10b98120' : colors.surface,
+                    borderRadius: 6, borderWidth: 1,
+                    borderColor: copied === key ? '#10b98140' : colors.border,
+                  }}
+                >
+                  <Ionicons
+                    name={copied === key ? 'checkmark' : 'copy-outline'}
+                    size={12}
+                    color={copied === key ? '#10b981' : colors.textSecondary}
+                  />
+                  <Text style={{
+                    fontSize: 10, fontWeight: '600',
+                    color: copied === key ? '#10b981' : colors.textSecondary,
+                  }}>
+                    {copied === key ? 'Copiado' : 'Copiar'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ))}
+
+          {/* Aviso Pinata */}
+          <View style={{
+            flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+            marginTop: 14, padding: 12,
+            backgroundColor: `${'#f59e0b'}12`,
+            borderRadius: 10, borderWidth: 1, borderColor: '#f59e0b30',
+          }}>
+            <Ionicons name="key-outline" size={15} color="#f59e0b" style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: '600', marginBottom: 3 }}>
+                Claves de Pinata (IPFS)
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 11, lineHeight: 17 }}>
+                Necesitas <Text style={{ color: colors.text, fontWeight: '600' }}>PINATA_API_KEY</Text> y <Text style={{ color: colors.text, fontWeight: '600' }}>PINATA_SECRET_KEY</Text> para subir imágenes y metadatos a IPFS al mintear.{' '}
+                Créate una cuenta gratuita en Pinata y genera tus claves desde el panel de API Keys.
+              </Text>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://app.pinata.cloud/developers/api-keys')}
+                style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              >
+                <Ionicons name="open-outline" size={12} color={colors.primaryLight} />
+                <Text style={{ color: colors.primaryLight, fontSize: 11, fontWeight: '600' }}>
+                  Ir a Pinata API Keys
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
