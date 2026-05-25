@@ -170,10 +170,19 @@ NFC_MASTER_KEY=
 """
 
 def _bootstrap_env():
-    """Crea un .env pre-configurado en el primer arranque si no existe."""
+    """Crea un .env pre-configurado en el primer arranque si no existe.
+    Si NFC_MASTER_KEY está vacía (chip virgen o .env heredado), la genera
+    automáticamente con secrets.token_hex(16) y la persiste."""
+    import secrets as _secrets
     if not ENV_FILE.exists():
         ENV_FILE.write_text(ENV_TEMPLATE.format(**DEFAULTS), encoding="utf-8")
         load_dotenv(ENV_FILE)
+    # Generar NFC_MASTER_KEY si todavía está vacía
+    load_dotenv(ENV_FILE, override=False)
+    if not os.getenv("NFC_MASTER_KEY", "").strip():
+        new_key = _secrets.token_hex(16)  # 32 hex chars = 16 bytes AES-128
+        set_key(str(ENV_FILE), "NFC_MASTER_KEY", new_key)
+        os.environ["NFC_MASTER_KEY"] = new_key
 
 _bootstrap_env()
 
@@ -1757,6 +1766,32 @@ class SettingsTab(tk.Frame):
         tk.Label(wallet_card,
                  text="Se deriva automáticamente de tu PRIVATE_KEY.\n"
                       "Debe coincidir con la wallet que vinculaste en la web/app AXIA.",
+                 font=FONT_SMALL, fg=C["muted"], bg=C["surface"],
+                 wraplength=600, justify="left").pack(anchor="w", pady=(6, 0))
+
+        # Clave NFC — solo lectura, generada automáticamente al arrancar
+        section_label(inner, "Clave NFC del chip (NFC_MASTER_KEY)")
+        nfc_card = card_frame(inner)
+        nfc_key_val = get_cfg("NFC_MASTER_KEY", "")
+        nfc_key_var = tk.StringVar(value=nfc_key_val)
+        nfc_row = tk.Frame(nfc_card, bg=C["surface"])
+        nfc_row.pack(fill="x", pady=(0, 4))
+        nfc_entry = tk.Entry(nfc_row, textvariable=nfc_key_var, font=FONT_MONO,
+                             fg=C["success"], bg=C["surface"], relief="flat",
+                             highlightthickness=1, highlightbackground=C["border"],
+                             state="readonly", width=36)
+        nfc_entry.pack(side="left", fill="x", expand=True)
+        def _copy_nfc_key():
+            self.clipboard_clear()
+            self.clipboard_append(nfc_key_var.get())
+        tk.Button(nfc_row, text="Copiar", font=FONT_SMALL,
+                  fg=C["text2"], bg=C["surface2"],
+                  activeforeground=C["primary"], activebackground=C["surface"],
+                  relief="flat", cursor="hand2", padx=8,
+                  command=_copy_nfc_key).pack(side="left", padx=(6, 0))
+        tk.Label(nfc_card,
+                 text="Generada automáticamente al arrancar la app. Guárdala en un lugar seguro.\n"
+                      "Sin esta clave no podrás reprogramar chips ya bloqueados.",
                  font=FONT_SMALL, fg=C["muted"], bg=C["surface"],
                  wraplength=600, justify="left").pack(anchor="w", pady=(6, 0))
 
