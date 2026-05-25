@@ -17,9 +17,9 @@ import WatchAuction_ABI from '../contracts/WatchAuction.json';
 import WatchNFT_ABI     from '../contracts/WatchNFT.json';
 import MockUSDC_ABI     from '../contracts/MockUSDC.json';
 
-const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS;
-const NFT_ADDRESS     = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS;
-const USDC_ADDRESS    = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS;
+const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS      || '0x701EAa91aeB8588694B116C004D1EaAC7f55F2F2';
+const NFT_ADDRESS     = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS     || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
+const USDC_ADDRESS    = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x967187957d31d0912aE57cad1B51F764339AaEe6';
 
 const AUCTION_ERRORS = {
   '69b8d0fe': 'La subasta ya no está activa.',

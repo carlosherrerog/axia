@@ -17,12 +17,10 @@ import UserAndWatchCard from '../components/UserAndWatchCard';
 import GlobalHeader from '../components/GlobalHeader';
 import { resolveImageUri } from '../utils/ipfs';
 
-const NFT_ADDRESS = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS;
-const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS;
-const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS;
-
-// Añade esto junto a las otras direcciones
-const USDC_ADDRESS = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS;
+const NFT_ADDRESS         = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS     || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
+const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS   || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6';
+const AUCTION_ADDRESS     = process.env.EXPO_PUBLIC_AUCTION_ADDRESS        || '0x701EAa91aeB8588694B116C004D1EaAC7f55F2F2';
+const USDC_ADDRESS        = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS  || '0x967187957d31d0912aE57cad1B51F764339AaEe6';
 
 // ABI mínimo para aprobar el token USDC
 const ERC20_ABI = [

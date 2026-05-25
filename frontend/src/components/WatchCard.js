@@ -8,7 +8,7 @@ import { resolveImageUri } from '../utils/ipfs';
 import { ethers } from 'ethers';
 import Marketplace_ABI from '../contracts/WatchMarketplace.json';
 
-const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS;
+const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6';
 
 export default function WatchCard({ nft, removeNFT, navigation, isAdminView = false, onRefresh, isManufacturer = false, walletConnected = true }) {
   const [isHovered, setIsHovered] = useState(false);
