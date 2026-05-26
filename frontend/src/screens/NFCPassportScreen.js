@@ -364,7 +364,6 @@ export default function NFCPassportScreen({ route, navigation }) {
           <View style={watchScreenStyles.contentCard}>
 
             {/* Propietario Actual */}
-            <Text style={[watchScreenStyles.detailLabel, { marginBottom: 10 }]}>Propietario Actual</Text>
             {(() => {
               const roleKey   = sellerRoles.includes('FABRICANTE') ? 'FABRICANTE'
                               : sellerRoles.includes('DEALER')     ? 'DEALER'
@@ -372,63 +371,30 @@ export default function NFCPassportScreen({ route, navigation }) {
                               : null;
               const roleColor = roleKey ? roleColors[roleKey] : colors.primary;
               const roleLabel = roleKey ? { FABRICANTE: 'Fabricante', DEALER: 'Dealer', RELOJERO: 'Relojero' }[roleKey] : null;
-              const roleIcon  = roleKey ? { FABRICANTE: 'construct', DEALER: 'storefront', RELOJERO: 'build' }[roleKey] : 'person';
               return (
-                <View style={{
-                  backgroundColor: colors.surface,
-                  borderRadius: 16, borderWidth: 1, borderColor: colors.border,
-                  padding: 16, marginBottom: 15, overflow: 'hidden',
-                }}>
-                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, backgroundColor: roleColor + '80', borderTopLeftRadius: 16, borderTopRightRadius: 16 }} />
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                    <View style={{
-                      width: 52, height: 52, borderRadius: 26,
-                      backgroundColor: roleColor + '18',
-                      borderWidth: 1.5, borderColor: roleColor + '50',
-                      alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}>
-                      <Ionicons name={roleIcon} size={24} color={roleColor} />
-                    </View>
-                    <View style={{ flex: 1, gap: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>
-                          {ownerData.username || 'Usuario'}
-                        </Text>
-                        {roleLabel && (
-                          <View style={{
-                            backgroundColor: roleColor + '20', borderWidth: 1,
-                            borderColor: roleColor + '60', borderRadius: 6,
-                            paddingHorizontal: 7, paddingVertical: 2,
-                          }}>
-                            <Text style={{ color: roleColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
-                              {roleLabel.toUpperCase()}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => Clipboard.setStringAsync(ownerData.wallet_address)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start' }}
-                      >
-                        <View style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: colors.border }}>
-                          <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, letterSpacing: 0.3 }}>
-                            {ownerData.wallet_address
-                              ? `${ownerData.wallet_address.slice(0, 10)}…${ownerData.wallet_address.slice(-8)}`
-                              : '—'}
-                          </Text>
+                <View style={[watchScreenStyles.detailRow, { marginBottom: 6 }]}>
+                  <Text style={watchScreenStyles.detailLabel}>Propietario:</Text>
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                      <Text style={watchScreenStyles.detailValue}>{ownerData.username || 'Usuario'}</Text>
+                      {roleLabel && (
+                        <View style={{ backgroundColor: roleColor + '20', borderWidth: 1, borderColor: roleColor + '60', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 1 }}>
+                          <Text style={{ color: roleColor, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 }}>{roleLabel.toUpperCase()}</Text>
                         </View>
-                        <Ionicons name="copy-outline" size={12} color={colors.textMuted} />
-                      </TouchableOpacity>
-                      {ownerData.id && (
-                        <TouchableOpacity
-                          onPress={() => navigation.navigate('PublicProfile', { userId: ownerData.id })}
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 4 }}
-                        >
-                          <Text style={{ color: colors.textMuted, fontSize: 12 }}>Ver perfil</Text>
-                          <Ionicons name="chevron-forward" size={13} color={colors.textMuted} />
-                        </TouchableOpacity>
                       )}
                     </View>
+                    <TouchableOpacity onPress={() => Clipboard.setStringAsync(ownerData.wallet_address)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
+                        {ownerData.wallet_address ? `${ownerData.wallet_address.slice(0, 10)}…${ownerData.wallet_address.slice(-8)}` : '—'}
+                      </Text>
+                      <Ionicons name="copy-outline" size={11} color={colors.textMuted} />
+                    </TouchableOpacity>
+                    {ownerData.id && (
+                      <TouchableOpacity onPress={() => navigation.navigate('PublicProfile', { userId: ownerData.id })} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                        <Text style={{ color: colors.textMuted, fontSize: 13 }}>Ver perfil</Text>
+                        <Ionicons name="chevron-forward" size={13} color={colors.textMuted} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               );
@@ -463,18 +429,18 @@ export default function NFCPassportScreen({ route, navigation }) {
 
             <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 15 }} />
 
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Estado Blockchain:</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={watchScreenStyles.detailLabel}>Estado Blockchain</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
                 <Ionicons name={currentStateInfo.icon} size={14} color={currentStateInfo.color} />
-                <Text style={[watchScreenStyles.detailValue, { fontWeight: 'bold', color: currentStateInfo.color }]}>
+                <Text style={{ color: currentStateInfo.color, fontSize: 13, fontWeight: '600' }}>
                   {currentStateId === 0 ? 'En propiedad' : currentStateInfo.label}
                 </Text>
               </View>
             </View>
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Estado Marketplace:</Text>
-              <Text style={[watchScreenStyles.detailValue, { fontWeight: 'bold', color: isAltered ? colors.textMuted : isEscrowed ? '#f59e0b' : isListed ? colors.primaryLight : watchData?.is_public ? '#10b981' : colors.textSecondary }]}>
+            <View style={{ marginBottom: 10 }}>
+              <Text style={watchScreenStyles.detailLabel}>Estado Marketplace</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', marginTop: 3, color: isAltered ? colors.textMuted : isEscrowed ? '#f59e0b' : isListed ? colors.primaryLight : watchData?.is_public ? '#10b981' : colors.textSecondary }}>
                 {isAltered ? '—' : isEscrowed ? 'Reservado' : isListed ? 'En Venta' : watchData?.is_public ? 'Público' : 'Privado'}
               </Text>
             </View>
