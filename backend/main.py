@@ -1758,14 +1758,19 @@ async def toggle_watch_privacy(
 
     return {"message": "Privacidad actualizada", "is_public": watch.is_public}
 
+class SdmSetupRequest(BaseModel):
+    sdm_key: str  # 32 hex chars = 16 bytes AES-128, derivados localmente por el fabricante
+
 @app.post("/nfts/{token_id}/sdm-setup")
 def sdm_setup(
     token_id: int,
+    data: SdmSetupRequest,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     """Almacena la clave SDM del chip NTAG 424 DNA para el reloj indicado.
-    Solo puede llamarlo el fabricante propietario del reloj."""
+    El manufacturer_tool deriva keccak256(PRIVATE_KEY)[:16] localmente y la
+    envía aquí. La clave privada del fabricante nunca sale de su máquina."""
     if "FABRICANTE" not in (current_user.roles or []):
         raise HTTPException(status_code=403, detail="Solo fabricantes pueden configurar SDM.")
     watch = db.query(models.Watch).filter(models.Watch.token_id == token_id).first()
@@ -1773,17 +1778,9 @@ def sdm_setup(
         raise HTTPException(status_code=404, detail="Reloj no encontrado.")
     if watch.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="No eres el propietario de este reloj.")
-    # La clave SDM coincide con la clave maestra NFC: keccak256(PK)[:16]
-    # El manufacturer_tool la deriva localmente y la envía aquí para que el
-    # backend pueda verificar futuros escaneos SDM sin necesidad de la clave privada.
-    import os as _os
-    from web3 import Web3
-    private_key = _os.getenv("PRIVATE_KEY", "")
-    if not private_key:
-        raise HTTPException(status_code=500, detail="PRIVATE_KEY no configurada en el servidor.")
-    pk_bytes = bytes.fromhex(private_key.removeprefix("0x"))
-    sdm_key_hex = Web3.keccak(pk_bytes).hex()[2:34]  # primeros 16 bytes = 32 hex chars
-    watch.sdm_key = sdm_key_hex
+    if len(data.sdm_key) != 32:
+        raise HTTPException(status_code=400, detail="sdm_key debe tener 32 caracteres hex (16 bytes).")
+    watch.sdm_key = data.sdm_key.lower()
     watch.last_sdm_counter = 0
     db.commit()
     return {"ok": True, "token_id": token_id}

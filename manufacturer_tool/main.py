@@ -271,9 +271,11 @@ class ApiClient:
         return self._request("post", f"/nfts/{token_id}/transfer",
                              json={"new_owner": new_owner, "tx_hash": tx_hash}).json()
 
-    def sdm_setup(self, token_id: int):
-        """Notifica al backend que el chip SDM está configurado; el backend almacena la clave derivada."""
-        return self._request("post", f"/nfts/{token_id}/sdm-setup").json()
+    def sdm_setup(self, token_id: int, sdm_key_hex: str):
+        """Envía la clave SDM derivada al backend para almacenarla.
+        La clave se deriva localmente: keccak256(PRIVATE_KEY)[:16]. Nunca sale la PK."""
+        return self._request("post", f"/nfts/{token_id}/sdm-setup",
+                             json={"sdm_key": sdm_key_hex}).json()
 
 
 api = ApiClient()
@@ -1650,9 +1652,10 @@ class MintTab(tk.Frame):
                 try:
                     setup_nfc_chip(int(token_id))
                     self._log(f"✓  SDM configurado — cada escaneo genera URL única e irrepetible.", C["success"])
-                    # Notificar al backend para que almacene la clave SDM derivada
+                    # Enviar la clave SDM derivada al backend para almacenarla
                     try:
-                        api.sdm_setup(int(token_id))
+                        sdm_key_hex = _derive_nfc_key().hex()  # keccak256(PK)[:16]
+                        api.sdm_setup(int(token_id), sdm_key_hex)
                         self._log(f"✓  Clave SDM registrada en AXIA.", C["success"])
                     except Exception as e_sdm_api:
                         self._log(f"⚠  sdm-setup API: {e_sdm_api}\n   El chip está configurado. El backend puede no verificar escaneos hasta que se corrija.", C["warning"])
