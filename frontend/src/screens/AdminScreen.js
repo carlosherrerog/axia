@@ -1355,30 +1355,44 @@ export default function AdminScreen({ route, navigation }) {
           </TouchableOpacity>
         ) : (
           <View style={{ marginTop: 12, gap: 8 }}>
-            {/* Dirección */}
-            <TouchableOpacity
-              onPress={async () => {
-                await Clipboard.setStringAsync(loggedUser.wallet_address);
-                setWalletCopied(true);
-                setTimeout(() => setWalletCopied(false), 2000);
-              }}
-              style={{
-                flexDirection: 'row', alignItems: 'center', gap: 8,
-                backgroundColor: '#10b98110', borderRadius: 8,
-                paddingHorizontal: 10, paddingVertical: 7,
-                borderWidth: 1, borderColor: '#10b98122',
-              }}
-            >
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' }} />
-              <Text style={{
-                flex: 1, color: colors.textSecondary, fontSize: 10,
-                fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-              }} numberOfLines={1}>{loggedUser.wallet_address}</Text>
-              <Ionicons
-                name={walletCopied ? 'checkmark' : 'copy-outline'}
-                size={12} color={walletCopied ? '#10b981' : colors.textMuted}
-              />
-            </TouchableOpacity>
+            {/* Dirección + enlace Polygonscan */}
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <TouchableOpacity
+                onPress={async () => {
+                  await Clipboard.setStringAsync(loggedUser.wallet_address);
+                  setWalletCopied(true);
+                  setTimeout(() => setWalletCopied(false), 2000);
+                }}
+                style={{
+                  flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8,
+                  backgroundColor: '#10b98110', borderRadius: 8,
+                  paddingHorizontal: 10, paddingVertical: 7,
+                  borderWidth: 1, borderColor: '#10b98122',
+                }}
+              >
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' }} />
+                <Text style={{
+                  flex: 1, color: colors.textSecondary, fontSize: 10,
+                  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                }} numberOfLines={1}>{loggedUser.wallet_address}</Text>
+                <Ionicons
+                  name={walletCopied ? 'checkmark' : 'copy-outline'}
+                  size={12} color={walletCopied ? '#10b981' : colors.textMuted}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => Linking.openURL(`${EXPLORER_BASE}${loggedUser.wallet_address}`)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 4,
+                  backgroundColor: '#8b5cf610', borderRadius: 8,
+                  paddingHorizontal: 10, paddingVertical: 7,
+                  borderWidth: 1, borderColor: '#8b5cf625',
+                }}
+              >
+                <Ionicons name="open-outline" size={12} color="#8b5cf6" />
+                <Text style={{ color: '#8b5cf6', fontSize: 10, fontWeight: '700' }}>Polygonscan</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Balances */}
             {(usdcBalance !== null || polBalance !== null) && (
