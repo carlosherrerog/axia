@@ -15,7 +15,9 @@ const AUCTION_ADDRESS     = process.env.EXPO_PUBLIC_AUCTION_ADDRESS      || '0x7
 const POLYGONSCAN_BASE = 'https://amoy.polygonscan.com';
 
 export default function NFCPassportScreen({ route, navigation }) {
-  const { tokenId } = route.params || {};
+  const { tokenId, verified } = route.params || {};
+  // verified viene como string "true"/"false" desde el query param ?verified=…
+  const sdmVerified = verified === 'true' || verified === true;
 
   const [activeTab, setActiveTab] = useState('details');
   const [watchData, setWatchData] = useState(null);
@@ -118,6 +120,29 @@ export default function NFCPassportScreen({ route, navigation }) {
           <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Pasaporte Digital</Text>
           <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>AXIA · Certificado Blockchain</Text>
         </View>
+        {/* Badge SDM — solo se muestra si el backend devolvió ?verified= */}
+        {verified !== undefined && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 4,
+            backgroundColor: sdmVerified ? '#16a34a22' : '#f9731622',
+            borderWidth: 1,
+            borderColor: sdmVerified ? '#16a34a80' : '#f9731680',
+            borderRadius: 14, paddingHorizontal: 9, paddingVertical: 4,
+            marginRight: 6,
+          }}>
+            <Ionicons
+              name={sdmVerified ? 'shield-checkmark' : 'warning'}
+              size={13}
+              color={sdmVerified ? '#22c55e' : '#f97316'}
+            />
+            <Text style={{
+              color: sdmVerified ? '#22c55e' : '#f97316',
+              fontSize: 10, fontWeight: '700', letterSpacing: 0.3,
+            }}>
+              {sdmVerified ? 'NFC AUTÉNTICO' : 'NFC INVÁLIDO'}
+            </Text>
+          </View>
+        )}
         {/* Botón login / ir a AXIA */}
         <TouchableOpacity
           onPress={() => {

@@ -52,6 +52,9 @@ class Watch(Base):
     # 0: Activo, 1: Robado, 2: Perdido, 3: Destruido, 4: Alterado
     security_state: Mapped[int] = mapped_column(default=0)
     mint_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # SDM (Secure Dynamic Messaging) — NTAG 424 DNA Fase 2
+    sdm_key: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)     # 16 bytes AES-128 en hex
+    last_sdm_counter: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # RELACIONES
     owner: Mapped["User"] = relationship(back_populates="owned_watches")

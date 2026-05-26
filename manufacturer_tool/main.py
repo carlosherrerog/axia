@@ -271,6 +271,10 @@ class ApiClient:
         return self._request("post", f"/nfts/{token_id}/transfer",
                              json={"new_owner": new_owner, "tx_hash": tx_hash}).json()
 
+    def sdm_setup(self, token_id: int):
+        """Notifica al backend que el chip SDM está configurado; el backend almacena la clave derivada."""
+        return self._request("post", f"/nfts/{token_id}/sdm-setup").json()
+
 
 api = ApiClient()
 
@@ -468,18 +472,19 @@ def _nfc_open_connection():
 
 def write_ndef_url(token_id: int) -> None:
     """
-    Escribe la URL de la ficha pública del reloj en el chip NTAG 424 DNA.
+    Escribe la URL SDM del reloj en el chip NTAG 424 DNA.
 
     Secuencia ISO 7816-4 T4T verificada en laboratorio (25/05/2026):
       (A) SELECT NDEF Application  (AID D2760000850101)
       (B) SELECT NDEF File         (FID E104)
       (C) UPDATE BINARY            (offset 0x0000)
 
-    La URL tiene formato: {API_URL}/nfc/{token_id}
-    El backend redirige al frontend a /watch/{token_id}.
+    Fase 2 SDM: la URL contiene 32 'P' (enc_picc placeholder) y 16 'C' (cmac placeholder).
+    El chip NTAG 424 DNA sobreescribe estos caracteres en cada escaneo con los datos SDM reales.
+    Formato: {API_URL}/nfc/{token_id}?picc=PPPP...PPPP&cmac=CCCC...CCCC
     """
     base_url = get_cfg("API_URL", "https://axia-8ivf.onrender.com").rstrip("/")
-    url_full = f"{base_url}/nfc/{token_id}"
+    url_full = f"{base_url}/nfc/{token_id}?picc={'P' * 32}&cmac={'C' * 16}"
 
     if url_full.startswith("https://"):
         url_suffix = url_full[8:].encode("utf-8")
@@ -633,34 +638,105 @@ def _compute_mac(session_mac_key: bytes, ins: int, cmd_ctr: int,
     return bytes([full_mac[i] for i in range(1, 16, 2)])  # 8 bytes
 
 
-def lock_nfc_chip() -> None:
+def _sdm_offsets(token_id: int, base_url: str) -> tuple:
     """
-    Protege el chip NTAG 424 DNA contra escritura no autorizada.
+    Calcula los offsets de EncPICCData y SDMMAC dentro del fichero NDEF.
 
-    Secuencia:
-      1. AuthEV2First con Key 0 = 00*16 (valor de fábrica en chip virgen)
-      2. ChangeFileSettings: restringe Write del fichero NDEF a Key 0
+    Estructura del fichero (desde offset 0):
+      [00][nlen]  NLEN big-endian (2 bytes)
+      [D1][01][payload_len][55]  cabecera NDEF record (4 bytes)
+      [prefix_byte]  código de prefijo URI NFC Forum (1 byte)
+      [url_suffix...]  URL sin el prefijo
+
+    EncPICCDataOffset = offset de los 32 chars 'PPPP...' dentro del fichero.
+    SDMMACInputOffset = igual que EncPICCDataOffset (MAC cubre enc_picc).
+    SDMMACOffset      = offset de los 16 chars 'CCCC...' dentro del fichero.
+    """
+    if base_url.startswith("https://"):
+        part = base_url[8:]
+    elif base_url.startswith("http://"):
+        part = base_url[7:]
+    else:
+        part = base_url
+    url_part_before_picc = f"{part}/nfc/{token_id}?picc="
+    header_bytes = 7  # NLEN(2) + D1 01 payload_len 55(4) + prefix_byte(1)
+    enc_picc_off = header_bytes + len(url_part_before_picc.encode("utf-8"))
+    mac_in_off   = enc_picc_off
+    mac_off      = enc_picc_off + 32 + len("&cmac=")
+    return enc_picc_off, mac_in_off, mac_off
+
+
+def setup_nfc_chip(token_id: int) -> None:
+    """
+    Configura el chip NTAG 424 DNA para SDM (Secure Dynamic Messaging) y
+    protege la escritura contra modificación no autorizada.
+
+    Secuencia (chip virgen, Key 0 = 00*16):
+      1. AuthEV2First con Key 0 = 00*16
+      2. ChangeFileSettings: habilita SDM con VCUID + ReadCtr + CMAC usando Key 0
       3. ChangeKey: cambia Key 0 a keccak256(PRIVATE_KEY)[:16]
 
-    Tras esto, UPDATE BINARY sin autenticación devuelve SW 6982.
-    Leer (escanear con el móvil) sigue siendo libre.
+    Tras esto, cada escaneo NFC genera una URL única con enc_picc y cmac
+    distintos, verificables criptográficamente en el backend.
     La nueva clave es determinista: misma wallet → misma clave NFC.
     """
     current_key = bytes(16)        # chip virgen: Key 0 = 00*16
     new_key     = _derive_nfc_key()
+    base_url    = get_cfg("API_URL", "https://axia-8ivf.onrender.com").rstrip("/")
+    enc_picc_off, mac_in_off, mac_off = _sdm_offsets(token_id, base_url)
+
+    def _off3(v):
+        return bytes([v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF])
 
     conn = _nfc_open_connection()
     try:
         # ── 1. Autenticación EV2 ──────────────────────────────────────────
         sess_enc, sess_mac, ti, cmd_ctr = _authenticate_ev2(conn, current_key, key_no=0)
 
-        # ── 2. ChangeFileSettings: restringir escritura del fichero NDEF ──
-        # FileNo = 0x02 (NDEF file dentro de la aplicación NXP)
-        # FileOption = 0x00 (CommMode=Plain para datos, MAC solo en el comando)
-        # AccessRights (2 bytes):
-        #   Byte 0: {ReadWrite_key[4] | Change_key[4]} = 0x0 | 0x0 → 0x00
-        #   Byte 1: {Read_key[4] | Write_key[4]}       = 0xE | 0x0 → 0xE0
-        #   ReadWrite=0 (key 0), Change=0 (key 0), Read=E (libre), Write=0 (key 0)
+        # ── 2. ChangeFileSettings con SDM habilitado ──────────────────────
+        # FileNo   = 0x02 (NDEF file)
+        # FileOption = 0x40: SDM_EN=1, CommMode=Plain (bit5:4=00)
+        # AccessRights: RW=0, Change=0, Read=E(libre), Write=0 → [0x00, 0xE0]
+        # SDMOptions = 0xC1: VCUID=1, SDMReadCtr=1, SDMMAC=1
+        # SDMAccessRights: SDMMetaRead=F(libre), SDMFileRead=0(Key0), CtrRet=F → [0xF0, 0x0F]
+        # EncPICCDataOffset, SDMMACInputOffset, SDMMACOffset (3 bytes LE cada uno)
+        cmd_data_cfs = bytes([
+            0x02,          # FileNo
+            0x40,          # FileOption: SDM_EN=1
+            0x00, 0xE0,    # AccessRights
+            0xC1,          # SDMOptions
+            0xF0, 0x0F,    # SDMAccessRights: FileReadKey=0 (Key0)
+        ]) + _off3(enc_picc_off) + _off3(mac_in_off) + _off3(mac_off)
+        mac_cfs = _compute_mac(sess_mac, 0x5F, cmd_ctr, ti, cmd_data_cfs)
+        apdu_cfs = [0x90, 0x5F, 0x00, 0x00, len(cmd_data_cfs) + 8] + \
+                   list(cmd_data_cfs) + list(mac_cfs) + [0x00]
+        _, sw1, sw2 = conn.transmit(apdu_cfs)
+        if sw1 != 0x91 or sw2 != 0x00:
+            raise IOError(f"ChangeFileSettings (SDM) falló: SW {sw1:02X} {sw2:02X}")
+        cmd_ctr += 1
+
+        # ── 3. ChangeKey: cambiar Key 0 a la clave secreta del fabricante ─
+        enc_new_key = _aes_cbc(sess_enc, b'\x00' * 16, new_key, encrypt=True)
+        key_ver = 0x01
+        cmd_data_ck = bytes([0x00]) + enc_new_key + bytes([key_ver])
+        mac_ck = _compute_mac(sess_mac, 0xC4, cmd_ctr, ti, cmd_data_ck)
+        apdu_ck = [0x90, 0xC4, 0x00, 0x00, len(cmd_data_ck) + 8] + \
+                  list(cmd_data_ck) + list(mac_ck) + [0x00]
+        _, sw1, sw2 = conn.transmit(apdu_ck)
+        if sw1 != 0x91 or sw2 != 0x00:
+            raise IOError(f"ChangeKey falló: SW {sw1:02X} {sw2:02X}")
+
+    finally:
+        conn.disconnect()
+
+
+def lock_nfc_chip() -> None:
+    """Alias de setup_nfc_chip sin token_id (solo protección de escritura, sin SDM)."""
+    current_key = bytes(16)
+    new_key     = _derive_nfc_key()
+    conn = _nfc_open_connection()
+    try:
+        sess_enc, sess_mac, ti, cmd_ctr = _authenticate_ev2(conn, current_key, key_no=0)
         cmd_data_cfs = bytes([0x02, 0x00, 0x00, 0xE0])
         mac_cfs = _compute_mac(sess_mac, 0x5F, cmd_ctr, ti, cmd_data_cfs)
         apdu_cfs = [0x90, 0x5F, 0x00, 0x00, len(cmd_data_cfs) + 8] + \
@@ -669,21 +745,15 @@ def lock_nfc_chip() -> None:
         if sw1 != 0x91 or sw2 != 0x00:
             raise IOError(f"ChangeFileSettings falló: SW {sw1:02X} {sw2:02X}")
         cmd_ctr += 1
-
-        # ── 3. ChangeKey: cambiar Key 0 a la clave secreta del fabricante ─
-        # Para auto-cambio de Key 0 (la clave con la que estamos autenticados):
-        #   EncNewKey = AES-CBC(sess_enc, IV=0, new_key)  [no XOR con current_key]
-        #   CRC32 no necesario en auto-cambio de la misma clave
         enc_new_key = _aes_cbc(sess_enc, b'\x00' * 16, new_key, encrypt=True)
-        key_ver = 0x01  # versión de clave (informativo, 1 byte)
-        cmd_data_ck = bytes([0x00]) + enc_new_key + bytes([key_ver])  # KeyNo || EncKey || Ver
+        key_ver = 0x01
+        cmd_data_ck = bytes([0x00]) + enc_new_key + bytes([key_ver])
         mac_ck = _compute_mac(sess_mac, 0xC4, cmd_ctr, ti, cmd_data_ck)
         apdu_ck = [0x90, 0xC4, 0x00, 0x00, len(cmd_data_ck) + 8] + \
                   list(cmd_data_ck) + list(mac_ck) + [0x00]
         _, sw1, sw2 = conn.transmit(apdu_ck)
         if sw1 != 0x91 or sw2 != 0x00:
             raise IOError(f"ChangeKey falló: SW {sw1:02X} {sw2:02X}")
-
     finally:
         conn.disconnect()
 
@@ -1567,21 +1637,27 @@ class MintTab(tk.Frame):
 
             self._log(f"✓  Registrado en AXIA. Programando chip NFC…", C["success"])
 
-            # 5. Escribir URL NDEF en el chip
+            # 5. Escribir URL SDM en el chip (con placeholders picc/cmac)
             if NFC_AVAILABLE:
                 try:
                     write_ndef_url(int(token_id))
-                    self._log(f"✓  NDEF escrito — URL: {get_cfg('API_URL')}/nfc/{token_id}", C["success"])
+                    self._log(f"✓  NDEF escrito — URL SDM: {get_cfg('API_URL')}/nfc/{token_id}?picc=…&cmac=…", C["success"])
                 except Exception as e_nfc:
                     self._log(f"⚠  NDEF: {e_nfc}\n   El reloj está minteado. Puedes programar la tarjeta manualmente.", C["warning"])
 
-            # 6. Bloquear escritura del chip (usa keccak256(PRIVATE_KEY)[:16])
+            # 6. Configurar SDM y bloquear escritura (ChangeFileSettings + ChangeKey)
             if NFC_AVAILABLE:
                 try:
-                    lock_nfc_chip()
-                    self._log(f"✓  Chip bloqueado — escritura protegida con clave derivada de tu wallet.", C["success"])
-                except Exception as e_lock:
-                    self._log(f"⚠  Bloqueo: {e_lock}\n   La URL está escrita. El bloqueo puede hacerse después.", C["warning"])
+                    setup_nfc_chip(int(token_id))
+                    self._log(f"✓  SDM configurado — cada escaneo genera URL única e irrepetible.", C["success"])
+                    # Notificar al backend para que almacene la clave SDM derivada
+                    try:
+                        api.sdm_setup(int(token_id))
+                        self._log(f"✓  Clave SDM registrada en AXIA.", C["success"])
+                    except Exception as e_sdm_api:
+                        self._log(f"⚠  sdm-setup API: {e_sdm_api}\n   El chip está configurado. El backend puede no verificar escaneos hasta que se corrija.", C["warning"])
+                except Exception as e_setup:
+                    self._log(f"⚠  Setup NFC: {e_setup}\n   La URL está escrita. La configuración SDM puede hacerse después.", C["warning"])
 
             self._log(
                 f"✓  Reloj registrado con éxito.\n"

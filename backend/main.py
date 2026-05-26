@@ -343,17 +343,57 @@ async def create_notification(
 def get_status():
     return {"status": "online", "architecture": "MVC Hybrid"}
 
+def _verify_sdm(picc_hex: str, cmac_hex: str, sdm_key_hex: str):
+    """Verifica SDM del NTAG 424 DNA. Retorna (ok, uid_bytes, counter)."""
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives.cmac import CMAC as CRY_CMAC
+    from cryptography.hazmat.primitives.ciphers import algorithms as cry_alg
+    from cryptography.hazmat.backends import default_backend
+    sdm_key   = bytes.fromhex(sdm_key_hex)
+    enc_picc  = bytes.fromhex(picc_hex)      # 16 bytes cifrados AES-128-CBC
+    recv_cmac = bytes.fromhex(cmac_hex)      # 8 bytes CMAC truncado
+    # Descifrar picc → UID(7B) || counter(3B LE) || padding(6B)
+    cipher = Cipher(algorithms.AES(sdm_key), modes.CBC(b'\x00' * 16), backend=default_backend())
+    dec = cipher.decryptor()
+    plain = dec.update(enc_picc) + dec.finalize()
+    uid_bytes = plain[:7]
+    counter   = int.from_bytes(plain[7:10], 'little')
+    # Verificar CMAC: AES-CMAC(key, enc_picc)[:8]
+    c = CRY_CMAC(cry_alg.AES(sdm_key), backend=default_backend())
+    c.update(enc_picc)
+    expected_cmac = c.finalize()[:8]
+    return recv_cmac == expected_cmac, uid_bytes, counter
+
 @app.get("/nfc/{token_id}")
-def nfc_redirect(token_id: int, db: Session = Depends(database.get_db)):
+def nfc_redirect(
+    token_id: int,
+    picc: Optional[str] = Query(None),
+    cmac: Optional[str] = Query(None),
+    db: Session = Depends(database.get_db)
+):
     """
     Punto de entrada para tarjetas NFC NTAG 424 DNA.
-    El chip escribe esta URL en su memoria NDEF al mintear; escanear
-    con el móvil abre directamente la ficha pública del reloj.
+    Sin picc/cmac → URL estática (Fase 1).
+    Con picc/cmac → verificación SDM (Fase 2); redirige con ?verified=true/false.
     """
     watch = db.query(models.Watch).filter(models.Watch.token_id == token_id).first()
     if not watch:
         raise HTTPException(status_code=404, detail="Reloj no encontrado")
-    return RedirectResponse(url=f"{FRONTEND_URL}/nfc-scan/{token_id}")
+
+    verified_param = ""
+    if picc and cmac and watch.sdm_key:
+        try:
+            ok, uid_bytes, counter = _verify_sdm(picc, cmac, watch.sdm_key)
+            if ok and counter > watch.last_sdm_counter:
+                watch.last_sdm_counter = counter
+                db.commit()
+                verified_param = "?verified=true"
+            else:
+                verified_param = "?verified=false"
+        except Exception:
+            verified_param = "?verified=false"
+
+    return RedirectResponse(url=f"{FRONTEND_URL}/nfc-scan/{token_id}{verified_param}")
 
 @app.post("/register", response_model=user_schemas.UserResponse)
 @limiter.limit("5/minute")
@@ -1717,6 +1757,36 @@ async def toggle_watch_privacy(
     await manager.broadcast("update_marketplace")
 
     return {"message": "Privacidad actualizada", "is_public": watch.is_public}
+
+@app.post("/nfts/{token_id}/sdm-setup")
+def sdm_setup(
+    token_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Almacena la clave SDM del chip NTAG 424 DNA para el reloj indicado.
+    Solo puede llamarlo el fabricante propietario del reloj."""
+    if "FABRICANTE" not in (current_user.roles or []):
+        raise HTTPException(status_code=403, detail="Solo fabricantes pueden configurar SDM.")
+    watch = db.query(models.Watch).filter(models.Watch.token_id == token_id).first()
+    if not watch:
+        raise HTTPException(status_code=404, detail="Reloj no encontrado.")
+    if watch.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No eres el propietario de este reloj.")
+    # La clave SDM coincide con la clave maestra NFC: keccak256(PK)[:16]
+    # El manufacturer_tool la deriva localmente y la envía aquí para que el
+    # backend pueda verificar futuros escaneos SDM sin necesidad de la clave privada.
+    import os as _os
+    from web3 import Web3
+    private_key = _os.getenv("PRIVATE_KEY", "")
+    if not private_key:
+        raise HTTPException(status_code=500, detail="PRIVATE_KEY no configurada en el servidor.")
+    pk_bytes = bytes.fromhex(private_key.removeprefix("0x"))
+    sdm_key_hex = Web3.keccak(pk_bytes).hex()[2:34]  # primeros 16 bytes = 32 hex chars
+    watch.sdm_key = sdm_key_hex
+    watch.last_sdm_counter = 0
+    db.commit()
+    return {"ok": True, "token_id": token_id}
 
 @app.post("/nfts/{token_id}/cancel")
 async def cancel_watch_listing(token_id: int, data: user_schemas.CancelListingRequest, db: Session = Depends(database.get_db), current_user: models.User = Depends(get_current_user)):
