@@ -262,6 +262,7 @@ const linking = {
         path: 'watchmaker',
         screens: {
           WatchmakerScreen: '',
+          NFCPassport: 'nfc-scan/:tokenId',
           Notificaciones: 'notifications',
         }
       },
@@ -270,6 +271,7 @@ const linking = {
         screens: {
           ManufacturerScreen: '',
           WatchScreen: 'watch/:watchId',
+          NFCPassport: 'nfc-scan/:tokenId',
           Notificaciones: 'notifications',
         }
       },
@@ -281,9 +283,11 @@ const linking = {
           Perfil: 'profile',
           WatchScreen: 'watch/:watchId',
           AuctionScreen: 'auction/:tokenId',
+          NFCPassport: 'nfc-scan/:tokenId',
           Notificaciones: 'notifications',
         }
       },
+      Admin: 'admin',
     },
   },
 };
@@ -292,6 +296,10 @@ const linking = {
 function AppNavigator() {
   const handleReady = async () => {
     try {
+      // Si el deep link ya resolvió NFCPassport, no redirigir al dashboard
+      const currentRoute = navigationRef.getCurrentRoute();
+      if (currentRoute?.name === 'NFCPassport') return;
+
       const token = Platform.OS === 'web'
         ? localStorage.getItem('userToken')
         : await SecureStore.getItemAsync('userToken');

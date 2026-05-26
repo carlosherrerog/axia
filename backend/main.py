@@ -1075,6 +1075,23 @@ async def register_minted_nft(
     db.commit()
     db.refresh(watch)
 
+    # Poblar historial de propiedad desde la blockchain
+    try:
+        chain_history = blockchain.get_ownership_history_from_chain(data.token_id)
+        for entry in chain_history:
+            history_record = models.WatchOwnershipHistory(
+                token_id=data.token_id,
+                previous_owner_wallet=entry.get("previous_owner_wallet"),
+                new_owner_wallet=entry.get("new_owner_wallet"),
+                via_contract_wallet=entry.get("via_contract_wallet"),
+                price_usdc=entry.get("price_usdc"),
+                transferred_at=entry.get("transferred_at"),
+            )
+            db.add(history_record)
+        db.commit()
+    except Exception as e:
+        print(f"[register_minted] No se pudo poblar historial on-chain: {e}")
+
     await create_notification(
         db, current_user.id,
         "Reloj minteado con éxito",

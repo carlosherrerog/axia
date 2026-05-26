@@ -1,6 +1,8 @@
 // src/screens/NFCPassportScreen.js
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Platform } from 'react-native';
+
+const AXIA_LOGO = require('../../assets/axia-icons/axia-icon-rounded-purple-1024.png');
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
@@ -142,13 +144,11 @@ export default function NFCPassportScreen({ route, navigation }) {
         backgroundColor: colors.surface,
         borderBottomWidth: 1, borderBottomColor: colors.border,
       }}>
-        <View style={{
-          width: 36, height: 36, borderRadius: 18,
-          backgroundColor: colors.primary + '20',
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Ionicons name="wifi-outline" size={19} color={colors.primary} />
-        </View>
+        <Image
+          source={AXIA_LOGO}
+          style={{ width: 36, height: 36, borderRadius: 18 }}
+          resizeMode="contain"
+        />
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Pasaporte Digital</Text>
           <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>AXIA · Certificado Blockchain</Text>
@@ -202,7 +202,7 @@ export default function NFCPassportScreen({ route, navigation }) {
             color={colors.primaryLight}
           />
           <Text style={{ color: colors.primaryLight, fontSize: 12, fontWeight: '600' }}>
-            {loggedUser ? 'Ir a AXIA' : 'Iniciar sesión'}
+            {loggedUser ? 'Volver a AXIA' : 'Iniciar sesión'}
           </Text>
         </TouchableOpacity>
 
