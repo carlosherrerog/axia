@@ -1,5 +1,5 @@
 // src/screens/NFCPassportScreen.js
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Image, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -27,6 +27,39 @@ export default function NFCPassportScreen({ route, navigation }) {
   const [appUsers, setAppUsers] = useState([]);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [isHoveringImg, setIsHoveringImg] = useState(false);
+  const gyroBaseline = useRef(null);  // posición neutral calibrada al abrir la pantalla
+
+  // Efecto giroscopio — solo en móvil web (deviceorientation)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const handleOrientation = (e) => {
+      if (e.gamma === null || e.beta === null) return;
+      // Primera lectura: calibrar posición neutral
+      if (!gyroBaseline.current) {
+        gyroBaseline.current = { beta: e.beta, gamma: e.gamma };
+        return;
+      }
+      const dx = (e.beta  - gyroBaseline.current.beta)  * 0.55;
+      const dy = (e.gamma - gyroBaseline.current.gamma) * 0.55;
+      setTilt({
+        x: Math.max(-20, Math.min(20, dx)),
+        y: Math.max(-20, Math.min(20, dy)),
+      });
+    };
+
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS 13+ requiere permiso explícito — pedirlo al cargar la pantalla
+      DeviceOrientationEvent.requestPermission()
+        .then(p => { if (p === 'granted') window.addEventListener('deviceorientation', handleOrientation); })
+        .catch(() => {});
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    return () => window.removeEventListener('deviceorientation', handleOrientation);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
