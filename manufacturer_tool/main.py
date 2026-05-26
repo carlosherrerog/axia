@@ -1320,7 +1320,10 @@ class MainFrame(tk.Frame):
 
     # ── Wallet header ─────────────────────────────────────────────────────
     def _refresh_wallet_header(self):
-        if not self.wallet_container.winfo_exists():
+        try:
+            if not self.wallet_container.winfo_exists():
+                return
+        except Exception:
             return
         for w in self.wallet_container.winfo_children():
             w.destroy()
