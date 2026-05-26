@@ -251,13 +251,23 @@ export default function NFCPassportScreen({ route, navigation }) {
             </View>
           )}
 
+          {/* ── NOMBRE DEL MODELO ── */}
+          <View style={{ paddingHorizontal: 18, paddingTop: 16, paddingBottom: 10 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+              {watchData?.brand || ''}
+            </Text>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', lineHeight: 24 }}>
+              {watchData?.model || 'Modelo'}
+            </Text>
+          </View>
+
           {Platform.OS === 'web' ? (
             <div
               onMouseMove={handleImgMouseMove}
               onMouseEnter={() => setIsHoveringImg(true)}
               onMouseLeave={handleImgMouseLeave}
               style={{
-                height: 420, backgroundColor: colors.surface,
+                height: 260, backgroundColor: colors.surface,
                 display: 'flex', justifyContent: 'center', alignItems: 'center',
                 perspective: '900px', position: 'relative',
               }}
@@ -290,7 +300,7 @@ export default function NFCPassportScreen({ route, navigation }) {
               )}
             </div>
           ) : (
-            <View style={{ height: 420, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+            <View style={{ height: 260, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
               <Image
                 source={{ uri: resolveImageUri(watchData.image) || 'https://via.placeholder.com/400?text=Sin+Imagen' }}
                 style={{ width: '55%', height: '100%', opacity: isSecurityBlocked ? 0.75 : isEscrowed ? 0.7 : 1 }}
@@ -416,10 +426,6 @@ export default function NFCPassportScreen({ route, navigation }) {
             })()}
 
             <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 5, marginBottom: 15 }} />
-
-            <Text style={watchScreenStyles.sectionTitle}>
-              {watchData?.model || 'Modelo'}
-            </Text>
 
             <View style={watchScreenStyles.detailRow}>
               <Text style={watchScreenStyles.detailLabel}>Marca:</Text>
