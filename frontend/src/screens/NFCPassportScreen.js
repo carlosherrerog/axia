@@ -63,17 +63,6 @@ export default function NFCPassportScreen({ route, navigation }) {
     return () => window.removeEventListener('deviceorientation', handleOrientation);
   }, []);
 
-  // Redirigir a MetaMask móvil si no hay wallet inyectada
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    if (typeof window === 'undefined') return;
-    if (window.ethereum) return; // ya tiene wallet (MetaMask browser o extensión)
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (!isMobile) return;
-    const path = window.location.pathname + window.location.search;
-    window.location.href = `https://metamask.app.link/dapp/${window.location.hostname}${path}`;
-  }, []);
-
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
