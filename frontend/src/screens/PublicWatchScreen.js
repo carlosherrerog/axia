@@ -10,6 +10,8 @@ import { useEthProvider } from '../wallet/useEthProvider';
 import { colors, watchScreenStyles, alertColors, globalStyles, alertStyles, WATCH_STATES, roleColors } from '../themes/styles.js';
 import { resolveImageUri } from '../utils/ipfs';
 import GlobalHeader from '../components/GlobalHeader';
+import WatchHistoryTab from '../components/WatchHistoryTab';
+import { useScrollAware, HEADER_HEIGHT } from '../hooks/useScrollAware';
 
 const NFT_ADDRESS                = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS          || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
 const MARKETPLACE_ADDRESS        = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS         || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6';
@@ -28,6 +30,7 @@ const MARKETPLACE_ABI = ["function buyWatchEscrow(uint256 tokenId) external"];
 export default function PublicWatchScreen({ route, navigation }) {
   const { watchId, initialTab = 'details' } = route.params || {};
   const { ethProvider } = useEthProvider();
+  const { onScroll, headerTranslate } = useScrollAware();
 
   // ESTADOS
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -228,9 +231,15 @@ export default function PublicWatchScreen({ route, navigation }) {
         navigation={navigation}
         onWalletChange={setLoggedUser}
         onWalletDisconnect={() => navigation.navigate('Marketplace')}
+        translateAnim={headerTranslate}
       />
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 100, paddingTop: HEADER_HEIGHT }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
         <View style={{ padding: 20 }}>
           
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
@@ -273,7 +282,7 @@ export default function PublicWatchScreen({ route, navigation }) {
                 onMouseEnter={() => setIsHoveringImg(true)}
                 onMouseLeave={handleImgMouseLeave}
                 style={{
-                  height: 420, backgroundColor: colors.surface,
+                  height: 260, backgroundColor: colors.surface,
                   display: 'flex', justifyContent: 'center', alignItems: 'center',
                   perspective: '900px', position: 'relative',
                 }}
@@ -306,7 +315,7 @@ export default function PublicWatchScreen({ route, navigation }) {
                 )}
               </div>
             ) : (
-              <View style={{ height: 420, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+              <View style={{ height: 260, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                 <Image
                   source={{ uri: resolveImageUri(watchData.image) || 'https://via.placeholder.com/400?text=Sin+Imagen' }}
                   style={{ width: '55%', height: '100%', opacity: isSecurityBlocked ? 0.75 : isEscrowed ? 0.7 : 1 }}
@@ -550,9 +559,9 @@ export default function PublicWatchScreen({ route, navigation }) {
 
               <View style={[watchScreenStyles.detailRow, { alignItems: 'flex-start' }]}>
                 <Text style={watchScreenStyles.detailLabel}>Dirección del contrato:</Text>
-                <TouchableOpacity onPress={() => Clipboard.setStringAsync(NFT_ADDRESS)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                  <Text style={{ color: colors.primaryLight, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, textAlign: 'right' }}>
-                    {NFT_ADDRESS || '0x...'}
+                <TouchableOpacity onPress={() => Clipboard.setStringAsync(NFT_ADDRESS)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ color: colors.primaryLight, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
+                    {NFT_ADDRESS ? `${NFT_ADDRESS.slice(0, 10)}…${NFT_ADDRESS.slice(-8)}` : '0x...'}
                   </Text>
                   <Ionicons name="copy-outline" size={14} color={colors.primaryLight} />
                 </TouchableOpacity>
@@ -570,228 +579,19 @@ export default function PublicWatchScreen({ route, navigation }) {
 
           {/* PESTAÑA HISTORIAL */}
           {activeTab === 'history' && (
-            <View style={watchScreenStyles.contentCard}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18, gap: 10 }}>
-                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="time" size={18} color={colors.primary} />
-                </View>
-                <View>
-                  <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>Historial On-Chain</Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>Registro inmutable de transferencias, verificaciones y cambios</Text>
-                </View>
-              </View>
-
-              {(() => {
-                const findUserByWallet = (wallet) =>
-                  wallet ? appUsers.find(u => u.wallet_address?.toLowerCase() === wallet.toLowerCase()) : null;
-
-                const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
-                // transferred_at viene de la BD sin indicador de zona → añadir 'Z' para tratarlo como UTC
-                const parseUTCDate = s => s ? new Date(/Z|[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z') : null;
-                const fmtDateTime = s => { const d = parseUTCDate(s); return d ? d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; };
-                const transfers = (watchData?.history || []).map(e => {
-                  const isMint = !e.previous_owner_wallet || e.previous_owner_wallet.toLowerCase() === ZERO_ADDR;
-                  const d = parseUTCDate(e.transferred_at);
-                  const isAuction = !isMint && e.via_contract_wallet &&
-                    AUCTION_ADDRESS &&
-                    e.via_contract_wallet.toLowerCase() === AUCTION_ADDRESS.toLowerCase();
-                  return {
-                    _type: 'transfer',
-                    _ts: d ? d.getTime() / 1000 : 0,
-                    icon: isMint ? 'flash-outline' : isAuction ? 'hammer-outline' : 'swap-horizontal',
-                    color: isMint ? '#a855f7' : isAuction ? '#f59e0b' : colors.primary,
-                    title: isMint ? 'Minteo inicial' : isAuction ? 'Vendido en subasta' : 'Transferencia de propiedad',
-                    price: e.price_usdc != null
-                      ? `${Number(e.price_usdc).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USDC`
-                      : null,
-                    isMint,
-                    isAuction,
-                    fromWallet: isMint ? (watchData?.manufacturer_wallet || watchData?.verifications?.[0]?.watchmaker || null) : (e.previous_owner_wallet || null),
-                    viaWallet: e.via_contract_wallet || null,
-                    toWallet: e.new_owner_wallet || null,
-                    fromUser: isMint ? findUserByWallet(watchData?.manufacturer_wallet || watchData?.verifications?.[0]?.watchmaker) : findUserByWallet(e.previous_owner_wallet),
-                    toUser: findUserByWallet(e.new_owner_wallet),
-                    date: fmtDateTime(e.transferred_at),
-                  };
-                });
-                const revisions = (watchData?.revisions || []).map(r => ({
-                  _type: 'revision', _ts: r.date || 0,
-                  icon: 'construct-outline', color: '#f59e0b',
-                  title: 'Revisión técnica',
-                  lines: [r.description],
-                  watchmakerWallet: r.watchmaker,
-                  watchmakerUser: findUserByWallet(r.watchmaker),
-                  date: r.date ? new Date(r.date * 1000).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—',
-                }));
-                const mfgWallet = watchData?.manufacturer_wallet?.toLowerCase();
-                const rawVerifs = (watchData?.verifications || []);
-                const latestVerifDate = rawVerifs.length > 0
-                  ? Math.max(...rawVerifs.map(v => v.date || 0))
-                  : -1;
-                const verifications = rawVerifs.map(v => {
-                  const isManufacturerCert = mfgWallet && v.watchmaker?.toLowerCase() === mfgWallet;
-                  const isRejectionByComment = typeof v.comment === 'string' && v.comment.startsWith('Peritaje rechazado');
-                  const isRejection = !isManufacturerCert && (isRejectionByComment || (isAltered && v.date === latestVerifDate));
-                  const isP2PSale = !isRejection && !isManufacturerCert &&
-                    typeof v.comment === 'string' && v.comment.startsWith('Peritaje superado en venta P2P');
-                  return {
-                    _type: 'verification', _ts: v.date || 0,
-                    icon: isRejection ? 'close-circle-outline'
-                        : isManufacturerCert ? 'ribbon-outline'
-                        : isP2PSale ? 'shield-half-outline'
-                        : 'shield-checkmark-outline',
-                    color: isRejection ? '#ef4444'
-                         : isManufacturerCert ? '#a855f7'
-                         : isP2PSale ? '#38bdf8'
-                         : '#10b981',
-                    title: isRejection ? 'Peritaje fallido — Alteración detectada'
-                         : isManufacturerCert ? 'Certificado de fabricación'
-                         : isP2PSale ? 'Peritaje de venta P2P'
-                         : 'Peritaje de autenticidad',
-                    lines: [v.comment],
-                    isRejection,
-                    watchmakerWallet: v.watchmaker,
-                    watchmakerUser: findUserByWallet(v.watchmaker),
-                    date: v.date ? new Date(v.date * 1000).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—',
-                  };
-                });
-
-                const all = [...transfers, ...revisions, ...verifications]
-                  .sort((a, b) => b._ts - a._ts);
-
-                if (all.length === 0) return (
-                  <View style={{ alignItems: 'center', paddingVertical: 30, gap: 10 }}>
-                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="cube-outline" size={26} color={colors.textMuted} />
-                    </View>
-                    <Text style={{ color: colors.textMuted, fontSize: 14 }}>Sin historial disponible</Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', maxWidth: 260 }}>
-                      Las transferencias y cambios de estado aparecerán aquí una vez registradas en blockchain.
-                    </Text>
-                  </View>
-                );
-
-                return all.map((event, index) => (
-                  <View key={index} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-                    <View style={{ alignItems: 'center', width: 28 }}>
-                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: event.color + '25', alignItems: 'center', justifyContent: 'center' }}>
-                        <Ionicons name={event.icon} size={13} color={event.color} />
-                      </View>
-                      {index < all.length - 1 && (
-                        <View style={{ width: 1.5, flex: 1, minHeight: 20, backgroundColor: event.isRejection ? '#ef444430' : colors.border, marginTop: 4 }} />
-                      )}
-                    </View>
-                    <View style={{ flex: 1, paddingBottom: 16 }}>
-                      <Text style={{ color: event.color, fontWeight: '700', fontSize: 13 }}>{event.title}</Text>
-
-                      {/* Wallets De / Vía / A con copia y perfil */}
-                      {event._type === 'transfer' && (() => {
-                        const rows = [
-                          { label: event.isMint ? 'Por' : 'De', wallet: event.fromWallet, user: event.fromUser, isEscrow: false },
-                          event.viaWallet ? { label: 'Vía', wallet: event.viaWallet, user: null, isEscrow: true, isAuction: event.isAuction } : null,
-                          { label: 'A',   wallet: event.toWallet,   user: event.toUser,   isEscrow: false },
-                        ].filter(Boolean);
-                        return rows.map(({ label, wallet, user, isEscrow, isAuction }) => wallet ? (
-                          <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3, flexWrap: 'wrap' }}>
-                            <Text style={{ color: colors.textMuted, fontSize: 11, minWidth: 20 }}>{label}:</Text>
-                            <TouchableOpacity onPress={() => Clipboard.setStringAsync(wallet)} style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                              <Text style={{ color: isEscrow ? '#f59e0b' : colors.primaryLight, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                                {wallet.slice(0, 8)}…{wallet.slice(-6)}
-                              </Text>
-                              <Ionicons name="copy-outline" size={11} color={isEscrow ? '#f59e0b' : colors.primaryLight} />
-                            </TouchableOpacity>
-                            {isEscrow && (
-                              <View style={{ backgroundColor: '#f59e0b22', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8 }}>
-                                <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '600' }}>{isAuction ? 'Subasta' : 'Escrow'}</Text>
-                              </View>
-                            )}
-                            {user && !isEscrow && (
-                              <TouchableOpacity
-                                onPress={() => navigation.navigate('PublicProfile', { userId: user.id })}
-                                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                              >
-                                <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600' }}>{user.username}</Text>
-                                {(() => { const rk = user.roles?.find(r => ['FABRICANTE','DEALER','RELOJERO'].includes(r)); return rk ? <Ionicons name="checkmark-circle" size={13} color={roleColors[rk]} /> : null; })()}
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        ) : null);
-                      })()}
-
-                      {/* Precio de venta */}
-                      {event.price && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
-                          <Ionicons name="cash-outline" size={11} color="#10b981" />
-                          <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '600' }}>{event.price}</Text>
-                        </View>
-                      )}
-
-                      {/* Texto libre (revisiones/verificaciones) */}
-                      {event._type !== 'transfer' && event.lines?.map((l, i) => l ? (
-                        event.isRejection ? (
-                          <View key={i} style={{
-                            backgroundColor: '#ef444415', borderRadius: 8, borderWidth: 1,
-                            borderColor: '#ef444430', padding: 8, marginTop: 5,
-                          }}>
-                            <Text style={{ color: '#ef4444', fontSize: 12, fontStyle: 'italic' }}>"{l}"</Text>
-                          </View>
-                        ) : (
-                          <Text key={i} style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>{l}</Text>
-                        )
-                      ) : null)}
-
-                      {/* Wallet del relojero */}
-                      {event.watchmakerWallet && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                          <TouchableOpacity onPress={() => Clipboard.setStringAsync(event.watchmakerWallet)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ color: colors.primaryLight, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                              {event.watchmakerWallet.slice(0, 8)}…{event.watchmakerWallet.slice(-6)}
-                            </Text>
-                            <Ionicons name="copy-outline" size={11} color={colors.primaryLight} />
-                          </TouchableOpacity>
-                          {event.watchmakerUser && !isManufacturer && (
-                            <TouchableOpacity
-                              onPress={() => navigation.navigate('PublicProfile', { userId: event.watchmakerUser.id })}
-                              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                            >
-                              <Text style={{ color: colors.text, fontSize: 11, fontWeight: '600' }}>{event.watchmakerUser.username}</Text>
-                              {(() => { const rk = event.watchmakerUser.roles?.find(r => ['FABRICANTE','DEALER','RELOJERO'].includes(r)); return rk ? <Ionicons name="checkmark-circle" size={13} color={roleColors[rk]} /> : null; })()}
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      )}
-
-                      <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>{event.date}</Text>
-                    </View>
-                  </View>
-                ));
-              })()}
-
-              <View style={{ marginTop: 8, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Contrato NFT</Text>
-                  <TouchableOpacity onPress={() => Clipboard.setStringAsync(NFT_ADDRESS)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ color: colors.primaryLight, fontSize: 11, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                      {NFT_ADDRESS ? `${NFT_ADDRESS.slice(0, 10)}…${NFT_ADDRESS.slice(-8)}` : '—'}
-                    </Text>
-                    <Ionicons name="copy-outline" size={12} color={colors.primaryLight} />
-                  </TouchableOpacity>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Token ID</Text>
-                  <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>#{watchId}</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => { const url = `${POLYGONSCAN_BASE}/token/${NFT_ADDRESS}?a=${watchId}`; if (Platform.OS === 'web') window.open(url, '_blank'); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
-                >
-                  <Ionicons name="open-outline" size={13} color={colors.textMuted} />
-                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>Ver en Polygonscan</Text>
-                  <Ionicons name="chevron-forward" size={13} color={colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-            </View>
+            <WatchHistoryTab
+              watchData={watchData}
+              appUsers={appUsers}
+              navigation={navigation}
+              nftAddress={NFT_ADDRESS}
+              auctionAddress={AUCTION_ADDRESS}
+              tokenId={watchId}
+              isAltered={isAltered}
+              isManufacturer={isManufacturer}
+              colors={colors}
+            />
           )}
+
         </View>
       </ScrollView>
 

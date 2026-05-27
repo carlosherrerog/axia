@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { watchCardStyles, colors, alertColors, roleColors } from '../themes/styles';
 import { resolveImageUri } from '../utils/ipfs';
 
-export default function PublicWatchCard({ nft, navigation }) {
+export default function PublicWatchCard({ nft, navigation, cardWidth }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleHoverIn  = () => setIsHovered(true);
@@ -67,8 +67,7 @@ export default function PublicWatchCard({ nft, navigation }) {
           elevation: isHovered ? 10 : 4,
           opacity: (isEscrowed && !isAltered) ? 0.85 : 1,
           transform: [{ scale: isHovered ? 1.04 : 1 }],
-          // ✅ CAMBIO 1: Altura fija y Layout Flex (igual que en WatchCard)
-          height: 380,
+          height: cardWidth ? Math.round(cardWidth * 1.55) : 300,
           display: 'flex',
           flexDirection: 'column',
           ...(Platform.OS === 'web' && { transition: 'all 0.2s ease-in-out', cursor: 'pointer' }),
@@ -160,8 +159,8 @@ export default function PublicWatchCard({ nft, navigation }) {
 
         <Image
           source={{ uri: resolveImageUri(nft.image) || 'https://via.placeholder.com/150' }}
-          style={[watchCardStyles.image, (isEscrowed && !isAltered) && { opacity: 0.4 }]}
-          resizeMode="cover"
+          style={[watchCardStyles.image, (isEscrowed && !isAltered) && { opacity: 0.4 }, cardWidth && { height: Math.round(cardWidth * 0.85) }]}
+          resizeMode="contain"
         />
       </View>
 

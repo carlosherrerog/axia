@@ -37,6 +37,7 @@ export default function GlobalHeader({
   forceDark = false,
   showBack = false,
   showHamburger = false,
+  translateAnim = null,
 }) {
   const theme = useTheme();
   const colors    = forceDark ? darkColors : theme.colors;
@@ -329,15 +330,22 @@ export default function GlobalHeader({
       })()}
 
       {/* Cabecera principal */}
-      <View style={{
-        flexDirection: 'row', alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 54 : 20,
-        paddingBottom: 14,
-        backgroundColor: colors.backgroundAlt,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-      }}>
+      <Animated.View style={[
+        {
+          flexDirection: 'row', alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingTop: Platform.OS === 'ios' ? 54 : 20,
+          paddingBottom: 14,
+          backgroundColor: colors.backgroundAlt,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        translateAnim != null && {
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
+          transform: [{ translateY: translateAnim }],
+          ...(Platform.OS === 'web' && { boxShadow: '0 2px 12px rgba(0,0,0,0.25)' }),
+        },
+      ]}>
         {/* Logo AXIA o botón volver */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 8 }}>
           {showBack ? (
@@ -519,7 +527,7 @@ export default function GlobalHeader({
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       <MenuDropdown
         visible={moreMenuVisible}

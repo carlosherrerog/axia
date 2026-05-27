@@ -342,7 +342,7 @@ function HowAxiaWorks({ isMobile, colors }) {
   );
 }
 
-export function MarketplaceWatchSection({ watches, navigation }) {
+export function MarketplaceWatchSection({ watches, navigation, onScroll, topOffset = 0 }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const isDesktop = width >= 768;
@@ -355,6 +355,9 @@ export function MarketplaceWatchSection({ watches, navigation }) {
   if (width >= 1200) cols = 5;
   else if (width >= 960) cols = 4;
   else if (width >= 720) cols = 3;
+
+  const colGap = 20;
+  const cardWidth = Math.floor((width - 2 * hPad - (cols - 1) * colGap) / cols);
 
   const getPrice = (w) =>
     w.auction_data
@@ -527,11 +530,13 @@ export function MarketplaceWatchSection({ watches, navigation }) {
         data={filtered}
         keyExtractor={(item) => (item.token_id || item.id).toString()}
         numColumns={cols}
-        columnWrapperStyle={{ justifyContent: 'flex-start', gap: 20 }}
-        contentContainerStyle={{ paddingHorizontal: hPad, paddingBottom: 100, paddingTop: 14 }}
+        columnWrapperStyle={{ justifyContent: 'flex-start', gap: colGap }}
+        contentContainerStyle={{ paddingHorizontal: hPad, paddingBottom: 100, paddingTop: topOffset + 14 }}
         ListHeaderComponent={ListHeader}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         renderItem={({ item }) => (
-          <View style={{ width: 210, marginBottom: 25 }}>
+          <View style={{ width: cardWidth, marginBottom: 20 }}>
             {item.auction_data ? (
               <AuctionCard
                 navigation={navigation}
@@ -545,7 +550,7 @@ export function MarketplaceWatchSection({ watches, navigation }) {
                 }}
               />
             ) : (
-              <PublicWatchCard nft={item} navigation={navigation} />
+              <PublicWatchCard nft={item} navigation={navigation} cardWidth={cardWidth} />
             )}
           </View>
         )}

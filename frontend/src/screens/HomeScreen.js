@@ -7,6 +7,7 @@ import GlobalHeader from '../components/GlobalHeader';
 import { MarketplaceWatchSection } from '../components/WatchSections';
 import AlertModal, { useAlert } from '../components/AlertModal';
 import { useTheme } from '../context/ThemeContext';
+import { useScrollAware, HEADER_HEIGHT } from '../hooks/useScrollAware';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -15,6 +16,7 @@ export default function HomeScreen() {
   const [loadingData, setLoadingData] = useState(true);
   const [loggedUser, setLoggedUser] = useState({});
   const { alertProps, showAlert } = useAlert();
+  const { onScroll, headerTranslate } = useScrollAware();
 
   const fetchData = useCallback(async () => {
     try {
@@ -84,9 +86,15 @@ export default function HomeScreen() {
         title="Marketplace"
         onWalletChange={setLoggedUser}
         navigation={navigation}
+        translateAnim={headerTranslate}
       />
 
-      <MarketplaceWatchSection watches={watches} navigation={navigation} />
+      <MarketplaceWatchSection
+        watches={watches}
+        navigation={navigation}
+        onScroll={onScroll}
+        topOffset={HEADER_HEIGHT}
+      />
 
       <AlertModal {...alertProps} />
     </View>

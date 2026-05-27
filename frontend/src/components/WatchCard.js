@@ -190,8 +190,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
           transition: Platform.OS === 'web' ? 'all 0.2s ease-in-out' : undefined,
           cursor: Platform.OS === 'web' ? (walletConnected ? 'pointer' : 'default') : 'auto',
           zIndex: showMenu ? 10 : 1,
-          // ✅ CAMBIO 1: Altura fija e Layout Flex para toda la tarjeta (igual que en Marketplace)
-          height: 380,
+          height: 300,
           display: 'flex',
           flexDirection: 'column',
         },

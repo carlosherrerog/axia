@@ -699,7 +699,7 @@ export const watchCardStyles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 180,
+    height: 145,
     borderRadius: 10,
     marginBottom: 10,
     backgroundColor: colors.surface,
