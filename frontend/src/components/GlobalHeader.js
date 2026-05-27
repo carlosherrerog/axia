@@ -127,7 +127,12 @@ export default function GlobalHeader({
   // Wallet 
   const handleConnect = async () => {
     if (Platform.OS !== 'web' || !window.ethereum) {
-      showAlert('MetaMask requerido', 'Usa un navegador con MetaMask instalado.', 'warning');
+      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobileDevice && typeof window !== 'undefined') {
+        window.location.href = `https://metamask.app.link/dapp/${window.location.hostname}${window.location.pathname}${window.location.search}`;
+      } else {
+        showAlert('MetaMask requerido', 'Instala la extensión MetaMask en tu navegador.', 'warning');
+      }
       return;
     }
     try {
