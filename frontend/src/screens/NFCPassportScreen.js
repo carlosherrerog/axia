@@ -10,6 +10,7 @@ import api from '../api/api.js';
 import { colors, watchScreenStyles, WATCH_STATES, roleColors } from '../themes/styles.js';
 import { resolveImageUri } from '../utils/ipfs';
 import WatchHistoryTab from '../components/WatchHistoryTab';
+import WatchDetailsTab from '../components/WatchDetailsTab';
 
 const NFT_ADDRESS         = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS    || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
 const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS  || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6';
@@ -362,121 +363,21 @@ export default function NFCPassportScreen({ route, navigation }) {
 
         {/* ── PESTAÑA INFORMACIÓN ── */}
         {activeTab === 'details' && (
-          <View style={watchScreenStyles.contentCard}>
-
-            {/* Propietario Actual */}
-            {(() => {
-              const roleKey   = sellerRoles.includes('FABRICANTE') ? 'FABRICANTE'
-                              : sellerRoles.includes('DEALER')     ? 'DEALER'
-                              : sellerRoles.includes('RELOJERO')   ? 'RELOJERO'
-                              : null;
-              const roleColor = roleKey ? roleColors[roleKey] : colors.primary;
-              const roleLabel = roleKey ? { FABRICANTE: 'Fabricante', DEALER: 'Dealer', RELOJERO: 'Relojero' }[roleKey] : null;
-              return (
-                <View style={[watchScreenStyles.detailRow, { marginBottom: 6 }]}>
-                  <Text style={watchScreenStyles.detailLabel}>Propietario:</Text>
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <TouchableOpacity
-                      onPress={() => ownerData.id && navigation.navigate('PublicProfile', { userId: ownerData.id })}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
-                    >
-                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>{ownerData.username || 'Usuario'}</Text>
-                      {roleKey && <Ionicons name="checkmark-circle" size={16} color={roleColor} />}
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => Clipboard.setStringAsync(ownerData.wallet_address)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                        {ownerData.wallet_address ? `${ownerData.wallet_address.slice(0, 10)}…${ownerData.wallet_address.slice(-8)}` : '—'}
-                      </Text>
-                      <Ionicons name="copy-outline" size={11} color={colors.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })()}
-
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 5, marginBottom: 15 }} />
-
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Marca:</Text>
-              <Text style={watchScreenStyles.detailValue}>{watchData?.brand || 'N/A'}</Text>
-            </View>
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Modelo:</Text>
-              <Text style={watchScreenStyles.detailValue}>{watchData?.model || 'N/A'}</Text>
-            </View>
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Número de Serie:</Text>
-              <Text style={watchScreenStyles.detailValue}>{watchData?.serialNumber || 'N/A'}</Text>
-            </View>
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Año de Fabricación:</Text>
-              <Text style={watchScreenStyles.detailValue}>{watchData?.manufacturingYear || 'N/A'}</Text>
-            </View>
-            {watchData.mint_date && (
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>Fecha de Minteo:</Text>
-                <Text style={[watchScreenStyles.detailValue, { color: colors.primaryLight, fontWeight: '600' }]}>
-                  {new Date(watchData.mint_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                </Text>
-              </View>
-            )}
-
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 15 }} />
-
-            <View style={[watchScreenStyles.detailRow, { marginBottom: 8 }]}>
-              <Text style={watchScreenStyles.detailLabel}>Estado Blockchain</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Ionicons name={currentStateInfo.icon} size={13} color={currentStateInfo.color} />
-                <Text style={{ color: currentStateInfo.color, fontSize: 13, fontWeight: '600' }}>
-                  {currentStateId === 0 ? 'En propiedad' : currentStateInfo.label}
-                </Text>
-              </View>
-            </View>
-            <View style={[watchScreenStyles.detailRow, { marginBottom: 10 }]}>
-              <Text style={watchScreenStyles.detailLabel}>Estado Marketplace</Text>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: isAltered ? colors.textMuted : isEscrowed ? '#f59e0b' : isListed ? colors.primaryLight : watchData?.is_public ? '#10b981' : colors.textSecondary }}>
-                {isAltered ? '—' : isEscrowed ? 'Reservado' : isListed ? 'En Venta' : watchData?.is_public ? 'Público' : 'Privado'}
-              </Text>
-            </View>
-
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 15 }} />
-
-            <View style={[watchScreenStyles.detailRow, { alignItems: 'flex-start' }]}>
-              <Text style={watchScreenStyles.detailLabel}>Dirección del contrato:</Text>
-              <TouchableOpacity onPress={() => Clipboard.setStringAsync(NFT_ADDRESS)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: colors.primaryLight, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                  {NFT_ADDRESS ? `${NFT_ADDRESS.slice(0, 10)}…${NFT_ADDRESS.slice(-8)}` : '0x...'}
-                </Text>
-                <Ionicons name="copy-outline" size={14} color={colors.primaryLight} />
-              </TouchableOpacity>
-            </View>
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>ID del Token:</Text>
-              <Text style={watchScreenStyles.detailValue}>{tokenId}</Text>
-            </View>
-            <View style={watchScreenStyles.detailRow}>
-              <Text style={watchScreenStyles.detailLabel}>Estándar de token:</Text>
-              <Text style={watchScreenStyles.detailValue}>ERC721</Text>
-            </View>
-
-            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 15 }} />
-
-            <TouchableOpacity
-              onPress={openPolygonscan}
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                backgroundColor: colors.surface, borderRadius: 12, padding: 14,
-                borderWidth: 1, borderColor: colors.border,
-              }}
-            >
-              <Ionicons name="open-outline" size={16} color={colors.primaryLight} />
-              <Text style={{ color: colors.primaryLight, fontWeight: '600', fontSize: 13 }}>
-                Ver en Polygonscan (Amoy)
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <WatchDetailsTab
+            watchData={watchData}
+            ownerData={ownerData}
+            sellerRoles={sellerRoles}
+            currentStateId={currentStateId}
+            currentStateInfo={currentStateInfo}
+            isAltered={isAltered}
+            isEscrowed={isEscrowed}
+            isListed={isListed}
+            nftAddress={NFT_ADDRESS}
+            tokenId={tokenId}
+            navigation={navigation}
+            colors={colors}
+          />
         )}
-
         {/* ── PESTAÑA HISTORIAL ── */}
         {activeTab === 'history' && (
           <WatchHistoryTab

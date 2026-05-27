@@ -11,6 +11,7 @@ import { colors, watchScreenStyles, alertColors, globalStyles, alertStyles, WATC
 import { resolveImageUri } from '../utils/ipfs';
 import GlobalHeader from '../components/GlobalHeader';
 import WatchHistoryTab from '../components/WatchHistoryTab';
+import WatchDetailsTab from '../components/WatchDetailsTab';
 import { useScrollAware, HEADER_HEIGHT } from '../hooks/useScrollAware';
 
 const NFT_ADDRESS                = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS          || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
@@ -223,6 +224,90 @@ export default function PublicWatchScreen({ route, navigation }) {
     setIsHoveringImg(false);
   } : null;
 
+  const hasWallet = !!loggedUser?.wallet_address;
+  const priceNum  = listingData?.price ? Number(listingData.price) / 1_000_000 : 0;
+  const buySection = (isListed && !isEscrowed && loggedUser && loggedUser.id !== watchData?.owner_id) ? (
+    <View style={{ marginBottom: 25 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="cart-outline" size={18} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Opciones de compra</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
+            {sellerIsTrusted ? 'Vendedor verificado · Sin peritaje' : 'Venta entre particulares · Con peritaje'}
+          </Text>
+        </View>
+        {sellerIsTrusted ? (
+          <View style={{ backgroundColor: '#10b98118', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#10b98140' }}>
+            <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
+              {sellerIsManufacturer ? 'FABRICANTE' : 'DEALER'}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ backgroundColor: '#f59e0b18', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#f59e0b40' }}>
+            <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '700' }}>PARTICULAR</Text>
+          </View>
+        )}
+      </View>
+      <View style={{ backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={{ color: colors.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>Precio de venta</Text>
+          <Text style={{ color: colors.text, fontWeight: '800', fontSize: 24 }}>
+            {displayPrice} <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }}>USDC</Text>
+          </Text>
+        </View>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="cash-outline" size={20} color={colors.primary} />
+        </View>
+      </View>
+      <View style={{ backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 16 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 10 }}>Resumen de la compra</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Total a pagar</Text>
+          <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>
+            {priceNum.toLocaleString('es-ES', { minimumFractionDigits: 2 })} USDC
+          </Text>
+        </View>
+        <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons
+            name={listingData?.is_p2p ? 'shield-checkmark-outline' : 'checkmark-circle-outline'}
+            size={13}
+            color={listingData?.is_p2p ? colors.textMuted : '#10b981'}
+          />
+          <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1 }}>
+            {listingData?.is_p2p
+              ? 'Un relojero certificado verificará el reloj antes de que lo recibas'
+              : 'Envío directo · Sin peritaje · Sin cargos adicionales para el comprador'}
+          </Text>
+        </View>
+      </View>
+      {!hasWallet && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+          <Ionicons name="wallet-outline" size={16} color={colors.textMuted} />
+          <Text style={{ color: colors.textMuted, fontSize: 12, flex: 1 }}>Conecta tu wallet para poder comprar u ofertar</Text>
+        </View>
+      )}
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity
+          style={{
+            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+            backgroundColor: hasWallet ? colors.primary : colors.surface, borderRadius: 14,
+            paddingVertical: 14,
+            borderWidth: hasWallet ? 0 : 1, borderColor: colors.border,
+            opacity: hasWallet ? 1 : 0.5,
+          }}
+          onPress={hasWallet ? handleBuyClick : undefined}
+          disabled={!hasWallet}
+        >
+          <Ionicons name="cart-outline" size={18} color={hasWallet ? '#fff' : colors.textMuted} />
+          <Text style={{ color: hasWallet ? '#fff' : colors.textMuted, fontWeight: '700', fontSize: 15 }}>Comprar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  ) : null;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <GlobalHeader
@@ -376,205 +461,22 @@ export default function PublicWatchScreen({ route, navigation }) {
 
           {/* PESTAÑA INFORMACIÓN */}
           {activeTab === 'details' && (
-            <View style={watchScreenStyles.contentCard}>
-
-              {isListed && !isEscrowed && loggedUser && loggedUser.id !== watchData.owner_id && (() => {
-                const hasWallet = !!loggedUser?.wallet_address;
-                const priceNum = listingData?.price ? Number(listingData.price) / 1_000_000 : 0;
-                const depositAmt = priceNum * 0.02; // solo para info del vendedor (no lo paga el comprador)
-                return (
-                  <View style={{ marginBottom: 25 }}>
-                    {/* Cabecera */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
-                        <Ionicons name="cart-outline" size={18} color={colors.primary} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Opciones de compra</Text>
-                        <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
-                          {sellerIsTrusted ? 'Vendedor verificado · Sin peritaje' : 'Venta entre particulares · Con peritaje'}
-                        </Text>
-                      </View>
-                      {sellerIsTrusted ? (
-                        <View style={{ backgroundColor: '#10b98118', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#10b98140' }}>
-                          <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
-                            {sellerIsManufacturer ? 'FABRICANTE' : 'DEALER'}
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={{ backgroundColor: '#f59e0b18', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: '#f59e0b40' }}>
-                          <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '700' }}>PARTICULAR</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Precio destacado */}
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <View>
-                        <Text style={{ color: colors.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>Precio de venta</Text>
-                        <Text style={{ color: colors.text, fontWeight: '800', fontSize: 24 }}>
-                          {displayPrice} <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }}>USDC</Text>
-                        </Text>
-                      </View>
-                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center' }}>
-                        <Ionicons name="cash-outline" size={20} color={colors.primary} />
-                      </View>
-                    </View>
-
-                    {/* Desglose para el comprador */}
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 16 }}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 10 }}>Resumen de la compra</Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Total a pagar</Text>
-                        <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>
-                          {priceNum.toLocaleString('es-ES', { minimumFractionDigits: 2 })} USDC
-                        </Text>
-                      </View>
-                      <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons
-                          name={listingData?.is_p2p ? 'shield-checkmark-outline' : 'checkmark-circle-outline'}
-                          size={13}
-                          color={listingData?.is_p2p ? colors.textMuted : '#10b981'}
-                        />
-                        <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1 }}>
-                          {listingData?.is_p2p
-                            ? 'Un relojero certificado verificará el reloj antes de que lo recibas'
-                            : 'Envío directo · Sin peritaje · Sin cargos adicionales para el comprador'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Aviso si no hay wallet */}
-                    {!hasWallet && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-                        <Ionicons name="wallet-outline" size={16} color={colors.textMuted} />
-                        <Text style={{ color: colors.textMuted, fontSize: 12, flex: 1 }}>Conecta tu wallet para poder comprar u ofertar</Text>
-                      </View>
-                    )}
-
-                    {/* Botones */}
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <TouchableOpacity
-                        style={{
-                          flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-                          backgroundColor: hasWallet ? colors.primary : colors.surface, borderRadius: 14,
-                          paddingVertical: 14,
-                          borderWidth: hasWallet ? 0 : 1, borderColor: colors.border,
-                          opacity: hasWallet ? 1 : 0.5,
-                        }}
-                        onPress={hasWallet ? handleBuyClick : undefined}
-                        disabled={!hasWallet}
-                      >
-                        <Ionicons name="cart-outline" size={18} color={hasWallet ? '#fff' : colors.textMuted} />
-                        <Text style={{ color: hasWallet ? '#fff' : colors.textMuted, fontWeight: '700', fontSize: 15 }}>Comprar</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                );
-              })()}
-
-              {(!isEscrowed || isAltered) && (
-                <>
-                  {(() => {
-                    const roleKey = sellerRoles.includes('FABRICANTE') ? 'FABRICANTE'
-                      : sellerRoles.includes('DEALER') ? 'DEALER'
-                      : sellerRoles.includes('RELOJERO') ? 'RELOJERO'
-                      : null;
-                    const roleColor = roleKey ? roleColors[roleKey] : colors.primary;
-                    const roleLabel = roleKey ? { FABRICANTE: 'Fabricante', DEALER: 'Dealer', RELOJERO: 'Relojero' }[roleKey] : null;
-                    return (
-                      <View style={[watchScreenStyles.detailRow, { marginBottom: 6 }]}>
-                        <Text style={watchScreenStyles.detailLabel}>Propietario:</Text>
-                        <View style={{ flex: 1, gap: 3 }}>
-                          <TouchableOpacity
-                            onPress={() => !isManufacturer && navigation.navigate('PublicProfile', { userId: watchData.owner_id })}
-                            style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
-                          >
-                            <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>{ownerData.username || 'Usuario'}</Text>
-                            {roleKey && <Ionicons name="checkmark-circle" size={16} color={roleColor} />}
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => Clipboard.setStringAsync(ownerData.wallet_address)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                              {ownerData.wallet_address ? `${ownerData.wallet_address.slice(0, 10)}…${ownerData.wallet_address.slice(-8)}` : '—'}
-                            </Text>
-                            <Ionicons name="copy-outline" size={11} color={colors.textMuted} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })()}
-                  <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 5, marginBottom: 15 }} />
-                </>
-              )}
-
-              <Text style={watchScreenStyles.sectionTitle}>
-                {watchData?.brand ? `${watchData.brand} ${watchData.model}` : watchData?.model || 'Modelo'}
-              </Text>
-
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>Marca:</Text>
-                <Text style={watchScreenStyles.detailValue}>{watchData?.brand || 'N/A'}</Text>
-              </View>
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>Modelo:</Text>
-                <Text style={watchScreenStyles.detailValue}>{watchData?.model || 'N/A'}</Text>
-              </View>
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>Número de Serie:</Text>
-                <Text style={watchScreenStyles.detailValue}>{watchData?.serialNumber || 'N/A'}</Text>
-              </View>
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>Año de Fabricación:</Text>
-                <Text style={watchScreenStyles.detailValue}>{watchData?.manufacturingYear || 'N/A'}</Text>
-              </View>
-              {watchData.mint_date && (
-                <View style={watchScreenStyles.detailRow}>
-                  <Text style={watchScreenStyles.detailLabel}>Última Verificación:</Text>
-                  <Text style={[watchScreenStyles.detailValue, { color: colors.primaryLight, fontWeight: '600' }]}>
-                    {new Date(watchData.mint_date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </Text>
-                </View>
-              )}
-
-              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 15 }} />
-
-              <View style={{ marginBottom: 12 }}>
-                <Text style={watchScreenStyles.detailLabel}>Estado Blockchain</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                  <Ionicons name={currentStateInfo.icon} size={14} color={currentStateInfo.color} />
-                  <Text style={{ color: currentStateInfo.color, fontSize: 13, fontWeight: '600' }}>
-                    {currentStateId === 0 ? 'En propiedad' : currentStateInfo.label}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ marginBottom: 10 }}>
-                <Text style={watchScreenStyles.detailLabel}>Estado Marketplace</Text>
-                <Text style={{ fontSize: 13, fontWeight: '600', marginTop: 3, color: isAltered ? colors.textMuted : isEscrowed ? '#f59e0b' : isListed ? colors.primaryLight : watchData?.is_public ? '#10b981' : colors.textSecondary }}>
-                  {isAltered ? '—' : isEscrowed ? 'Reservado' : isListed ? 'En Venta' : watchData?.is_public ? 'Público' : 'Privado'}
-                </Text>
-              </View>
-
-              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 15 }} />
-
-              <View style={[watchScreenStyles.detailRow, { alignItems: 'flex-start' }]}>
-                <Text style={watchScreenStyles.detailLabel}>Dirección del contrato:</Text>
-                <TouchableOpacity onPress={() => Clipboard.setStringAsync(NFT_ADDRESS)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ color: colors.primaryLight, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
-                    {NFT_ADDRESS ? `${NFT_ADDRESS.slice(0, 10)}…${NFT_ADDRESS.slice(-8)}` : '0x...'}
-                  </Text>
-                  <Ionicons name="copy-outline" size={14} color={colors.primaryLight} />
-                </TouchableOpacity>
-              </View>
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>ID del Token:</Text>
-                <Text style={watchScreenStyles.detailValue}>{watchId}</Text>
-              </View>
-              <View style={watchScreenStyles.detailRow}>
-                <Text style={watchScreenStyles.detailLabel}>Estándar de token:</Text>
-                <Text style={watchScreenStyles.detailValue}>ERC721</Text>
-              </View>
-            </View>
+            <WatchDetailsTab
+              watchData={watchData}
+              ownerData={ownerData}
+              sellerRoles={sellerRoles}
+              currentStateId={currentStateId}
+              currentStateInfo={currentStateInfo}
+              isAltered={isAltered}
+              isEscrowed={isEscrowed}
+              isListed={isListed}
+              nftAddress={NFT_ADDRESS}
+              tokenId={watchId}
+              navigation={navigation}
+              isManufacturer={isManufacturer}
+              colors={colors}
+              buySection={buySection}
+            />
           )}
 
           {/* PESTAÑA HISTORIAL */}
