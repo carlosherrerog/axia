@@ -476,24 +476,19 @@ export default function PublicWatchScreen({ route, navigation }) {
                       <View style={[watchScreenStyles.detailRow, { marginBottom: 6 }]}>
                         <Text style={watchScreenStyles.detailLabel}>Propietario:</Text>
                         <View style={{ flex: 1, gap: 3 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <TouchableOpacity
+                            onPress={() => !isManufacturer && navigation.navigate('PublicProfile', { userId: watchData.owner_id })}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
+                          >
                             <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>{ownerData.username || 'Usuario'}</Text>
-                            {roleKey && (
-                              <Ionicons name="checkmark-circle" size={16} color={roleColor} />
-                            )}
-                          </View>
+                            {roleKey && <Ionicons name="checkmark-circle" size={16} color={roleColor} />}
+                          </TouchableOpacity>
                           <TouchableOpacity onPress={() => Clipboard.setStringAsync(ownerData.wallet_address)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>
                               {ownerData.wallet_address ? `${ownerData.wallet_address.slice(0, 10)}…${ownerData.wallet_address.slice(-8)}` : '—'}
                             </Text>
                             <Ionicons name="copy-outline" size={11} color={colors.textMuted} />
                           </TouchableOpacity>
-                          {!isManufacturer && (
-                            <TouchableOpacity onPress={() => navigation.navigate('PublicProfile', { userId: watchData.owner_id })} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                              <Text style={{ color: colors.textMuted, fontSize: 13 }}>Ver perfil</Text>
-                              <Ionicons name="chevron-forward" size={13} color={colors.textMuted} />
-                            </TouchableOpacity>
-                          )}
                         </View>
                       </View>
                     );
