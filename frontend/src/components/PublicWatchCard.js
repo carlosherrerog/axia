@@ -179,12 +179,12 @@ export default function PublicWatchCard({ nft, navigation, cardWidth }) {
 
           <View style={{
             alignSelf: 'flex-start',
-            marginTop: 12,
+            marginTop: 5,
             backgroundColor: '#10b98118',
             borderWidth: 1, borderColor: '#10b98150',
-            borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3,
+            borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2,
           }}>
-            <Text style={{ color: '#10b981', fontSize: 13, fontWeight: '700' }}>
+            <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
               #{nft.token_id || nft.id}
             </Text>
           </View>
