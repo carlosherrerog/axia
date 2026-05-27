@@ -1,15 +1,19 @@
 import { Platform } from 'react-native';
 import { ethers } from 'ethers';
 
-// Polygon Amoy exige mínimo 25 gwei de tip. Usamos 30 gwei como margen seguro.
-const MIN_PRIORITY_FEE = ethers.parseUnits('30', 'gwei');
+// Floor absoluto por si la red devuelve 0 o un valor muy bajo
+const FLOOR_PRIORITY_FEE = ethers.parseUnits('25', 'gwei');
+// Margen sobre el valor que devuelva la red (+20%)
+const GAS_MARGIN = 120n;
 
 function applyMinGasFee(provider) {
   const _getFeeData = provider.getFeeData.bind(provider);
   provider.getFeeData = async () => {
     const feeData = await _getFeeData();
-    const tip = feeData.maxPriorityFeePerGas ?? 0n;
-    const adjustedTip = tip < MIN_PRIORITY_FEE ? MIN_PRIORITY_FEE : tip;
+    const networkTip = feeData.maxPriorityFeePerGas ?? 0n;
+    // Aplicar margen del 20% sobre lo que pida la red, con floor de 25 gwei
+    const withMargin = (networkTip * GAS_MARGIN) / 100n;
+    const adjustedTip = withMargin < FLOOR_PRIORITY_FEE ? FLOOR_PRIORITY_FEE : withMargin;
     return new ethers.FeeData(
       feeData.gasPrice,
       feeData.maxFeePerGas,
