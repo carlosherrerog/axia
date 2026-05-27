@@ -370,7 +370,7 @@ export function MarketplaceWatchSection({ watches, navigation, onScroll, topOffs
   const filtered = watches
     .filter(w => {
       if (filter === 'auction') return !!w.auction_data;
-      if (filter === 'sale')    return !w.auction_data;
+      if (filter === 'sale')    return !w.auction_data && !!w.is_listed;
       return true;
     })
     .filter(w => {

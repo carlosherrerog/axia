@@ -149,7 +149,17 @@ export default function AuctionsScreen({ navigation }) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { fetchData(); }, [fetchData]));
+  useFocusEffect(useCallback(() => {
+    fetchData();
+    // WebSocket público para actualizaciones en tiempo real sin login
+    const ws = new WebSocket(`${WS_URL}/ws/admin`);
+    ws.onmessage = ({ data }) => {
+      let type = data;
+      try { type = JSON.parse(data)?.type ?? data; } catch {}
+      if (type === 'update_marketplace' || type === 'update_auction') fetchData();
+    };
+    return () => ws.close();
+  }, [fetchData]));
 
   useEffect(() => {
     if (!loggedUser?.id) return;
