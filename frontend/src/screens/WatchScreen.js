@@ -1,7 +1,7 @@
 // src/screens/WatchScreen.js
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, 
-         Image, Platform, Alert, Modal, Switch, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator,
+         Image, Platform, Alert, Modal, Switch, Pressable, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
 import { useFocusEffect } from '@react-navigation/native';
@@ -30,7 +30,9 @@ const ERC20_ABI = [
 ];
 
 export default function WatchScreen({ route, navigation }) {
-  
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
   const { watchId, initialTab = 'details', isBuyer = false } = route.params || {};
   const [activeTab, setActiveTab] = useState(initialTab);
   const [watchData, setWatchData] = useState(null);
@@ -619,7 +621,7 @@ export default function WatchScreen({ route, navigation }) {
       </TouchableOpacity>
 
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 100 }}>
-      <View style={{ padding: 20 }}>
+      <View style={{ paddingHorizontal: isDesktop ? 24 : 16, paddingVertical: 20, maxWidth: 900, alignSelf: 'center', width: '100%' }}>
         <View style={[
           watchScreenStyles.contentCard,
           { padding: 0, overflow: 'hidden', marginBottom: 20 },
@@ -1084,7 +1086,6 @@ export default function WatchScreen({ route, navigation }) {
 
         {/* --- PESTAÑA VENDER --- */}
         {currentTab === 'sell' && !isListed && (
-          <View style={{ maxWidth: 520, alignSelf: 'center', width: '100%' }}>
             <View style={watchScreenStyles.contentCard}>
               {/* Cabecera */}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 }}>
@@ -1197,12 +1198,10 @@ export default function WatchScreen({ route, navigation }) {
                 }
               </TouchableOpacity>
             </View>
-          </View>
         )}
 
         {/* --- PESTAÑA GESTIONAR SEGURIDAD --- */}
         {currentTab === 'security' && (
-          <View style={{ maxWidth: 520, alignSelf: 'center', width: '100%' }}>
           <View style={watchScreenStyles.contentCard}>
             {/* Cabecera */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18, gap: 10 }}>
@@ -1376,7 +1375,6 @@ export default function WatchScreen({ route, navigation }) {
                 </View>
               </>
             )}
-          </View>
           </View>
         )}
 
