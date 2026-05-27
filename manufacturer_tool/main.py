@@ -1596,7 +1596,8 @@ class MintTab(tk.Frame):
             # 1. Subir imagen a Pinata
             self._log("Subiendo imagen a IPFS…", C["text2"])
             img_cid = upload_image_pinata(self.img_path)
-            img_url = f"ipfs://{img_cid}"
+            # Usar gateway HTTPS de Pinata para que exploradores como PolygonScan puedan resolver la imagen
+            img_url = f"https://gateway.pinata.cloud/ipfs/{img_cid}"
             self._log("Imagen subida. Generando metadata…", C["text2"])
 
             # 2. Subir metadata JSON
