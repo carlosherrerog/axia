@@ -243,20 +243,19 @@ export default function WatchScreen({ route, navigation }) {
       } catch (e) { console.error("Error guardando preferencia", e); }
     }
 
+    setActionLoading(true);
+    setMetaMaskLoading(true);
+    let receipt = null;
+
+    // — PASOS 1-3: BLOCKCHAIN —
     try {
-      setActionLoading(true);
-      setMetaMaskLoading(true);
       const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
-
-      // Definimos los 3 contratos necesarios
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
       const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
+      const priceInWei = ethers.parseUnits(sellPrice, 6);
 
-      const priceInWei = ethers.parseUnits(sellPrice, 6); 
-
-      // --- PASO 1: APROBAR EL TOKEN USDC (Fianza del vendedor) — solo para particulares ---
       if (!isManufacturer) {
         const sellerDeposit = (priceInWei * 200n) / 10000n;
         const signerAddress = await signer.getAddress();
@@ -269,68 +268,100 @@ export default function WatchScreen({ route, navigation }) {
         await usdcApproveTx.wait();
       }
 
-      // --- PASO 2: APROBAR EL NFT ---
-      console.log("Aprobando transferencia del NFT...");
       const nftApproveTx = await nftContract.approve(MARKETPLACE_ADDRESS, watchId);
       await nftApproveTx.wait();
 
-      // --- PASO 3: LISTAR EN BLOCKCHAIN ---
-      console.log("Enviando listado al Smart Contract...");
       const listTx = await marketplaceContract.listWatch(watchId, priceInWei);
-      const receipt = await listTx.wait();
-
-      // --- PASO 4: REGISTRAR EN EL BACKEND ---
-      await api.post(`/nfts/${watchId}/list`, {
-        price_usdc: parseFloat(sellPrice),
-        tx_hash: receipt.hash
-      });
-
-      navigation.goBack();
-      setSellPrice('');
-
+      receipt = await listTx.wait();
     } catch (error) {
-      console.error("Error en el listado:", error);
       if (error.code === 'ACTION_REJECTED') {
         Alert.alert("Cancelado", "Has rechazado la transacción.");
       } else {
-        Alert.alert("Error", "La transacción falló. Asegúrate de tener saldo suficiente para el gas y la fianza.");
+        Alert.alert("Error", error.message?.includes('USDC')
+          ? error.message
+          : "La transacción blockchain falló. No se realizó ningún cambio.");
       }
       setActionLoading(false);
-    } finally {
       setMetaMaskLoading(false);
+      return;
     }
+
+    setMetaMaskLoading(false);
+
+    // — PASO 4: BACKEND — reintentos para evitar desincronización
+    let backendOk = false;
+    for (let i = 0; i < 3; i++) {
+      try {
+        await api.post(`/nfts/${watchId}/list`, {
+          price_usdc: parseFloat(sellPrice),
+          tx_hash: receipt.hash,
+        });
+        backendOk = true;
+        break;
+      } catch {
+        if (i < 2) await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      }
+    }
+
+    if (!backendOk) {
+      Alert.alert(
+        "Atención",
+        `El reloj #${watchId} se publicó en blockchain pero no pudimos registrarlo en la base de datos. Contacta con soporte indicando el token #${watchId}.`
+      );
+    }
+
+    navigation.goBack();
+    setSellPrice('');
+    setActionLoading(false);
   };
 
   const handleCancelListing = async () => {
+    setCancellingListing(true);
+    setMetaMaskLoading(true);
+    let txHash = null;
+
+    // — BLOCKCHAIN —
     try {
-      setCancellingListing(true);
-      setMetaMaskLoading(true);
       const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
-
       const tx = await marketplaceContract.cancelListing(watchId);
       await tx.wait();
-
-      await api.post(`/nfts/${watchId}/cancel`, {
-        tx_hash: tx.hash
-      });
-      
-      // 1. Navegamos hacia atrás INMEDIATAMENTE para salir de la pantalla de detalles
-      // antes de que el WebSocket choque con la interfaz.
-      navigation.goBack();
-
+      txHash = tx.hash;
     } catch (error) {
       if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
-        Alert.alert("Transacción Cancelada", "Has rechazado la firma de la transacción en tu wallet.");
+        Alert.alert("Cancelado", "Has rechazado la firma en tu wallet.");
       } else {
-        console.error(error);
-        Alert.alert("Error", "No se pudo cancelar el anuncio. Inténtalo de nuevo.");
+        Alert.alert("Error", "No se pudo cancelar el anuncio en blockchain.");
       }
       setCancellingListing(false);
-    } finally {
       setMetaMaskLoading(false);
+      return;
     }
+
+    setMetaMaskLoading(false);
+
+    // — BACKEND con reintentos —
+    let backendOk = false;
+    for (let i = 0; i < 3; i++) {
+      try {
+        await api.post(`/nfts/${watchId}/cancel`, { tx_hash: txHash });
+        backendOk = true;
+        break;
+      } catch {
+        if (i < 2) await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      }
+    }
+
+    if (!backendOk) {
+      Alert.alert(
+        "Atención",
+        `El anuncio se canceló en blockchain pero no pudimos actualizarlo en la base de datos. Contacta con soporte (token #${watchId}).`
+      );
+    }
+
+    navigation.goBack();
+    setCancellingListing(false);
   };
 
   const handleUpdatePrice = async () => {
@@ -339,9 +370,12 @@ export default function WatchScreen({ route, navigation }) {
       return;
     }
 
+    setUpdatingPrice(true);
+    setMetaMaskLoading(true);
+    let txHash = null;
+
+    // — BLOCKCHAIN —
     try {
-      setUpdatingPrice(true);
-      setMetaMaskLoading(true);
       const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
@@ -352,8 +386,6 @@ export default function WatchScreen({ route, navigation }) {
         (listingData?.price ? Number(listingData.price) / 1_000_000 : 0).toString(), 6
       );
 
-      // Si el nuevo precio es mayor y es una venta P2P, hay que re-aprobar el depósito
-      // ya que el contrato extrae el 2% del vendedor cuando alguien compra
       if (!isManufacturer && listingData?.is_p2p !== false && priceInWei > currentPriceInWei) {
         const newDeposit = (priceInWei * 200n) / 10000n;
         const approveTx = await usdcContract.approve(MARKETPLACE_ADDRESS, newDeposit);
@@ -362,29 +394,46 @@ export default function WatchScreen({ route, navigation }) {
 
       const tx = await marketplaceContract.updateListingPrice(watchId, priceInWei);
       await tx.wait();
-
-      await api.put(`/nfts/${watchId}/update-price`, { 
-        new_price_usdc: parseFloat(newPrice),
-        tx_hash: tx.hash
-      });
-
-      const priceInEnteros = Math.round(parseFloat(newPrice) * 1000000);
-      setListingData(prev => ({ ...prev, price: priceInEnteros }));
-      setNewPrice('');
-      await fetchWatchDetails();
-      
-      Alert.alert("Éxito", "Precio actualizado correctamente.", [{ text: "OK", onPress: () => setActiveTab('details') }]);
+      txHash = tx.hash;
     } catch (error) {
       if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
-        Alert.alert("Transacción Cancelada", "No se ha modificado el precio porque cancelaste la firma.");
+        Alert.alert("Cancelado", "No se modificó el precio porque cancelaste la firma.");
       } else {
-        console.error(error);
-        Alert.alert("Error", "Ocurrió un error al intentar actualizar el precio.");
+        Alert.alert("Error", "La transacción blockchain falló.");
       }
-    } finally {
       setUpdatingPrice(false);
       setMetaMaskLoading(false);
+      return;
     }
+
+    setMetaMaskLoading(false);
+
+    // — BACKEND con reintentos —
+    let backendOk = false;
+    for (let i = 0; i < 3; i++) {
+      try {
+        await api.put(`/nfts/${watchId}/update-price`, {
+          new_price_usdc: parseFloat(newPrice),
+          tx_hash: txHash,
+        });
+        backendOk = true;
+        break;
+      } catch {
+        if (i < 2) await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      }
+    }
+
+    const priceInEnteros = Math.round(parseFloat(newPrice) * 1000000);
+    setListingData(prev => ({ ...prev, price: priceInEnteros }));
+    setNewPrice('');
+    await fetchWatchDetails();
+
+    if (backendOk) {
+      Alert.alert("Éxito", "Precio actualizado correctamente.", [{ text: "OK", onPress: () => setActiveTab('details') }]);
+    } else {
+      Alert.alert("Atención", `El precio se actualizó en blockchain pero no en la base de datos. Contacta con soporte (token #${watchId}).`);
+    }
+    setUpdatingPrice(false);
   };
 
   const handleRequestReverification = async () => {

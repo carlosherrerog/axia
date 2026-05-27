@@ -143,43 +143,52 @@ export default function PublicWatchScreen({ route, navigation }) {
 
   const confirmPurchase = async () => {
     setBuyModalVisible(false);
+    setIsProcessingPurchase(true);
+
+    // — BLOCKCHAIN (approve + buy) —
     try {
-      setIsProcessingPurchase(true);
       const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
-      
       const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer);
-
       const priceWei = ethers.parseUnits((Number(listingData.price) / 1000000).toString(), 6);
 
-      // 1. Approve — el comprador solo paga el precio listado
       const approveTx = await usdcContract.approve(MARKETPLACE_ADDRESS, priceWei);
       await approveTx.wait();
 
-      // 2. Buy
       const buyTx = await marketplace.buyWatchEscrow(watchId);
       await buyTx.wait();
-
-      // 3. Backend
-      await api.post(`/marketplace/buy/${watchId}`);
-
-      showAlert("¡Éxito!", "Compra realizada con éxito.", "success");
-      setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'UserDashboard' }] }), 2000);
-
     } catch (error) {
-      console.error("Error en la compra:", error);
       if (error?.code === 'ACTION_REJECTED') {
         showAlert("Cancelado", "Has rechazado la transacción en tu wallet.");
-      } else if (error?.response?.data?.detail) {
-        showAlert("Error", error.response.data.detail);
       } else if (error?.message) {
         showAlert("Error", error.message);
       } else {
-        showAlert("Error", "La transacción falló o fue rechazada.");
+        showAlert("Error", "La transacción blockchain falló.");
       }
-    } finally {
       setIsProcessingPurchase(false);
+      return;
+    }
+
+    // — BACKEND con reintentos —
+    let backendOk = false;
+    for (let i = 0; i < 3; i++) {
+      try {
+        await api.post(`/marketplace/buy/${watchId}`);
+        backendOk = true;
+        break;
+      } catch {
+        if (i < 2) await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+      }
+    }
+
+    setIsProcessingPurchase(false);
+
+    if (backendOk) {
+      showAlert("¡Éxito!", "Compra realizada con éxito. El vendedor recibirá una notificación.", "success");
+      setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'UserDashboard' }] }), 2000);
+    } else {
+      showAlert("Atención", `La compra se procesó en blockchain pero no pudimos registrarla en la base de datos. Contacta con soporte (token #${watchId}).`, "warning");
     }
   };
   
