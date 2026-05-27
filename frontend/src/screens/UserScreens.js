@@ -168,7 +168,7 @@ function getStoredUser() {
 }
 
 export default function UserDashboardScreen({ route, navigation }) {
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
   const user = route?.params?.userData || getStoredUser() || {};
   const { colors } = useTheme();
 
@@ -376,8 +376,7 @@ export default function UserDashboardScreen({ route, navigation }) {
       setTxLoading(true);
       setCreateModal(false);
 
-      const provider  = new ethers.BrowserProvider(ethProvider);
-      const signer    = await provider.getSigner();
+      const signer    = await getConnectedSigner();
       const nft       = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
       const priceWei  = ethers.parseUnits(String(price), 6);

@@ -65,7 +65,7 @@ const fmtDateTime  = s => {
 export default function AuctionScreen({ route, navigation }) {
   const { tokenId } = route.params;
   const { colors }  = useTheme();
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
 
   const [auction, setAuction]           = useState(null);
   const [watch, setWatch]               = useState(null);
@@ -139,8 +139,7 @@ export default function AuctionScreen({ route, navigation }) {
     try {
       setTxLoading(true);
       setShowBidInput(false);
-      const provider  = new ethers.BrowserProvider(ethProvider);
-      const signer    = await provider.getSigner();
+      const signer    = await getConnectedSigner();
       const usdc      = new ethers.Contract(USDC_ADDRESS, MockUSDC_ABI.abi, signer);
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
       const amountWei = ethers.parseUnits(String(amount), 6);
@@ -178,8 +177,7 @@ export default function AuctionScreen({ route, navigation }) {
     const noWinner = !auction.highest_bidder || auction.highest_bid === 0;
     try {
       setTxLoading(true);
-      const provider  = new ethers.BrowserProvider(ethProvider);
-      const signer    = await provider.getSigner();
+      const signer    = await getConnectedSigner();
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
       const tx = await auctionCt.endAuction(tokenId);
       await tx.wait();

@@ -12,7 +12,7 @@ import Marketplace_ABI from '../contracts/WatchMarketplace.json';
 const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6';
 
 export default function WatchCard({ nft, removeNFT, navigation, isAdminView = false, onRefresh, isManufacturer = false, walletConnected = true }) {
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
@@ -129,8 +129,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
       setDeliveryConfirmVisible(false);
       setIsConfirming(true);
       setMetaMaskLoading(true);
-      const provider    = new ethers.BrowserProvider(ethProvider);
-      const signer      = await provider.getSigner();
+      const signer      = await getConnectedSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
       let blockchainWarning = null;

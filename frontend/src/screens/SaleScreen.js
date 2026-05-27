@@ -34,7 +34,7 @@ const ROLE_ICONS = {
 export default function SaleScreen({ route, navigation }) {
   const { listingId, tokenId } = route.params || {};
   const { colors } = useTheme();
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
 
   const [loggedUser, setLoggedUser] = useState(null);
   const [sale, setSale]           = useState(null);
@@ -118,8 +118,7 @@ export default function SaleScreen({ route, navigation }) {
     try {
       setActionLoading(true);
       setMetaMaskVisible(true);
-      const provider    = new ethers.BrowserProvider(ethProvider);
-      const signer      = await provider.getSigner();
+      const signer      = await getConnectedSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
       let blockchainWarning = null;

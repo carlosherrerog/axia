@@ -22,7 +22,7 @@ const MARKETPLACE_ABI = [
 
 
 export default function WatchmakerScreen({ navigation }) {
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
   const [loading, setLoading]           = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loggedUser, setLoggedUser]     = useState({ roles: [] });
@@ -171,8 +171,7 @@ export default function WatchmakerScreen({ navigation }) {
         // Re-certificación aprobada: restaurar estado en WatchNFT (requiere firma obligatoria)
         const WATCHNFT_ABI = ["function restoreAuthenticity(uint256 tokenId, string repairDescription) external"];
         const WATCHNFT_ADDRESS = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
-        const provider = new ethers.BrowserProvider(ethProvider);
-        const signer   = await provider.getSigner();
+        const signer   = await getConnectedSigner();
         const watchNFT = new ethers.Contract(WATCHNFT_ADDRESS, WATCHNFT_ABI, signer);
         const description = periComment.trim() || "Autenticidad restaurada tras re-certificación.";
         const tx = await watchNFT.restoreAuthenticity(selectedWatch.token_id, description);
@@ -182,8 +181,7 @@ export default function WatchmakerScreen({ navigation }) {
         // Venta P2P: la firma en MetaMask debe confirmar antes de actualizar el backend.
         // Si falla (wallet incorrecta, rechazo, error de contrato), se lanza el error y
         // el backend NO se actualiza.
-        const provider    = new ethers.BrowserProvider(ethProvider);
-        const signer      = await provider.getSigner();
+        const signer      = await getConnectedSigner();
         const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer);
         const tx = await marketplace.verifyAuthenticity(selectedWatch.token_id, isVerifySuccess);
         await tx.wait();

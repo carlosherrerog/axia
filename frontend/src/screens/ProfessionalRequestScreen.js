@@ -8,7 +8,7 @@ import { globalStyles, colors, roleColors, professionalRequestStyles as styles, 
 import GlobalHeader from '../components/GlobalHeader'; 
 
 export default function ProfessionalRequestScreen({ navigation }) {
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
   const [selectedType, setSelectedType] = useState(null);
   const [hoveredType, setHoveredType] = useState(null);
   const [requestMessage, setRequestMessage] = useState('');
@@ -70,8 +70,7 @@ export default function ProfessionalRequestScreen({ navigation }) {
       const address = accounts[0];
       const challengeRes = await api.post('/auth/challenge', { address });
       const { nonce } = challengeRes.data;
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const signature = await signer.signMessage(nonce);
       
       const verifyRes = await api.post('/auth/verify', { address, signature, nonce });

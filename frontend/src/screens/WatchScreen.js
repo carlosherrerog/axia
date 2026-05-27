@@ -34,7 +34,7 @@ const ERC20_ABI = [
 export default function WatchScreen({ route, navigation }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
 
   const { watchId, initialTab = 'details', isBuyer = false } = route.params || {};
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -249,8 +249,7 @@ export default function WatchScreen({ route, navigation }) {
 
     // — PASOS 1-3: BLOCKCHAIN —
     try {
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
       const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
@@ -327,8 +326,7 @@ export default function WatchScreen({ route, navigation }) {
 
     // — BLOCKCHAIN —
     try {
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const signerAddress = (await signer.getAddress()).toLowerCase();
       const sellerAddress = (listingData?.seller || '').toLowerCase();
       if (sellerAddress && signerAddress !== sellerAddress) {
@@ -396,8 +394,7 @@ export default function WatchScreen({ route, navigation }) {
 
     // — BLOCKCHAIN —
     try {
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
       const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
 
@@ -490,9 +487,7 @@ export default function WatchScreen({ route, navigation }) {
     setChangingStateId(newStateId);
     setMetaMaskLoading(true);
     try {
-      await ethProvider.request({ method: 'eth_requestAccounts' });
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
 
       const tx = await nftContract.changeSecurityState(watchId, newStateId);
@@ -526,8 +521,7 @@ export default function WatchScreen({ route, navigation }) {
     try {
       setActionLoading(true);
       setMetaMaskLoading(true);
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
       const tx = await marketplace.confirmDelivery(watchId);
@@ -599,8 +593,7 @@ export default function WatchScreen({ route, navigation }) {
       setActionLoading(true);
       setMetaMaskLoading(true);
 
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const userAddress = await signer.getAddress();
 
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);

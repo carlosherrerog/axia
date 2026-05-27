@@ -31,7 +31,7 @@ const MARKETPLACE_ABI = ["function buyWatchEscrow(uint256 tokenId) external"];
 export default function PublicWatchScreen({ route, navigation }) {
   const { watchId, initialTab = 'details' } = route.params || {};
   const { width } = useWindowDimensions();
-  const { ethProvider } = useEthProvider();
+  const { ethProvider, getConnectedSigner } = useEthProvider();
   const { onScroll, headerTranslate } = useScrollAware();
 
   // ESTADOS
@@ -147,8 +147,7 @@ export default function PublicWatchScreen({ route, navigation }) {
 
     // — BLOCKCHAIN (approve + buy) —
     try {
-      const provider = new ethers.BrowserProvider(ethProvider);
-      const signer = await provider.getSigner();
+      const signer = await getConnectedSigner();
       const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer);
       const priceWei = ethers.parseUnits((Number(listingData.price) / 1000000).toString(), 6);
