@@ -1084,108 +1084,125 @@ export default function WatchScreen({ route, navigation }) {
 
         {/* --- PESTAÑA VENDER --- */}
         {currentTab === 'sell' && !isListed && (
-          <View style={watchScreenStyles.contentCard}>
-            {/* Cabecera */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="cash" size={18} color={colors.primary} />
+          <View style={{ maxWidth: 520, alignSelf: 'center', width: '100%' }}>
+            <View style={watchScreenStyles.contentCard}>
+              {/* Cabecera */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + '20', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="cash" size={18} color={colors.primary} />
+                </View>
+                <View>
+                  <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>Publicar en el Marketplace</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>Fija el precio en USDC y firma la transacción</Text>
+                </View>
               </View>
-              <View>
-                <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>Publicar en el Marketplace</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>Fija el precio en USDC y firma la transacción</Text>
-              </View>
-            </View>
 
-            {/* Aviso si bloqueado */}
-            {currentStateId !== 0 && (
-              <View style={{ backgroundColor: '#f43f5e15', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#f43f5e40', marginBottom: 16, flexDirection: 'row', gap: 10 }}>
-                <Ionicons name="warning" size={18} color="#f43f5e" style={{ marginTop: 1 }} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#f43f5e', fontSize: 13, fontWeight: '700', marginBottom: 2 }}>Venta bloqueada</Text>
-                  <Text style={{ color: '#f43f5e', fontSize: 12, lineHeight: 18 }}>
-                    Este reloj está reportado como {currentStateInfo.label.toLowerCase()}. Resuélvelo en la pestaña Seguridad antes de venderlo.
+              {/* Aviso proceso P2P para particulares */}
+              {!isTrustedSeller && currentStateId === 0 && (
+                <View style={{ backgroundColor: '#f59e0b10', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#f59e0b30', marginBottom: 14, flexDirection: 'row', gap: 8 }}>
+                  <Ionicons name="information-circle-outline" size={16} color="#f59e0b" style={{ marginTop: 1 }} />
+                  <Text style={{ color: colors.textMuted, fontSize: 12, flex: 1, lineHeight: 17 }}>
+                    La venta P2P requiere una <Text style={{ color: '#f59e0b', fontWeight: '600' }}>fianza del 2%</Text> y la revisión por un relojero certificado antes de liberar los fondos al comprador.
                   </Text>
                 </View>
-              </View>
-            )}
+              )}
 
-            {/* Input de precio */}
-            <View style={{ marginBottom: 14, opacity: currentStateId !== 0 ? 0.5 : 1 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8, textTransform: 'uppercase' }}>Precio de venta</Text>
-              <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: colors.surface, borderRadius: 12,
-                borderWidth: 1.5, borderColor: sellPrice ? colors.primary : colors.border,
-                overflow: 'hidden',
-              }}>
-                <TextInput
-                  style={{ flex: 1, color: colors.text, fontSize: 20, fontWeight: '600', paddingHorizontal: 16, paddingVertical: 14, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) }}
-                  keyboardType="decimal-pad"
-                  value={sellPrice}
-                  onChangeText={v => {
-                    const cleaned = v.replace(/[^0-9.]/g, '');
-                    const parts = cleaned.split('.');
-                    setSellPrice(parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned);
-                  }}
-                  placeholderTextColor={colors.textMuted}
-                  placeholder="0.00"
-                  editable={currentStateId === 0}
-                />
-                <View style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.primary + '15', borderLeftWidth: 1, borderLeftColor: colors.border }}>
-                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>USDC</Text>
+              {/* Aviso si bloqueado */}
+              {currentStateId !== 0 && (
+                <View style={{ backgroundColor: '#f43f5e15', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#f43f5e40', marginBottom: 16, flexDirection: 'row', gap: 10 }}>
+                  <Ionicons name="warning" size={18} color="#f43f5e" style={{ marginTop: 1 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#f43f5e', fontSize: 13, fontWeight: '700', marginBottom: 2 }}>Venta bloqueada</Text>
+                    <Text style={{ color: '#f43f5e', fontSize: 12, lineHeight: 18 }}>
+                      Este reloj está reportado como {currentStateInfo.label.toLowerCase()}. Resuélvelo en la pestaña Seguridad antes de venderlo.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Input de precio */}
+              <View style={{ marginBottom: 14, opacity: currentStateId !== 0 ? 0.5 : 1 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', letterSpacing: 0.5, marginBottom: 8, textTransform: 'uppercase' }}>Precio de venta</Text>
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: colors.surface, borderRadius: 12,
+                  borderWidth: 1.5, borderColor: sellPrice && Number(sellPrice) > 0 ? colors.primary : colors.border,
+                  overflow: 'hidden',
+                }}>
+                  <TextInput
+                    style={{ flex: 1, color: colors.text, fontSize: 22, fontWeight: '700', paddingHorizontal: 16, paddingVertical: 14, ...(Platform.OS === 'web' && { outlineStyle: 'none' }) }}
+                    keyboardType="decimal-pad"
+                    value={sellPrice}
+                    onChangeText={v => {
+                      const cleaned = v.replace(/[^0-9.]/g, '');
+                      const parts = cleaned.split('.');
+                      setSellPrice(parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleaned);
+                    }}
+                    placeholderTextColor={colors.textMuted}
+                    placeholder="0.00"
+                    editable={currentStateId === 0}
+                  />
+                  <View style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.primary + '15', borderLeftWidth: 1, borderLeftColor: colors.border }}>
+                    <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>USDC</Text>
+                  </View>
                 </View>
               </View>
-            </View>
 
-            {/* Desglose de comisiones */}
-            {sellPrice && Number(sellPrice) > 0 && (
-              <View style={{ backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 16 }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: 10 }}>Estimación de comisiones</Text>
-                {[
-                  { label: 'Precio de venta', value: `${Number(sellPrice).toLocaleString('es-ES')} USDC`, color: colors.text },
-                  isManufacturer && { label: 'Regalías por reventa (1%)', value: `+${(Number(sellPrice) * 0.01).toFixed(2)} USDC`, color: '#10b981', note: 'Recibirás esto cada vez que el reloj se revenda' },
-                  !isTrustedSeller && { label: 'Fianza vendedor (2%)', value: `${(Number(sellPrice) * 0.02).toFixed(2)} USDC`, color: '#f59e0b', note: 'Cobrada al vendedor cuando alguien compre' },
-                  { label: 'Comisión plataforma (1%)', value: `− ${(Number(sellPrice) * 0.01).toFixed(2)} USDC`, color: colors.textSecondary },
-                  !isTrustedSeller && { label: 'Comisión relojero (2%)', value: `− ${(Number(sellPrice) * 0.02).toFixed(2)} USDC`, color: colors.textSecondary, note: 'Solo en ventas P2P' },
-                  { label: 'Recibirás (estimado)', value: `~${(Number(sellPrice) * (isTrustedSeller ? (isManufacturer ? 0.99 : 1.0) : 0.97)).toFixed(2)} USDC`, color: colors.primary, bold: true },
-                ].filter(Boolean).map(row => (
-                  <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{row.label}</Text>
-                      {row.note && <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 1 }}>{row.note}</Text>}
-                    </View>
-                    <Text style={{ color: row.color, fontWeight: row.bold ? '700' : '600', fontSize: row.bold ? 14 : 13 }}>{row.value}</Text>
+              {/* Desglose de comisiones — siempre visible */}
+              {(() => {
+                const p = Number(sellPrice) || 0;
+                const hasPrice = p > 0;
+                return (
+                  <View style={{ backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 16, opacity: currentStateId !== 0 ? 0.5 : 1 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 10 }}>Desglose de comisiones</Text>
+                    {[
+                      { label: 'Precio de venta', value: hasPrice ? `${p.toLocaleString('es-ES')} USDC` : '—', color: colors.text },
+                      isManufacturer && { label: 'Regalías por reventa (1%)', value: hasPrice ? `+${(p * 0.01).toFixed(2)} USDC` : '+0.00 USDC', color: '#10b981', note: 'En cada reventa futura' },
+                      !isTrustedSeller && { label: 'Fianza vendedor (2%)', value: hasPrice ? `${(p * 0.02).toFixed(2)} USDC` : '0.00 USDC', color: '#f59e0b', note: 'Retenida al vendedor al comprar' },
+                      { label: 'Comisión plataforma (1%)', value: hasPrice ? `− ${(p * 0.01).toFixed(2)} USDC` : '− 0.00 USDC', color: colors.textSecondary },
+                      !isTrustedSeller && { label: 'Comisión relojero (2%)', value: hasPrice ? `− ${(p * 0.02).toFixed(2)} USDC` : '− 0.00 USDC', color: colors.textSecondary, note: 'Solo en ventas P2P' },
+                      { label: 'Recibirás (estimado)', value: hasPrice ? `~${(p * (isTrustedSeller ? (isManufacturer ? 0.99 : 1.0) : 0.97)).toFixed(2)} USDC` : '—', color: hasPrice ? colors.primary : colors.textMuted, bold: true },
+                    ].filter(Boolean).map(row => (
+                      <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{row.label}</Text>
+                          {row.note && <Text style={{ color: colors.textMuted, fontSize: 10, marginTop: 1 }}>{row.note}</Text>}
+                        </View>
+                        <Text style={{ color: row.color, fontWeight: row.bold ? '700' : '600', fontSize: row.bold ? 14 : 13 }}>{row.value}</Text>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            )}
+                );
+              })()}
 
-            <TouchableOpacity
-              style={{
-                backgroundColor: (currentStateId !== 0 || !hasWallet) ? colors.surface : colors.primary,
-                borderRadius: 14, paddingVertical: 14, alignItems: 'center',
-                flexDirection: 'row', justifyContent: 'center', gap: 8,
-                opacity: (actionLoading || !hasWallet) ? 0.5 : 1,
-                borderWidth: (currentStateId !== 0 || !hasWallet) ? 1 : 0, borderColor: colors.border,
-              }}
-              onPress={hasWallet ? handlePreListCheck : undefined}
-              disabled={actionLoading || currentStateId !== 0 || !hasWallet}
-            >
-              {actionLoading
-                ? <ActivityIndicator color="#fff" />
-                : <>
-                    <Ionicons name="storefront-outline" size={18} color={currentStateId !== 0 ? colors.textMuted : '#fff'} />
-                    <Text style={{ color: currentStateId !== 0 ? colors.textMuted : '#fff', fontWeight: '700', fontSize: 15 }}>
-                      Publicar anuncio
-                    </Text>
-                  </>
-              }
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: (currentStateId !== 0 || !hasWallet || !sellPrice || Number(sellPrice) <= 0) ? colors.surface : colors.primary,
+                  borderRadius: 14, paddingVertical: 14, alignItems: 'center',
+                  flexDirection: 'row', justifyContent: 'center', gap: 8,
+                  opacity: (actionLoading || !hasWallet) ? 0.5 : 1,
+                  borderWidth: (currentStateId !== 0 || !hasWallet || !sellPrice || Number(sellPrice) <= 0) ? 1 : 0, borderColor: colors.border,
+                }}
+                onPress={hasWallet ? handlePreListCheck : undefined}
+                disabled={actionLoading || currentStateId !== 0 || !hasWallet || !sellPrice || Number(sellPrice) <= 0}
+              >
+                {actionLoading
+                  ? <ActivityIndicator color="#fff" />
+                  : <>
+                      <Ionicons name="storefront-outline" size={18} color={(currentStateId !== 0 || !sellPrice || Number(sellPrice) <= 0) ? colors.textMuted : '#fff'} />
+                      <Text style={{ color: (currentStateId !== 0 || !sellPrice || Number(sellPrice) <= 0) ? colors.textMuted : '#fff', fontWeight: '700', fontSize: 15 }}>
+                        Publicar anuncio
+                      </Text>
+                    </>
+                }
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
         {/* --- PESTAÑA GESTIONAR SEGURIDAD --- */}
         {currentTab === 'security' && (
+          <View style={{ maxWidth: 520, alignSelf: 'center', width: '100%' }}>
           <View style={watchScreenStyles.contentCard}>
             {/* Cabecera */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 18, gap: 10 }}>
@@ -1302,26 +1319,36 @@ export default function WatchScreen({ route, navigation }) {
                   )}
 
                   {currentStateId !== 1 && (
-                    <TouchableOpacity
-                      style={{
-                        backgroundColor: alertColors.error + '12', borderRadius: 12,
-                        borderWidth: 1, borderColor: alertColors.error + '40',
-                        paddingVertical: 13, paddingHorizontal: 16,
-                        flexDirection: 'row', alignItems: 'center', gap: 10,
-                        opacity: changingStateId !== null || isListed ? 0.5 : 1,
-                      }}
-                      onPress={() => handleChangeSecurityState(1)}
-                      disabled={changingStateId !== null || isListed}
-                    >
-                      {changingStateId === 1
-                        ? <ActivityIndicator color={alertColors.error} size="small" />
-                        : <Ionicons name="warning" size={18} color={alertColors.error} />}
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: alertColors.error, fontWeight: '600', fontSize: 14 }}>Reportar Robo</Text>
-                        <Text style={{ color: alertColors.error + '80', fontSize: 11, marginTop: 1 }}>Bloqueará transferencias y ventas</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={14} color={alertColors.error + '80'} />
-                    </TouchableOpacity>
+                    <>
+                      {currentStateId === 0 && (
+                        <View style={{ backgroundColor: alertColors.error + '08', borderRadius: 10, borderWidth: 1, borderColor: alertColors.error + '25', padding: 12, flexDirection: 'row', gap: 8 }}>
+                          <Ionicons name="alert-circle-outline" size={15} color={alertColors.error} style={{ marginTop: 1 }} />
+                          <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 }}>
+                            Reportar un robo <Text style={{ color: alertColors.error, fontWeight: '600' }}>bloquea permanentemente</Text> transferencias y ventas hasta que lo canceles. Esta acción queda registrada en blockchain.
+                          </Text>
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: alertColors.error + '12', borderRadius: 12,
+                          borderWidth: 1, borderColor: alertColors.error + '40',
+                          paddingVertical: 13, paddingHorizontal: 16,
+                          flexDirection: 'row', alignItems: 'center', gap: 10,
+                          opacity: changingStateId !== null || isListed ? 0.5 : 1,
+                        }}
+                        onPress={() => handleChangeSecurityState(1)}
+                        disabled={changingStateId !== null || isListed}
+                      >
+                        {changingStateId === 1
+                          ? <ActivityIndicator color={alertColors.error} size="small" />
+                          : <Ionicons name="warning" size={18} color={alertColors.error} />}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: alertColors.error, fontWeight: '700', fontSize: 14 }}>Reportar Robo</Text>
+                          <Text style={{ color: alertColors.error + '90', fontSize: 11, marginTop: 1 }}>Bloquea transferencias y ventas</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={14} color={alertColors.error + '80'} />
+                      </TouchableOpacity>
+                    </>
                   )}
 
                   {currentStateId !== 2 && !isManufacturer && (
@@ -1349,6 +1376,7 @@ export default function WatchScreen({ route, navigation }) {
                 </View>
               </>
             )}
+          </View>
           </View>
         )}
 
