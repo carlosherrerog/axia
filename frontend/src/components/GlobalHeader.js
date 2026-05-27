@@ -13,6 +13,17 @@ import { NavTabContext } from '../context/NavTabContext';
 import MenuDropdown from './MenuDropDown';
 import AlertModal, { useAlert } from './AlertModal';
 
+// Web3Modal hooks — solo en web
+let useWeb3Modal = () => ({ open: null });
+let useWeb3ModalProvider = () => ({ walletProvider: null });
+if (Platform.OS === 'web') {
+  try {
+    const wc = require('@web3modal/ethers/react');
+    useWeb3Modal = wc.useWeb3Modal;
+    useWeb3ModalProvider = wc.useWeb3ModalProvider;
+  } catch {}
+}
+
 export default function GlobalHeader({
   loggedUser,
   loading,
@@ -29,6 +40,9 @@ export default function GlobalHeader({
   const colors    = forceDark ? darkColors : theme.colors;
   const { width } = useWindowDimensions();
   const isMobile  = width < 768;
+
+  const { open: w3mOpen }          = useWeb3Modal();
+  const { walletProvider: w3mProvider } = useWeb3ModalProvider();
 
   const { activeTab, onTabPress, tabs } = useContext(NavTabContext);
   const showInlineTabs = !isMobile && tabs?.length > 0 && !showBack;
@@ -124,24 +138,14 @@ export default function GlobalHeader({
     }, 4500);
   };
 
-  // Wallet 
-  const handleConnect = async () => {
-    if (Platform.OS !== 'web' || !window.ethereum) {
-      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobileDevice && typeof window !== 'undefined') {
-        window.location.href = `https://metamask.app.link/dapp/${window.location.hostname}${window.location.pathname}${window.location.search}`;
-      } else {
-        showAlert('MetaMask requerido', 'Instala la extensión MetaMask en tu navegador.', 'warning');
-      }
-      return;
-    }
+  // Wallet
+  const doVerify = async (eip1193) => {
     try {
       setIsProcessingWallet(true);
-      const accounts  = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const address   = accounts[0];
-      const { data: { nonce } } = await api.post('/auth/challenge', { address });
-      const provider  = new ethers.BrowserProvider(window.ethereum);
+      const provider  = new ethers.BrowserProvider(eip1193);
       const signer    = await provider.getSigner();
+      const address   = await signer.getAddress();
+      const { data: { nonce } } = await api.post('/auth/challenge', { address });
       const signature = await signer.signMessage(nonce);
       const res       = await api.post('/auth/verify', { address, signature, nonce });
       setLocalUser(res.data);
@@ -153,6 +157,30 @@ export default function GlobalHeader({
       setIsProcessingWallet(false);
     }
   };
+
+  const handleConnect = async () => {
+    if (Platform.OS !== 'web') return;
+    if (window.ethereum) {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await doVerify(window.ethereum);
+    } else if (w3mOpen) {
+      // Móvil o sin extensión: abrir modal Web3Modal
+      pendingW3mVerify.current = true;
+      await w3mOpen();
+      // doVerify se llamará desde el useEffect cuando walletProvider esté disponible
+    } else {
+      showAlert('Wallet requerida', 'Instala MetaMask o usa un navegador compatible.', 'warning');
+    }
+  };
+
+  // Cuando Web3Modal conecta (móvil), completar verificación backend
+  const pendingW3mVerify = useRef(false);
+  useEffect(() => {
+    if (!w3mProvider || !pendingW3mVerify.current) return;
+    pendingW3mVerify.current = false;
+    doVerify(w3mProvider);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [w3mProvider]);
 
   const handleDisconnect = async () => {
     try {

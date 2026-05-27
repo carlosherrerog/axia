@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
 import { useFocusEffect } from '@react-navigation/native';
 import api, { getToken, WS_URL } from '../api/api';
+import { useEthProvider } from '../wallet/useEthProvider';
 import GlobalHeader from '../components/GlobalHeader';
 import AlertModal, { useAlert } from '../components/AlertModal';
 import { useTheme } from '../context/ThemeContext';
@@ -64,6 +65,7 @@ const fmtDateTime  = s => {
 export default function AuctionScreen({ route, navigation }) {
   const { tokenId } = route.params;
   const { colors }  = useTheme();
+  const { ethProvider } = useEthProvider();
 
   const [auction, setAuction]           = useState(null);
   const [watch, setWatch]               = useState(null);
@@ -129,7 +131,7 @@ export default function AuctionScreen({ route, navigation }) {
     wallet ? appUsers.find(u => u.wallet_address?.toLowerCase() === wallet.toLowerCase()) : null;
 
   const handlePlaceBid = async () => {
-    if (!window.ethereum) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
+    if (!ethProvider) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
     const amount = parseFloat(bidAmount);
     const minBid = Math.max(auction.highest_bid, auction.min_price);
     if (isNaN(amount) || amount <= minBid) return;
@@ -137,7 +139,7 @@ export default function AuctionScreen({ route, navigation }) {
     try {
       setTxLoading(true);
       setShowBidInput(false);
-      const provider  = new ethers.BrowserProvider(window.ethereum);
+      const provider  = new ethers.BrowserProvider(ethProvider);
       const signer    = await provider.getSigner();
       const usdc      = new ethers.Contract(USDC_ADDRESS, MockUSDC_ABI.abi, signer);
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
@@ -172,11 +174,11 @@ export default function AuctionScreen({ route, navigation }) {
   };
 
   const executeEndAuction = async () => {
-    if (!window.ethereum) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
+    if (!ethProvider) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
     const noWinner = !auction.highest_bidder || auction.highest_bid === 0;
     try {
       setTxLoading(true);
-      const provider  = new ethers.BrowserProvider(window.ethereum);
+      const provider  = new ethers.BrowserProvider(ethProvider);
       const signer    = await provider.getSigner();
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
       const tx = await auctionCt.endAuction(tokenId);

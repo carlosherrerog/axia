@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { ethers } from 'ethers'; 
 import api, { WS_URL } from '../api/api.js';
+import { useEthProvider } from '../wallet/useEthProvider';
 import { colors, watchScreenStyles, alertColors, globalStyles, alertStyles, WATCH_STATES, roleColors } from '../themes/styles.js';
 import { resolveImageUri } from '../utils/ipfs';
 import GlobalHeader from '../components/GlobalHeader';
@@ -26,7 +27,8 @@ const MARKETPLACE_ABI = ["function buyWatchEscrow(uint256 tokenId) external"];
 
 export default function PublicWatchScreen({ route, navigation }) {
   const { watchId, initialTab = 'details' } = route.params || {};
-  
+  const { ethProvider } = useEthProvider();
+
   // ESTADOS
   const [activeTab, setActiveTab] = useState(initialTab);
   const [watchData, setWatchData] = useState(null);
@@ -56,8 +58,8 @@ export default function PublicWatchScreen({ route, navigation }) {
 
   // HELPER BLOCKCHAIN: CONSULTAR SALDO
   const getBalanceInWei = async () => {
-    if (typeof window.ethereum === 'undefined') throw new Error("MetaMask no detectado");
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    if (typeof ethProvider === 'undefined') throw new Error("MetaMask no detectado");
+    const provider = new ethers.BrowserProvider(ethProvider);
     const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
     return await usdcContract.balanceOf(loggedUser.wallet_address);
   };
@@ -138,7 +140,7 @@ export default function PublicWatchScreen({ route, navigation }) {
     setBuyModalVisible(false);
     try {
       setIsProcessingPurchase(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       
       const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);

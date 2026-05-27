@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import * as SecureStore from 'expo-secure-store'; 
 import api, { WS_URL } from '../api/api.js';
+import { useEthProvider } from '../wallet/useEthProvider';
 import { globalStyles, colors, watchScreenStyles, alertColors, roleColors, alertStyles,
          WATCH_STATES} from '../themes/styles.js';
 
@@ -32,6 +33,7 @@ const ERC20_ABI = [
 export default function WatchScreen({ route, navigation }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
+  const { ethProvider } = useEthProvider();
 
   const { watchId, initialTab = 'details', isBuyer = false } = route.params || {};
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -213,7 +215,7 @@ export default function WatchScreen({ route, navigation }) {
       return;
     }
 
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       Alert.alert("MetaMask requerido", "Es necesario firmar la transacción desde un navegador con MetaMask.");
       return;
     }
@@ -243,7 +245,7 @@ export default function WatchScreen({ route, navigation }) {
     try {
       setActionLoading(true);
       setMetaMaskLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
 
       // Definimos los 3 contratos necesarios
@@ -302,7 +304,7 @@ export default function WatchScreen({ route, navigation }) {
     try {
       setCancellingListing(true);
       setMetaMaskLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
@@ -339,7 +341,7 @@ export default function WatchScreen({ route, navigation }) {
     try {
       setUpdatingPrice(true);
       setMetaMaskLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
       const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, signer);
@@ -410,7 +412,7 @@ export default function WatchScreen({ route, navigation }) {
       return; // Detenemos la ejecución aquí
     }
 
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       Alert.alert("MetaMask requerido", "Es necesario firmar la transacción desde un navegador.");
       return;
     }
@@ -418,8 +420,8 @@ export default function WatchScreen({ route, navigation }) {
     setChangingStateId(newStateId);
     setMetaMaskLoading(true);
     try {
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      await ethProvider.request({ method: 'eth_requestAccounts' });
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
 
@@ -447,14 +449,14 @@ export default function WatchScreen({ route, navigation }) {
   };
 
   const handleConfirmReceipt = async () => {
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       Alert.alert("MetaMask requerido", "Necesitas MetaMask conectado para confirmar la entrega.");
       return;
     }
     try {
       setActionLoading(true);
       setMetaMaskLoading(true);
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
@@ -518,7 +520,7 @@ export default function WatchScreen({ route, navigation }) {
       return;
     }
 
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       Alert.alert("MetaMask requerido", "Es necesario firmar la transacción desde un navegador.");
       return;
     }
@@ -527,7 +529,7 @@ export default function WatchScreen({ route, navigation }) {
       setActionLoading(true);
       setMetaMaskLoading(true);
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const userAddress = await signer.getAddress();
 

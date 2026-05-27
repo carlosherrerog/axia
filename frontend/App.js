@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import api from './src/api/api';
 import * as SecureStore from 'expo-secure-store';
+if (Platform.OS === 'web') { require('./src/wallet/walletconnect'); }
 
 // IMPORTACIÓN DE PANTALLAS
 import AuthScreen                from './src/screens/AuthScreen';

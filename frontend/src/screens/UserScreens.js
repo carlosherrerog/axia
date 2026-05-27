@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
+import { useEthProvider } from '../wallet/useEthProvider';
 import api, { getToken, WS_URL } from '../api/api.js';
 import GlobalHeader from '../components/GlobalHeader';
 import WatchSections from '../components/WatchSections';
@@ -167,6 +168,7 @@ function getStoredUser() {
 }
 
 export default function UserDashboardScreen({ route, navigation }) {
+  const { ethProvider } = useEthProvider();
   const user = route?.params?.userData || getStoredUser() || {};
   const { colors } = useTheme();
 
@@ -368,13 +370,13 @@ export default function UserDashboardScreen({ route, navigation }) {
     const dur   = parseInt(duration, 10);
     if (isNaN(price) || price <= 0) { showAlert('Error', 'Precio mínimo inválido.', 'error'); return; }
     if (isNaN(dur)   || dur   <= 0) { showAlert('Error', 'Duración inválida.', 'error');       return; }
-    if (!window.ethereum) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
+    if (!ethProvider) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
 
     try {
       setTxLoading(true);
       setCreateModal(false);
 
-      const provider  = new ethers.BrowserProvider(window.ethereum);
+      const provider  = new ethers.BrowserProvider(ethProvider);
       const signer    = await provider.getSigner();
       const nft       = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);

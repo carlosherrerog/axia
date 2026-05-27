@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { ethers } from 'ethers';
 import { useFocusEffect } from '@react-navigation/native';
+import { useEthProvider } from '../wallet/useEthProvider';
 import api, { getToken, WS_URL } from '../api/api';
 import { resolveImageUri } from '../utils/ipfs';
 import { useTheme } from '../context/ThemeContext';
@@ -33,6 +34,7 @@ const ROLE_ICONS = {
 export default function SaleScreen({ route, navigation }) {
   const { listingId, tokenId } = route.params || {};
   const { colors } = useTheme();
+  const { ethProvider } = useEthProvider();
 
   const [loggedUser, setLoggedUser] = useState(null);
   const [sale, setSale]           = useState(null);
@@ -109,14 +111,14 @@ export default function SaleScreen({ route, navigation }) {
   };
 
   const handleConfirmDelivery = async () => {
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       showAlert('MetaMask requerido', 'Necesitas MetaMask conectado para confirmar la entrega.', 'warning');
       return;
     }
     try {
       setActionLoading(true);
       setMetaMaskVisible(true);
-      const provider    = new ethers.BrowserProvider(window.ethereum);
+      const provider    = new ethers.BrowserProvider(ethProvider);
       const signer      = await provider.getSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 

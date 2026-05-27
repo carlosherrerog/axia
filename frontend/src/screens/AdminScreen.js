@@ -10,6 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Clipboard from 'expo-clipboard';
 import { Linking } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useEthProvider } from '../wallet/useEthProvider';
 import api, { WS_URL } from '../api/api.js';
 import { roleColors, alertColors } from '../themes/styles.js';
 import { useTheme } from '../context/ThemeContext';
@@ -1049,6 +1050,7 @@ function ContractsPanel({ colors }) {
 }
 
 export default function AdminScreen({ route, navigation }) {
+  const { ethProvider } = useEthProvider();
   const { colors } = useTheme();
   const { width }  = useWindowDimensions();
   const isDesktop  = width >= 900;
@@ -1180,14 +1182,14 @@ export default function AdminScreen({ route, navigation }) {
   };
 
   const handleConnectWallet = async () => {
-    if (Platform.OS !== 'web' || !window.ethereum)
+    if (Platform.OS !== 'web' || !ethProvider)
       return showAlert('Atención', 'Usa un navegador con MetaMask.', 'warning');
     try {
       setLoadingWallet(true);
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await ethProvider.request({ method: 'eth_requestAccounts' });
       const address  = accounts[0];
       const { data: { nonce } } = await api.post('/auth/challenge', { address });
-      const signer    = await new ethers.BrowserProvider(window.ethereum).getSigner();
+      const signer    = await new ethers.BrowserProvider(ethProvider).getSigner();
       const signature = await signer.signMessage(nonce);
       const { data }  = await api.post('/auth/verify', { address, signature, nonce });
       setLoggedUser(data);

@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEthProvider } from '../wallet/useEthProvider';
 import api from '../api/api'; 
 import { globalStyles, colors, roleColors, professionalRequestStyles as styles, alertStyles, alertColors } from '../themes/styles'; 
 import GlobalHeader from '../components/GlobalHeader'; 
 
 export default function ProfessionalRequestScreen({ navigation }) {
+  const { ethProvider } = useEthProvider();
   const [selectedType, setSelectedType] = useState(null);
   const [hoveredType, setHoveredType] = useState(null);
   const [requestMessage, setRequestMessage] = useState('');
@@ -59,16 +61,16 @@ export default function ProfessionalRequestScreen({ navigation }) {
   }, []);
 
   const handleConnectWallet = async () => {
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       showAlert("Atención", "Por favor, usa un navegador con MetaMask.", "warning");
       return;
     }
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await ethProvider.request({ method: 'eth_requestAccounts' });
       const address = accounts[0];
       const challengeRes = await api.post('/auth/challenge', { address });
       const { nonce } = challengeRes.data;
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
       const signature = await signer.signMessage(nonce);
       

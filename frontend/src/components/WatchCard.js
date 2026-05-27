@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, Pressable, Platform, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { watchCardStyles, colors, alertColors } from '../themes/styles';
+import { useEthProvider } from '../wallet/useEthProvider';
 import api from '../api/api.js';
 import { resolveImageUri } from '../utils/ipfs';
 import { ethers } from 'ethers';
@@ -11,6 +12,7 @@ import Marketplace_ABI from '../contracts/WatchMarketplace.json';
 const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6';
 
 export default function WatchCard({ nft, removeNFT, navigation, isAdminView = false, onRefresh, isManufacturer = false, walletConnected = true }) {
+  const { ethProvider } = useEthProvider();
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isShipping, setIsShipping] = useState(false);
@@ -118,7 +120,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
   };
 
   const doConfirmDelivery = async () => {
-    if (Platform.OS !== 'web' || !window.ethereum) {
+    if (Platform.OS !== 'web' || !ethProvider) {
       setDeliveryConfirmVisible(false);
       setShipResultMsg({ title: 'Error', message: 'Necesitas MetaMask conectado para confirmar la entrega.', isError: true });
       setShipResultVisible(true);
@@ -128,7 +130,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
       setDeliveryConfirmVisible(false);
       setIsConfirming(true);
       setMetaMaskLoading(true);
-      const provider    = new ethers.BrowserProvider(window.ethereum);
+      const provider    = new ethers.BrowserProvider(ethProvider);
       const signer      = await provider.getSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
