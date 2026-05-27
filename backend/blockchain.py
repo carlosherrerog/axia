@@ -29,6 +29,10 @@ PINATA_SECRET_KEY = os.getenv("PINATA_SECRET_KEY")
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
+# RPC público para get_logs — Alchemy rechaza rangos amplios (from_block=0) con 400
+PUBLIC_RPC_URL = "https://rpc-amoy.polygon.technology"
+w3_public = Web3(Web3.HTTPProvider(PUBLIC_RPC_URL))
+
 # --- CARGA DE ABIs ---
 def load_abi(filename: str):
     try:
@@ -51,10 +55,16 @@ watchNFT_contract = None
 marketplace_contract = None
 auction_contract = None
 
+# Contratos espejo con RPC público — usados solo para get_logs (sin límite de rango)
+watchNFT_contract_public = None
+marketplace_contract_public = None
+
 if WATCH_NFT_ADDRESS:
     watchNFT_contract = w3.eth.contract(address=w3.to_checksum_address(WATCH_NFT_ADDRESS), abi=watch_nft_abi)
+    watchNFT_contract_public = w3_public.eth.contract(address=w3_public.to_checksum_address(WATCH_NFT_ADDRESS), abi=watch_nft_abi)
 if MARKETPLACE_ADDRESS:
     marketplace_contract = w3.eth.contract(address=w3.to_checksum_address(MARKETPLACE_ADDRESS), abi=marketplace_abi)
+    marketplace_contract_public = w3_public.eth.contract(address=w3_public.to_checksum_address(MARKETPLACE_ADDRESS), abi=marketplace_abi)
 if WATCH_AUCTION_ADDRESS and auction_abi:
     auction_contract = w3.eth.contract(address=w3.to_checksum_address(WATCH_AUCTION_ADDRESS), abi=auction_abi)
 
@@ -118,7 +128,7 @@ def get_full_watch_profile(token_id: int) -> dict:
         # por lo que getVerificationHistory no los recoge. Hay que leer los eventos.
         if marketplace_contract:
             try:
-                approved_logs = marketplace_contract.events.AuthenticityApproved.get_logs(
+                approved_logs = marketplace_contract_public.events.AuthenticityApproved.get_logs(
                     from_block=0,
                     to_block='latest',
                     argument_filters={'tokenId': token_id}
@@ -138,7 +148,7 @@ def get_full_watch_profile(token_id: int) -> dict:
                 print(f"[blockchain] Error leyendo AuthenticityApproved para token {token_id}: {e}")
 
             try:
-                rejected_logs = marketplace_contract.events.AuthenticityRejected.get_logs(
+                rejected_logs = marketplace_contract_public.events.AuthenticityRejected.get_logs(
                     from_block=0,
                     to_block='latest',
                     argument_filters={'tokenId': token_id}
@@ -238,7 +248,7 @@ def get_ownership_history_from_chain(token_id: int) -> list:
 
     try:
         # 1. Leer todos los eventos Transfer para este tokenId
-        transfer_logs = watchNFT_contract.events.Transfer.get_logs(
+        transfer_logs = watchNFT_contract_public.events.Transfer.get_logs(
             from_block=0,
             to_block='latest',
             argument_filters={'tokenId': token_id}
@@ -251,7 +261,7 @@ def get_ownership_history_from_chain(token_id: int) -> list:
     sale_price_by_block = {}
     if marketplace_contract:
         try:
-            sale_logs = marketplace_contract.events.SaleCompleted.get_logs(
+            sale_logs = marketplace_contract_public.events.SaleCompleted.get_logs(
                 from_block=0,
                 to_block='latest',
                 argument_filters={'tokenId': token_id}
