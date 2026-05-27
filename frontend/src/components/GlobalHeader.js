@@ -190,23 +190,21 @@ export default function GlobalHeader({
 
   const proceedConnect = async () => {
     setWalletInfoVisible(false);
-    pendingW3mVerify.current = true;
-    await w3mOpen();
-  };
-
-  const handleConnect = async () => {
-    if (Platform.OS !== 'web') return;
     if (window.ethereum) {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       await doVerify(window.ethereum);
     } else if (w3mProvider) {
       await doVerify(w3mProvider);
     } else if (w3mOpen) {
-      // Mostrar aviso de los 2 pasos antes de abrir WalletConnect
-      setWalletInfoVisible(true);
-    } else {
-      showAlert('Wallet requerida', 'Instala MetaMask o usa un navegador compatible.', 'warning');
+      pendingW3mVerify.current = true;
+      await w3mOpen();
     }
+  };
+
+  const handleConnect = async () => {
+    if (Platform.OS !== 'web') return;
+    // Mostrar siempre el aviso de los 2 pasos antes de continuar
+    setWalletInfoVisible(true);
   };
 
   // Cuando Web3Modal conecta (móvil), completar verificación backend

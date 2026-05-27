@@ -12,6 +12,19 @@ import { Linking } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEthProvider } from '../wallet/useEthProvider';
 import api, { WS_URL } from '../api/api.js';
+
+// Web3Modal hooks — solo en web
+let useWeb3Modal = () => ({ open: null });
+let useWeb3ModalProvider = () => ({ walletProvider: null });
+let useDisconnect = () => ({ disconnect: null });
+if (Platform.OS === 'web') {
+  try {
+    const wc = require('@web3modal/ethers/react');
+    useWeb3Modal = wc.useWeb3Modal;
+    useWeb3ModalProvider = wc.useWeb3ModalProvider;
+    useDisconnect = wc.useDisconnect;
+  } catch {}
+}
 import { roleColors, alertColors } from '../themes/styles.js';
 import { useTheme } from '../context/ThemeContext';
 
@@ -1056,10 +1069,17 @@ export default function AdminScreen({ route, navigation }) {
   const isDesktop  = width >= 900;
   const { user }   = route.params;
 
+  const { open: w3mOpen }               = useWeb3Modal();
+  const { walletProvider: w3mProvider } = useWeb3ModalProvider();
+  const { disconnect: w3mDisconnect }   = useDisconnect();
+  const pendingW3mVerify = React.useRef(false);
+
   const [loggedUser,       setLoggedUser]       = useState(user);
   const [users,            setUsers]            = useState([]);
   const [loadingUsers,     setLoadingUsers]     = useState(true);
   const [loadingWallet,    setLoadingWallet]    = useState(false);
+  const [walletStepMsg,    setWalletStepMsg]    = useState('');
+  const [walletInfoVisible, setWalletInfoVisible] = useState(false);
   const [loadingPause,     setLoadingPause]     = useState(false);
   const [refreshing,       setRefreshing]       = useState(false);
   const [activeSection,    setActiveSection]    = useState('pending');
@@ -1181,25 +1201,67 @@ export default function AdminScreen({ route, navigation }) {
     }
   };
 
-  const handleConnectWallet = async () => {
-    if (Platform.OS !== 'web' || !ethProvider)
-      return showAlert('Atención', 'Usa un navegador con MetaMask.', 'warning');
+  const AMOY_CHAIN_ID = '0x13882';
+
+  const doVerify = async (eip1193) => {
     try {
       setLoadingWallet(true);
-      const accounts = await ethProvider.request({ method: 'eth_requestAccounts' });
-      const address  = accounts[0];
+      setWalletStepMsg('Conectando con tu wallet…');
+      const provider = new ethers.BrowserProvider(eip1193);
+      try {
+        await eip1193.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: AMOY_CHAIN_ID }] });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await eip1193.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: AMOY_CHAIN_ID,
+              chainName: 'Polygon Amoy',
+              nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
+              rpcUrls: ['https://rpc-amoy.polygon.technology'],
+              blockExplorerUrls: ['https://amoy.polygonscan.com'],
+            }],
+          });
+        }
+      }
+      const signer  = await provider.getSigner();
+      const address = await signer.getAddress();
       const { data: { nonce } } = await api.post('/auth/challenge', { address });
-      const signer    = await new ethers.BrowserProvider(ethProvider).getSigner();
+      setWalletStepMsg('Firma el mensaje en tu wallet');
       const signature = await signer.signMessage(nonce);
-      const { data }  = await api.post('/auth/verify', { address, signature, nonce });
+      setWalletStepMsg('Verificando…');
+      const { data } = await api.post('/auth/verify', { address, signature, nonce });
       setLoggedUser(data);
       showAlert('Wallet vinculada', 'Tu cuenta Web3 está conectada.', 'success');
     } catch (e) {
-      showAlert('Error', e.response?.data?.detail || 'Error de conexión.', 'error');
+      if (e.code !== 4001) showAlert('Error', e.response?.data?.detail || 'Error de conexión.', 'error');
     } finally {
       setLoadingWallet(false);
+      setWalletStepMsg('');
     }
   };
+
+  const proceedConnectWallet = async () => {
+    setWalletInfoVisible(false);
+    if (window.ethereum) {
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await doVerify(window.ethereum);
+    } else if (w3mProvider) {
+      await doVerify(w3mProvider);
+    } else if (w3mOpen) {
+      pendingW3mVerify.current = true;
+      await w3mOpen();
+    }
+  };
+
+  const handleConnectWallet = () => setWalletInfoVisible(true);
+
+  // Cuando Web3Modal conecta, completar verificación
+  React.useEffect(() => {
+    if (!w3mProvider || !pendingW3mVerify.current) return;
+    pendingW3mVerify.current = false;
+    doVerify(w3mProvider);
+  }, [w3mProvider]);
 
   const handleLogout = async () => {
     try {
@@ -1351,7 +1413,7 @@ export default function AdminScreen({ route, navigation }) {
               ? <ActivityIndicator color="#F6851B" size="small" />
               : <>
                   <Ionicons name="wallet-outline" size={15} color="#F6851B" />
-                  <Text style={{ color: '#F6851B', fontWeight: '700', fontSize: 13 }}>Conectar MetaMask</Text>
+                  <Text style={{ color: '#F6851B', fontWeight: '700', fontSize: 13 }}>Conectar wallet</Text>
                 </>
             }
           </TouchableOpacity>
@@ -1564,6 +1626,78 @@ export default function AdminScreen({ route, navigation }) {
           {renderContent()}
         </View>
       </ScrollView>
+
+      {/* Aviso previo conexión wallet */}
+      <Modal visible={walletInfoVisible} transparent animationType="fade" onRequestClose={() => setWalletInfoVisible(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }}
+          onPress={() => setWalletInfoVisible(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <View style={{
+              backgroundColor: colors.backgroundAlt, borderRadius: 20,
+              borderWidth: 1, borderColor: colors.border,
+              width: 300, padding: 24, gap: 16,
+              ...(Platform.OS === 'web' && { boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }),
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name="wallet-outline" size={22} color={colors.primary} />
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700', flex: 1 }}>Conectar wallet</Text>
+              </View>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
+                Tu wallet realizará <Text style={{ color: colors.text, fontWeight: '600' }}>2 acciones</Text>:
+              </Text>
+              <View style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: `${colors.primary}25`, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>1</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>Aprobar la conexión</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>Permite que AXIA lea tu dirección pública.</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: `${colors.primary}25`, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: colors.primary, fontSize: 11, fontWeight: '800' }}>2</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: '600' }}>Firmar un mensaje</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>
+                      Prueba que eres el propietario de la wallet.{' '}
+                      <Text style={{ color: '#10b981', fontWeight: '600' }}>Sin coste.</Text>
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={proceedConnectWallet}
+                style={{ backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 4 }}
+                activeOpacity={0.8}
+              >
+                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Continuar</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Spinner wallet */}
+      {loadingWallet && (
+        <Modal visible transparent animationType="fade">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', gap: 16, paddingHorizontal: 40 }}>
+            <ActivityIndicator size="large" color="#a78bfa" />
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
+              {walletStepMsg || 'Procesando…'}
+            </Text>
+            {walletStepMsg === 'Firma el mensaje en tu wallet' && (
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                Esta firma verifica que eres el propietario de la wallet.{'\n'}No es una transacción y no tiene ningún coste.
+              </Text>
+            )}
+          </View>
+        </Modal>
+      )}
 
       {/* Modal alerta */}
       <Modal visible={alert.visible} transparent animationType="fade">
