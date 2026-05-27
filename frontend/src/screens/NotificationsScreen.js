@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, ActivityIndicator,
-  TouchableOpacity, Modal, Platform, RefreshControl,
+  TouchableOpacity, Modal, Platform, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,6 +14,8 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function NotificationsScreen({ navigation }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const hPad = width >= 768 ? Math.max(24, Math.floor((width - 1000) / 2)) : 16;
 
   const [loggedUser, setLoggedUser]       = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -133,10 +135,11 @@ export default function NotificationsScreen({ navigation }) {
           />
         }
       >
+        <View style={{ maxWidth: 1000, alignSelf: 'center', width: '100%' }}>
         {/* Barra de acciones */}
         <View style={{
           flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-          paddingHorizontal: 16, paddingTop: 18, paddingBottom: 10,
+          paddingHorizontal: hPad, paddingTop: 18, paddingBottom: 10,
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <TouchableOpacity
@@ -203,7 +206,7 @@ export default function NotificationsScreen({ navigation }) {
             </Text>
           </View>
         ) : (
-          <View style={{ paddingHorizontal: 16 }}>
+          <View style={{ paddingHorizontal: hPad }}>
             {groups.map(group => (
               <View key={group.title} style={{ marginBottom: 24 }}>
                 {/* Encabezado de grupo */}
@@ -226,6 +229,7 @@ export default function NotificationsScreen({ navigation }) {
             ))}
           </View>
         )}
+        </View>
       </ScrollView>
 
 

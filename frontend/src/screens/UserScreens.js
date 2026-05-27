@@ -201,7 +201,7 @@ export default function UserDashboardScreen({ route, navigation }) {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const isDealer = loggedUser?.roles?.includes('DEALER');
-  const hPad = isDesktop ? Math.round(width * 0.03) : 16;
+  const hPad = isDesktop ? Math.max(24, Math.floor((width - 1000) / 2)) : 16;
 
   const showConfirm = (title, message, onConfirmCallback, btnText = 'Confirmar') => {
     setConfirmCallback(() => onConfirmCallback);
