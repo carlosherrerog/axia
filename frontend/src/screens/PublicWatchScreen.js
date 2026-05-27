@@ -58,7 +58,7 @@ export default function PublicWatchScreen({ route, navigation }) {
 
   // HELPER BLOCKCHAIN: CONSULTAR SALDO
   const getBalanceInWei = async () => {
-    if (typeof ethProvider === 'undefined') throw new Error("MetaMask no detectado");
+    if (typeof ethProvider === 'undefined') throw new Error("Wallet no detectada");
     const provider = new ethers.BrowserProvider(ethProvider);
     const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
     return await usdcContract.balanceOf(loggedUser.wallet_address);
@@ -132,7 +132,7 @@ export default function PublicWatchScreen({ route, navigation }) {
       setBuyModalVisible(true); 
     } catch (error) {
       setIsProcessingPurchase(false);
-      showAlert("Error", "No se pudo verificar el saldo en MetaMask.");
+      showAlert("Error", "No se pudo verificar el saldo.");
     }
   };
 
@@ -165,7 +165,7 @@ export default function PublicWatchScreen({ route, navigation }) {
     } catch (error) {
       console.error("Error en la compra:", error);
       if (error?.code === 'ACTION_REJECTED') {
-        showAlert("Cancelado", "Has rechazado la transacción en MetaMask.");
+        showAlert("Cancelado", "Has rechazado la transacción en tu wallet.");
       } else if (error?.response?.data?.detail) {
         showAlert("Error", error.response.data.detail);
       } else if (error?.message) {
@@ -853,7 +853,7 @@ export default function PublicWatchScreen({ route, navigation }) {
           }}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, textAlign: 'center' }}>
-              Esperando MetaMask
+              Esperando firma…
             </Text>
             <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 13, lineHeight: 20 }}>
               Confirma la transacción en tu wallet para continuar.

@@ -41,7 +41,7 @@ const decodeAuctionError = (error) => {
     const selector = data.slice(2, 10).toLowerCase();
     if (AUCTION_ERRORS[selector]) return AUCTION_ERRORS[selector];
   }
-  if (error?.code === 'ACTION_REJECTED') return 'Has cancelado la transacción en MetaMask.';
+  if (error?.code === 'ACTION_REJECTED') return 'Has cancelado la transacción en tu wallet.';
   return null;
 };
 
@@ -370,7 +370,7 @@ export default function UserDashboardScreen({ route, navigation }) {
     const dur   = parseInt(duration, 10);
     if (isNaN(price) || price <= 0) { showAlert('Error', 'Precio mínimo inválido.', 'error'); return; }
     if (isNaN(dur)   || dur   <= 0) { showAlert('Error', 'Duración inválida.', 'error');       return; }
-    if (!ethProvider) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
+    if (!ethProvider) { showAlert('Error', 'Necesitas una wallet conectada.', 'error'); return; }
 
     try {
       setTxLoading(true);
@@ -645,7 +645,7 @@ export default function UserDashboardScreen({ route, navigation }) {
             borderWidth: 1, borderColor: colors.border, minWidth: 260,
           }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Esperando MetaMask</Text>
+            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Esperando firma…</Text>
             <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 13 }}>
               Confirma la transacción en tu wallet para continuar.
             </Text>

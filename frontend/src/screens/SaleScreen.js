@@ -112,7 +112,7 @@ export default function SaleScreen({ route, navigation }) {
 
   const handleConfirmDelivery = async () => {
     if (Platform.OS !== 'web' || !ethProvider) {
-      showAlert('MetaMask requerido', 'Necesitas MetaMask conectado para confirmar la entrega.', 'warning');
+      showAlert('Wallet requerida', 'Necesitas una wallet conectada para confirmar la entrega.', 'warning');
       return;
     }
     try {
@@ -143,7 +143,7 @@ export default function SaleScreen({ route, navigation }) {
     } catch (e) {
       setMetaMaskVisible(false);
       if (e.code === 'ACTION_REJECTED') {
-        showAlert('Cancelado', 'Rechazaste la operación en MetaMask.', 'warning');
+        showAlert('Cancelado', 'Rechazaste la operación en tu wallet.', 'warning');
       } else {
         showAlert('Error', e.response?.data?.detail || e.message || 'No se pudo confirmar la entrega.', 'error');
       }
@@ -460,7 +460,7 @@ export default function SaleScreen({ route, navigation }) {
       <Modal visible={metaMaskVisible} transparent animationType="fade">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', gap: 16 }}>
           <ActivityIndicator size="large" color={colors.primaryLight} />
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Esperando MetaMask…</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Esperando firma…</Text>
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>Confirma la transacción en tu wallet</Text>
         </View>
       </Modal>

@@ -149,7 +149,7 @@ export default function WatchmakerScreen({ navigation }) {
       const selector = data.slice(2, 10).toLowerCase();
       if (CONTRACT_ERRORS[selector]) return CONTRACT_ERRORS[selector];
     }
-    if (error?.code === 'ACTION_REJECTED') return 'Has cancelado la transacción en MetaMask.';
+    if (error?.code === 'ACTION_REJECTED') return 'Has cancelado la transacción en tu wallet.';
     return null;
   };
 
@@ -159,7 +159,7 @@ export default function WatchmakerScreen({ navigation }) {
     const needsMetaMask = isReverification ? isVerifySuccess : true;
 
     if (needsMetaMask && (!loggedUser?.wallet_address || typeof ethProvider === 'undefined')) {
-      return showAlert("Error", "MetaMask no detectado o wallet no conectada.", "error");
+      return showAlert("Error", "Wallet no detectada o no conectada.", "error");
     }
     setConfirmModal(false);
     setPeriModal(false);
@@ -204,7 +204,7 @@ export default function WatchmakerScreen({ navigation }) {
       console.error('[VERIFY] error:', error);
       const msg = decodeContractError(error)
         ?? (error?.code === 'ACTION_REJECTED'
-          ? "Has cancelado la transacción en MetaMask."
+          ? "Has cancelado la transacción en tu wallet."
           : error?.response?.data?.detail || "Error desconocido.");
       showAlert("Error en el peritaje", msg, "error");
     } finally {
@@ -470,13 +470,13 @@ export default function WatchmakerScreen({ navigation }) {
         message={
           selectedWatch?.buyer_wallet
             ? isVerifySuccess
-              ? `Estás a punto de certificar en la blockchain que el ${selectedWatch?.brand} ${selectedWatch?.model} es una pieza ORIGINAL.\n\nEl comprador podrá confirmar la entrega y en ese momento se liberará el pago al vendedor.\n\nRequiere firma en MetaMask.`
-              : `Estás a punto de marcar el ${selectedWatch?.brand} ${selectedWatch?.model} como FALSIFICACIÓN.\n\nEsto cancelará la venta, devolverá el dinero al comprador y retendrá la fianza del vendedor.\n\nRequiere firma en MetaMask.`
+              ? `Estás a punto de certificar en la blockchain que el ${selectedWatch?.brand} ${selectedWatch?.model} es una pieza ORIGINAL.\n\nEl comprador podrá confirmar la entrega y en ese momento se liberará el pago al vendedor.\n\nRequiere firma en tu wallet.`
+              : `Estás a punto de marcar el ${selectedWatch?.brand} ${selectedWatch?.model} como FALSIFICACIÓN.\n\nEsto cancelará la venta, devolverá el dinero al comprador y retendrá la fianza del vendedor.\n\nRequiere firma en tu wallet.`
             : isVerifySuccess
               ? `Vas a certificar el ${selectedWatch?.brand} ${selectedWatch?.model} como auténtico.\n\nEl reloj quedará rehabilitado y el propietario podrá venderlo o transferirlo.`
               : `Vas a rechazar la certificación del ${selectedWatch?.brand} ${selectedWatch?.model}.\n\nEl reloj continuará marcado como alterado.`
         }
-        confirmLabel={selectedWatch?.buyer_wallet ? "Firmar en MetaMask" : isVerifySuccess ? "Confirmar" : "Confirmar"}
+        confirmLabel={selectedWatch?.buyer_wallet ? "Firmar" : isVerifySuccess ? "Confirmar" : "Confirmar"}
         onConfirm={executeVerification}
         cancelLabel="Cancelar"
         onCancel={() => setConfirmModal(false)}
@@ -494,7 +494,7 @@ export default function WatchmakerScreen({ navigation }) {
             minWidth: 260, maxWidth: 320 }}>
             <ActivityIndicator size="large" color={roleColors.RELOJERO} />
             <Text style={{ color: '#f0f0f8', fontWeight: '700', fontSize: 16, textAlign: 'center' }}>
-              {(!selectedWatch?.buyer_wallet && !isVerifySuccess) ? 'Procesando…' : 'Esperando MetaMask…'}
+              {(!selectedWatch?.buyer_wallet && !isVerifySuccess) ? 'Procesando…' : 'Esperando firma…'}
             </Text>
             {(selectedWatch?.buyer_wallet || isVerifySuccess) && (
               <Text style={{ color: '#a09dc5', fontSize: 13, textAlign: 'center', lineHeight: 20 }}>

@@ -122,7 +122,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
   const doConfirmDelivery = async () => {
     if (Platform.OS !== 'web' || !ethProvider) {
       setDeliveryConfirmVisible(false);
-      setShipResultMsg({ title: 'Error', message: 'Necesitas MetaMask conectado para confirmar la entrega.', isError: true });
+      setShipResultMsg({ title: 'Error', message: 'Necesitas una wallet conectada para confirmar la entrega.', isError: true });
       setShipResultVisible(true);
       return;
     }
@@ -158,7 +158,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
     } catch (error) {
       setMetaMaskLoading(false);
       if (error?.code === 'ACTION_REJECTED') {
-        setShipResultMsg({ title: 'Cancelado', message: 'Operación cancelada en MetaMask.', isError: true });
+        setShipResultMsg({ title: 'Cancelado', message: 'Operación cancelada en tu wallet.', isError: true });
       } else {
         setShipResultMsg({ title: 'Error', message: error.response?.data?.detail || error.message || 'No se pudo confirmar la entrega.', isError: true });
       }
@@ -633,7 +633,7 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
           }}>
             <ActivityIndicator size="large" color="#8b5cf6" />
             <Text style={{ color: '#f0f0f8', fontWeight: '700', fontSize: 16, textAlign: 'center' }}>
-              Esperando MetaMask
+              Esperando firma…
             </Text>
             <Text style={{ color: '#a09dc5', textAlign: 'center', fontSize: 13, lineHeight: 20 }}>
               Confirma la transacción en tu wallet para continuar.

@@ -62,7 +62,7 @@ export default function ProfessionalRequestScreen({ navigation }) {
 
   const handleConnectWallet = async () => {
     if (Platform.OS !== 'web' || !ethProvider) {
-      showAlert("Atención", "Por favor, usa un navegador con MetaMask.", "warning");
+      showAlert("Atención", "Por favor, conecta tu wallet para continuar.", "warning");
       return;
     }
     try {

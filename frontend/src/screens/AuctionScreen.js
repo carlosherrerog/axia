@@ -38,7 +38,7 @@ function decodeContractError(error) {
     const selector = data.slice(2, 10).toLowerCase();
     if (AUCTION_ERRORS[selector]) return AUCTION_ERRORS[selector];
   }
-  if (error?.code === 'ACTION_REJECTED') return 'Has cancelado la transacción en MetaMask.';
+  if (error?.code === 'ACTION_REJECTED') return 'Has cancelado la transacción en tu wallet.';
   return null;
 }
 
@@ -131,7 +131,7 @@ export default function AuctionScreen({ route, navigation }) {
     wallet ? appUsers.find(u => u.wallet_address?.toLowerCase() === wallet.toLowerCase()) : null;
 
   const handlePlaceBid = async () => {
-    if (!ethProvider) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
+    if (!ethProvider) { showAlert('Error', 'Necesitas una wallet conectada.', 'error'); return; }
     const amount = parseFloat(bidAmount);
     const minBid = Math.max(auction.highest_bid, auction.min_price);
     if (isNaN(amount) || amount <= minBid) return;
@@ -174,7 +174,7 @@ export default function AuctionScreen({ route, navigation }) {
   };
 
   const executeEndAuction = async () => {
-    if (!ethProvider) { showAlert('Error', 'Necesitas MetaMask.', 'error'); return; }
+    if (!ethProvider) { showAlert('Error', 'Necesitas una wallet conectada.', 'error'); return; }
     const noWinner = !auction.highest_bidder || auction.highest_bid === 0;
     try {
       setTxLoading(true);
@@ -936,7 +936,7 @@ export default function AuctionScreen({ route, navigation }) {
         }}>
           <View style={{ backgroundColor: colors.backgroundAlt, borderRadius: 24, padding: 36, alignItems: 'center', gap: 18, borderWidth: 1, borderColor: colors.border, minWidth: 280 }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>Esperando MetaMask</Text>
+            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>Esperando firma…</Text>
             <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 13, lineHeight: 19 }}>
               Confirma la transacción en tu wallet para continuar.
             </Text>

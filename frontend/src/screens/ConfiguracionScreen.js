@@ -368,7 +368,7 @@ export default function ConfiguracionScreen({ navigation }) {
             <SettingRow
               icon="checkmark-circle-outline"
               color="#10b981"
-              label="MetaMask conectada"
+              label="Wallet conectada"
               description={loggedUser.wallet_address}
               isLast
               onPress={async () => {
@@ -392,7 +392,7 @@ export default function ConfiguracionScreen({ navigation }) {
               <SettingRow
                 icon="open-outline"
                 color="#10b981"
-                label="Descargar MetaMask"
+                label="Descargar MetaMask (recomendada)"
                 description="Obtén la wallet oficial para interactuar con la blockchain."
                 isLast
                 onPress={() => Linking.openURL('https://metamask.io/download/')}

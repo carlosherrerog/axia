@@ -68,7 +68,7 @@ const FEATURE_DATA = [
         'Si te superan, tu USDC vuelve automáticamente a tu balance.',
         'Al cerrar, el NFT y el pago se transfieren en una sola transacción blockchain.',
       ]},
-      { type: 'highlight', icon: 'wallet', text: 'Necesitas MetaMask conectado para pujar. Hazlo desde el header.' },
+      { type: 'highlight', icon: 'wallet', text: 'Necesitas una wallet conectada para pujar. Hazlo desde el header.' },
     ],
   },
 ];
@@ -96,15 +96,15 @@ const TECH_SECTIONS = [
     color: '#38bdf8',
     title: 'Wallet y blockchain',
     content: [
-      { type: 'paragraph', text: 'Una wallet (cartera digital) es tu identidad en la blockchain. En AXIA usamos MetaMask, la extensión de navegador más extendida, compatible con la red Polygon.' },
+      { type: 'paragraph', text: 'Una wallet (cartera digital) es tu identidad en la blockchain. En AXIA puedes conectar cualquier wallet compatible con WalletConnect o extensiones de navegador como MetaMask, Coinbase Wallet, Brave Wallet, etc.' },
       { type: 'subtitle', text: 'Conectar tu wallet' },
       { type: 'steps', items: [
-        'Instala MetaMask como extensión en tu navegador.',
+        'Instala una wallet compatible (MetaMask, Coinbase Wallet, etc.) o usa WalletConnect en móvil.',
         'Pulsa "Conectar wallet" en el header de la aplicación.',
-        'MetaMask te pedirá que firmes un mensaje para verificar tu identidad.',
+        'Tu wallet te pedirá que firmes un mensaje para verificar tu identidad.',
         'Una vez vinculada, tu dirección aparece en el header en verde.',
       ]},
-      { type: 'highlight', icon: 'information-circle', text: 'AXIA nunca accede a tus fondos directamente. Solo lees y firmas transacciones que tú previamente apruebas en MetaMask.' },
+      { type: 'highlight', icon: 'information-circle', text: 'AXIA nunca accede a tus fondos directamente. Solo lees y firmas transacciones que tú previamente apruebas en tu wallet.' },
     ],
   },
   {

@@ -216,7 +216,7 @@ export default function WatchScreen({ route, navigation }) {
     }
 
     if (Platform.OS !== 'web' || !ethProvider) {
-      Alert.alert("MetaMask requerido", "Es necesario firmar la transacción desde un navegador con MetaMask.");
+      Alert.alert("Wallet requerida", "Es necesario firmar la transacción desde un navegador con una wallet conectada.");
       return;
     }
 
@@ -321,7 +321,7 @@ export default function WatchScreen({ route, navigation }) {
 
     } catch (error) {
       if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
-        Alert.alert("Transacción Cancelada", "Has rechazado la firma de la transacción en MetaMask.");
+        Alert.alert("Transacción Cancelada", "Has rechazado la firma de la transacción en tu wallet.");
       } else {
         console.error(error);
         Alert.alert("Error", "No se pudo cancelar el anuncio. Inténtalo de nuevo.");
@@ -413,7 +413,7 @@ export default function WatchScreen({ route, navigation }) {
     }
 
     if (Platform.OS !== 'web' || !ethProvider) {
-      Alert.alert("MetaMask requerido", "Es necesario firmar la transacción desde un navegador.");
+      Alert.alert("Wallet requerida", "Es necesario firmar la transacción desde un navegador.");
       return;
     }
 
@@ -450,7 +450,7 @@ export default function WatchScreen({ route, navigation }) {
 
   const handleConfirmReceipt = async () => {
     if (Platform.OS !== 'web' || !ethProvider) {
-      Alert.alert("MetaMask requerido", "Necesitas MetaMask conectado para confirmar la entrega.");
+      Alert.alert("Wallet requerida", "Necesitas una wallet conectada para confirmar la entrega.");
       return;
     }
     try {
@@ -468,7 +468,7 @@ export default function WatchScreen({ route, navigation }) {
       setDeliverySuccessVisible(true);
     } catch (error) {
       if (error.code === 'ACTION_REJECTED') {
-        Alert.alert("Cancelado", "Operación cancelada en MetaMask.");
+        Alert.alert("Cancelado", "Operación cancelada en tu wallet.");
       } else {
         Alert.alert("Error", error.response?.data?.detail || error.message || "No se pudo confirmar la entrega.");
       }
@@ -521,7 +521,7 @@ export default function WatchScreen({ route, navigation }) {
     }
 
     if (Platform.OS !== 'web' || !ethProvider) {
-      Alert.alert("MetaMask requerido", "Es necesario firmar la transacción desde un navegador.");
+      Alert.alert("Wallet requerida", "Es necesario firmar la transacción desde un navegador.");
       return;
     }
 
@@ -1921,7 +1921,7 @@ export default function WatchScreen({ route, navigation }) {
           }}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, textAlign: 'center' }}>
-              Esperando MetaMask
+              Esperando firma…
             </Text>
             <Text style={{ color: colors.textSecondary, textAlign: 'center', fontSize: 13, lineHeight: 20 }}>
               Confirma la transacción en tu wallet para continuar.
