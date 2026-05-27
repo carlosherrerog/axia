@@ -342,22 +342,25 @@ function HowAxiaWorks({ isMobile, colors }) {
   );
 }
 
+const MAX_CONTENT_WIDTH = 1000;
+
 export function MarketplaceWatchSection({ watches, navigation, onScroll, topOffset = 0 }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const isDesktop = width >= 768;
-  const hPad = isDesktop ? Math.round(width * 0.03) : 16;
+  const hPad = isDesktop ? Math.max(24, Math.floor((width - MAX_CONTENT_WIDTH) / 2)) : 16;
+  const contentW = width - 2 * hPad;
   const [search, setSearch]   = useState('');
   const [filter, setFilter]   = useState('all');
   const [sortBy, setSortBy]   = useState('recent');
 
   let cols = 2;
-  if (width >= 1200) cols = 5;
-  else if (width >= 960) cols = 4;
-  else if (width >= 720) cols = 3;
+  if (contentW >= 1100) cols = 5;
+  else if (contentW >= 850) cols = 4;
+  else if (contentW >= 620) cols = 3;
 
   const colGap = 20;
-  const cardWidth = Math.floor((width - 2 * hPad - (cols - 1) * colGap) / cols);
+  const cardWidth = Math.floor((contentW - (cols - 1) * colGap) / cols);
 
   const getPrice = (w) =>
     w.auction_data

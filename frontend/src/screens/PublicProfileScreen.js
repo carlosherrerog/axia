@@ -15,6 +15,9 @@ export default function PublicProfileScreen({ route, navigation }) {
   const [loggedUser, setLoggedUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const hPad = isDesktop ? Math.max(24, Math.floor((width - 1000) / 2)) : 16;
+  const contentW = width - 2 * hPad;
   
   const [activeTab, setActiveTab] = useState('coleccion');
 
@@ -68,9 +71,9 @@ export default function PublicProfileScreen({ route, navigation }) {
   const nftsToDisplay = activeTab === 'coleccion' ? collectionNfts : forSaleNfts;
 
   let cols = 2;
-  if (width >= 1200) cols = 5;
-  else if (width >= 960) cols = 4;
-  else if (width >= 720) cols = 3;
+  if (contentW >= 1100) cols = 5;
+  else if (contentW >= 850) cols = 4;
+  else if (contentW >= 620) cols = 3;
 
   const topRole = profile.roles?.includes('FABRICANTE') ? 'FABRICANTE'
     : profile.roles?.includes('DEALER') ? 'DEALER'
@@ -240,7 +243,7 @@ export default function PublicProfileScreen({ route, navigation }) {
         key={`grid-${cols}`}
         numColumns={cols}
         keyExtractor={(item) => item.token_id.toString()}
-        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: hPad, paddingTop: 20, paddingBottom: 100 }}
         columnWrapperStyle={{ gap: 20 }}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
@@ -252,7 +255,7 @@ export default function PublicProfileScreen({ route, navigation }) {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={{ width: 200, marginBottom: 25 }}>
+          <View style={{ width: Math.floor((contentW - (cols - 1) * 20) / cols), marginBottom: 20 }}>
             <PublicWatchCard nft={item} navigation={navigation} />
           </View>
         )}

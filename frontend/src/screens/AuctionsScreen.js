@@ -125,12 +125,13 @@ export default function AuctionsScreen({ navigation }) {
 
   const isMobile = width < 768;
   const isDesktop = width >= 768;
-  const hPad = isDesktop ? Math.round(width * 0.03) : 16;
+  const hPad = isDesktop ? Math.max(24, Math.floor((width - 1000) / 2)) : 16;
+  const contentW = width - 2 * hPad;
 
   let cols = 2;
-  if (width >= 1200) cols = 5;
-  else if (width >= 960) cols = 4;
-  else if (width >= 720) cols = 3;
+  if (contentW >= 1100) cols = 5;
+  else if (contentW >= 850) cols = 4;
+  else if (contentW >= 620) cols = 3;
 
   const fetchData = useCallback(async () => {
     try {
@@ -208,7 +209,7 @@ export default function AuctionsScreen({ navigation }) {
           />
         }
         renderItem={({ item }) => (
-          <View style={{ width: 210, marginBottom: 20 }}>
+          <View style={{ width: Math.floor((contentW - (cols - 1) * 20) / cols), marginBottom: 20 }}>
             <AuctionCard auction={item} navigation={navigation} />
           </View>
         )}
