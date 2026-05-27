@@ -316,6 +316,11 @@ export default function WatchScreen({ route, navigation }) {
   };
 
   const handleCancelListing = async () => {
+    if (Platform.OS !== 'web' || !ethProvider) {
+      Alert.alert("Wallet requerida", "Es necesario firmar la transacción desde un navegador con MetaMask conectado.");
+      return;
+    }
+
     setCancellingListing(true);
     setMetaMaskLoading(true);
     let txHash = null;
@@ -324,15 +329,30 @@ export default function WatchScreen({ route, navigation }) {
     try {
       const provider = new ethers.BrowserProvider(ethProvider);
       const signer = await provider.getSigner();
+      const signerAddress = (await signer.getAddress()).toLowerCase();
+      const sellerAddress = (listingData?.seller || '').toLowerCase();
+      if (sellerAddress && signerAddress !== sellerAddress) {
+        Alert.alert(
+          "Cuenta incorrecta",
+          `MetaMask tiene la cuenta ${signerAddress.slice(0, 8)}… pero el anuncio fue creado con ${sellerAddress.slice(0, 8)}…\nCambia la cuenta en MetaMask e inténtalo de nuevo.`
+        );
+        setCancellingListing(false);
+        setMetaMaskLoading(false);
+        return;
+      }
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
       const tx = await marketplaceContract.cancelListing(watchId);
       await tx.wait();
       txHash = tx.hash;
     } catch (error) {
+      console.error('handleCancelListing blockchain error:', error);
       if (error.code === 'ACTION_REJECTED' || error.code === 4001) {
         Alert.alert("Cancelado", "Has rechazado la firma en tu wallet.");
       } else {
-        Alert.alert("Error", "No se pudo cancelar el anuncio en blockchain.");
+        const msg = error?.reason || error?.message || '';
+        Alert.alert("Error", msg.includes('not listed') || msg.includes('seller')
+          ? "Este reloj no está listado con esta cuenta. Verifica la cuenta activa en MetaMask."
+          : "No se pudo cancelar el anuncio en blockchain.");
       }
       setCancellingListing(false);
       setMetaMaskLoading(false);
