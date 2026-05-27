@@ -326,7 +326,7 @@ export default function PublicWatchScreen({ route, navigation }) {
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        <View style={{ paddingVertical: 20, paddingHorizontal: width >= 768 ? Math.max(24, Math.floor((width - 1000) / 2)) : 16, maxWidth: 1000, alignSelf: 'center', width: '100%' }}>
+        <View style={{ paddingVertical: 20, paddingHorizontal: width >= 768 ? 24 : 16, maxWidth: 1000, alignSelf: 'center', width: '100%' }}>
           
           <TouchableOpacity onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
             <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
