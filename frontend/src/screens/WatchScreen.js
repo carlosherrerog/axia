@@ -621,7 +621,7 @@ export default function WatchScreen({ route, navigation }) {
       </TouchableOpacity>
 
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ paddingBottom: 100 }}>
-      <View style={{ paddingHorizontal: isDesktop ? 24 : 16, paddingVertical: 20, maxWidth: 900, alignSelf: 'center', width: '100%' }}>
+      <View style={{ paddingHorizontal: isDesktop ? 24 : 16, paddingVertical: 20, maxWidth: 1100, alignSelf: 'center', width: '100%' }}>
         <View style={[
           watchScreenStyles.contentCard,
           { padding: 0, overflow: 'hidden', marginBottom: 20 },
