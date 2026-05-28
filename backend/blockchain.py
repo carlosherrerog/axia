@@ -61,7 +61,7 @@ marketplace_contract_public = None
 
 # Bloque desde el que empezar a buscar eventos (despliegue del contrato en Amoy)
 DEPLOY_BLOCK = int(os.getenv("DEPLOY_BLOCK", "39000000"))
-LOG_CHUNK_SIZE = 50000  # bloques por chunk — 50k es seguro para Alchemy y RPC público
+LOG_CHUNK_SIZE = 2000  # bloques por chunk — límite de Alchemy para eth_getLogs en Amoy
 
 def get_logs_paginated(event, from_block: int, to_block, argument_filters: dict = None) -> list:
     """Divide get_logs en chunks para no superar el límite de rango de cualquier RPC."""
