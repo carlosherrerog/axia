@@ -212,6 +212,8 @@ export default function WatchScreen({ route, navigation }) {
   };
 
   const handlePreListCheck = () => {
+    Alert.alert('DEBUG 0', `Platform: ${Platform.OS}\nethProvider: ${ethProvider ? 'OK' : 'NULL'}`);
+
     if (!sellPrice || isNaN(sellPrice) || Number(sellPrice) <= 0) {
       Alert.alert("Atención", "Introduce un precio válido.");
       return;
