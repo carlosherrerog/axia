@@ -270,24 +270,13 @@ export default function WatchCard({ nft, removeNFT, navigation, isAdminView = fa
                   <Text style={{ color: '#f59e0b', fontWeight: '500' }}>Confirmar Envío</Text>
                 </Pressable>
               ) : isAltered ? (
-                <>
-                  <Pressable
-                    style={({ hovered }) => [watchCardStyles.menuItem, hovered && { backgroundColor: 'rgba(249,115,22,0.12)' }]}
-                    onPress={() => { setShowMenu(false); navigation.navigate('WatchScreen', { watchId: nft.id, initialTab: 'security' }); }}
-                  >
-                    <Ionicons name="refresh-circle-outline" size={16} color={alteredColor} style={{ marginRight: 8 }} />
-                    <Text style={{ color: alteredColor, fontWeight: '500' }}>Solicitar certificación</Text>
-                  </Pressable>
-                  {!isManufacturer && (
-                    <Pressable
-                      style={({ hovered }) => [watchCardStyles.menuItem, { borderBottomWidth: 0 }, hovered && { backgroundColor: 'rgba(244,63,94,0.12)' }]}
-                      onPress={() => { setShowMenu(false); removeNFT(nft.id); }}
-                    >
-                      <Ionicons name="eye-off-outline" size={16} color="#f43f5e" style={{ marginRight: 8 }} />
-                      <Text style={{ color: '#f43f5e', fontWeight: '500' }}>Ocultar</Text>
-                    </Pressable>
-                  )}
-                </>
+                <Pressable
+                  style={({ hovered }) => [watchCardStyles.menuItem, { borderBottomWidth: 0 }, hovered && { backgroundColor: 'rgba(249,115,22,0.12)' }]}
+                  onPress={() => { setShowMenu(false); navigation.navigate('WatchScreen', { watchId: nft.id, initialTab: 'security' }); }}
+                >
+                  <Ionicons name="refresh-circle-outline" size={16} color={alteredColor} style={{ marginRight: 8 }} />
+                  <Text style={{ color: alteredColor, fontWeight: '500' }}>Solicitar certificación</Text>
+                </Pressable>
               ) : (
                 <>
                   {!isStolen && !isLost && (
