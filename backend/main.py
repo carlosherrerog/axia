@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 from passlib.context import CryptContext
+import asyncio
 import jwt
 import secrets
 import os
@@ -2429,6 +2430,8 @@ async def confirm_delivery(watch_id: int, db: Session = Depends(database.get_db)
         raise HTTPException(status_code=500, detail="Error guardando en la base de datos.")
 
     # Re-sincronizar historial desde la blockchain (incluye la transferencia final marketplace→buyer)
+    # Espera 4s para que el RPC indexe la transferencia antes de releerla
+    await asyncio.sleep(4)
     _resync_ownership_history(watch.token_id, db)
     try:
         db.commit()

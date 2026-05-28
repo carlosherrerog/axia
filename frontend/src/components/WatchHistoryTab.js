@@ -13,6 +13,7 @@ export default function WatchHistoryTab({
   navigation,
   nftAddress,
   auctionAddress,
+  marketplaceAddress,
   tokenId,
   isAltered = false,
   isManufacturer = false,
@@ -27,20 +28,49 @@ export default function WatchHistoryTab({
     return d ? d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
   };
 
+  // Timestamps de verificaciones P2P para poder correlacionar con transfers
+  const p2pVerifTimestamps = (watchData?.verifications || [])
+    .filter(v => typeof v.comment === 'string' && v.comment.startsWith('Peritaje superado en venta P2P'))
+    .map(v => v.date || 0);
+
   const transfers = (watchData?.history || []).map(e => {
     const isMint = !e.previous_owner_wallet || e.previous_owner_wallet.toLowerCase() === ZERO_ADDR;
     const d = parseUTCDate(e.transferred_at);
+    const ts = d ? d.getTime() / 1000 : 0;
     const isAuction = !isMint && e.via_contract_wallet && auctionAddress &&
       e.via_contract_wallet.toLowerCase() === auctionAddress.toLowerCase();
     const isAuctionReturn = isAuction &&
       e.previous_owner_wallet && e.new_owner_wallet &&
       e.previous_owner_wallet.toLowerCase() === e.new_owner_wallet.toLowerCase();
+    const isMarketplaceSale = !isMint && !isAuction && e.via_contract_wallet && marketplaceAddress &&
+      e.via_contract_wallet.toLowerCase() === marketplaceAddress.toLowerCase() && e.price_usdc != null;
+    // Es P2P si hay una verificación P2P en los 30 días anteriores a la transferencia
+    const isP2PSale = isMarketplaceSale &&
+      p2pVerifTimestamps.some(vt => vt <= ts && ts - vt <= 30 * 24 * 3600);
+    const isDealerSale = isMarketplaceSale && !isP2PSale;
+
+    const icon  = isMint ? 'flash-outline'
+                : isAuctionReturn ? 'close-circle-outline'
+                : isAuction ? 'hammer-outline'
+                : isP2PSale ? 'shield-checkmark-outline'
+                : isDealerSale ? 'storefront-outline'
+                : 'swap-horizontal';
+    const color = isMint ? '#a855f7'
+                : isAuctionReturn ? '#6b7280'
+                : isAuction ? '#f59e0b'
+                : isP2PSale ? '#10b981'
+                : isDealerSale ? '#38bdf8'
+                : colors.primary;
+    const title = isMint ? 'Minteo inicial'
+                : isAuctionReturn ? 'Subasta desierta'
+                : isAuction ? 'Vendido en subasta'
+                : isP2PSale ? 'Venta P2P'
+                : isDealerSale ? 'Venta Dealer / Fabricante'
+                : 'Transferencia de propiedad';
     return {
       _type: 'transfer',
-      _ts: d ? d.getTime() / 1000 : 0,
-      icon: isMint ? 'flash-outline' : isAuctionReturn ? 'close-circle-outline' : isAuction ? 'hammer-outline' : 'swap-horizontal',
-      color: isMint ? '#a855f7' : isAuctionReturn ? '#6b7280' : isAuction ? '#f59e0b' : colors.primary,
-      title: isMint ? 'Minteo inicial' : isAuctionReturn ? 'Subasta desierta' : isAuction ? 'Vendido en subasta' : 'Transferencia de propiedad',
+      _ts: ts,
+      icon, color, title,
       lines: [e.price_usdc != null ? `${Number(e.price_usdc).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USDC` : null].filter(Boolean),
       isMint, isAuction, isAuctionReturn,
       fromWallet: isMint

@@ -1578,6 +1578,7 @@ export default function WatchScreen({ route, navigation }) {
             navigation={navigation}
             nftAddress={NFT_ADDRESS}
             auctionAddress={AUCTION_ADDRESS}
+            marketplaceAddress={MARKETPLACE_ADDRESS}
             tokenId={watchId}
             isAltered={isAltered}
             isManufacturer={isManufacturer}
