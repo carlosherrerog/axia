@@ -7,6 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import api from './src/api/api';
 import * as SecureStore from 'expo-secure-store';
 if (Platform.OS === 'web') { require('./src/wallet/walletconnect'); }
+if (Platform.OS !== 'web') { require('./src/wallet/appkit-native'); }
+
+let AppKitModal = null;
+try {
+  if (Platform.OS !== 'web') AppKitModal = require('@reown/appkit-react-native').AppKit;
+} catch {}
 
 // IMPORTACIÓN DE PANTALLAS
 import AuthScreen                from './src/screens/AuthScreen';
@@ -367,6 +373,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AppNavigator />
+      {AppKitModal && <AppKitModal />}
     </ThemeProvider>
   );
 }

@@ -52,22 +52,41 @@ function wrapSignerWithGas(signer) {
 }
 
 export function useEthProvider() {
-  if (Platform.OS !== 'web') {
-    return { ethProvider: null, getConnectedSigner: async () => { throw new Error('Solo disponible en web'); } };
-  }
-
+  // Web: Web3Modal provider
   let walletProvider = null;
   try {
     const { useWeb3ModalProvider } = require('@web3modal/ethers/react');
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const result = useWeb3ModalProvider();
-    walletProvider = result.walletProvider;
+    walletProvider = result?.walletProvider;
+  } catch {}
+
+  // Native: Reown AppKit provider
+  let nativeWalletProvider = null;
+  try {
+    const { useAppKitProvider } = require('@reown/appkit-react-native');
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { walletProvider: wp } = useAppKitProvider('eip155');
+    nativeWalletProvider = wp;
   } catch {}
 
   const win = typeof window !== 'undefined' ? window : null;
-  const ethProvider = win?.ethereum || walletProvider || null;
+  const ethProvider = Platform.OS === 'web'
+    ? (win?.ethereum || walletProvider || null)
+    : nativeWalletProvider;
 
   const getConnectedSigner = async () => {
+    // ── Path nativo (APK) ──────────────────────────────────────────────
+    if (Platform.OS !== 'web') {
+      if (!nativeWalletProvider) {
+        throw new Error('Conecta tu wallet MetaMask primero.');
+      }
+      await ensureAmoyNetwork(nativeWalletProvider);
+      const signer = await new ethers.BrowserProvider(nativeWalletProvider).getSigner();
+      return wrapSignerWithGas(signer);
+    }
+
+    // ── Path web ───────────────────────────────────────────────────────
     const isNativeExtension = win?.ethereum?.isMetaMask && !win?.ethereum?.isWalletConnect;
 
     if (isNativeExtension) {

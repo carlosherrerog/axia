@@ -13,7 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useEthProvider } from '../wallet/useEthProvider';
 import api, { WS_URL } from '../api/api.js';
 
-// Web3Modal hooks — solo en web
+// Web3Modal hooks (web) / AppKit hooks (native)
 let useWeb3Modal = () => ({ open: null });
 let useWeb3ModalProvider = () => ({ walletProvider: null });
 let useDisconnect = () => ({ disconnect: null });
@@ -23,6 +23,12 @@ if (Platform.OS === 'web') {
     useWeb3Modal = wc.useWeb3Modal;
     useWeb3ModalProvider = wc.useWeb3ModalProvider;
     useDisconnect = wc.useDisconnect;
+  } catch {}
+} else {
+  try {
+    const ak = require('@reown/appkit-react-native');
+    useWeb3Modal = ak.useAppKit;
+    useDisconnect = ak.useDisconnect;
   } catch {}
 }
 import { roleColors, alertColors } from '../themes/styles.js';
