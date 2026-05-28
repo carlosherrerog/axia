@@ -1,6 +1,17 @@
 import { ethers } from 'ethers';
+import { Linking } from 'react-native';
 
 const AMOY_RPC = process.env.EXPO_PUBLIC_RPC_URL || 'https://rpc-amoy.polygon.technology';
+
+// Abre MetaMask automáticamente cuando se usa WalletConnect (móvil).
+// Con la extensión nativa de escritorio no es necesario porque MetaMask ya está en el navegador.
+export function openMetaMask() {
+  const win = typeof window !== 'undefined' ? window : null;
+  const isNativeExtension = win?.ethereum?.isMetaMask && !win?.ethereum?.isWalletConnect;
+  if (!isNativeExtension) {
+    Linking.openURL('metamask://').catch(() => {});
+  }
+}
 
 // Polling HTTP directo contra el RPC público de Amoy.
 // No usa el provider de WalletConnect para esperar — ese depende del WebSocket

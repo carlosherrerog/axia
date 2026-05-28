@@ -15,7 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { watchScreenStyles } from '../themes/styles.js';
 import WatchAuction_ABI from '../contracts/WatchAuction.json';
 import MockUSDC_ABI from '../contracts/MockUSDC.json';
-import { waitForTx } from '../utils/txUtils';
+import { waitForTx, openMetaMask } from '../utils/txUtils';
 
 const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS    || '0x701EAa91aeB8588694B116C004D1EaAC7f55F2F2';
 const USDC_ADDRESS    = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x967187957d31d0912aE57cad1B51F764339AaEe6';
@@ -145,9 +145,13 @@ export default function AuctionScreen({ route, navigation }) {
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
       const amountWei = ethers.parseUnits(String(amount), 6);
 
-      const approveTx = await usdc.approve(AUCTION_ADDRESS, amountWei);
+      const approveTxP = usdc.approve(AUCTION_ADDRESS, amountWei);
+      openMetaMask();
+      const approveTx = await approveTxP;
       await waitForTx(approveTx);
-      const bidTx = await auctionCt.placeBid(tokenId, amountWei);
+      const bidTxP = auctionCt.placeBid(tokenId, amountWei);
+      openMetaMask();
+      const bidTx = await bidTxP;
       await waitForTx(bidTx);
 
       await api.post(`/auctions/${tokenId}/bid`, { bid_amount_usdc: amount });
@@ -180,7 +184,9 @@ export default function AuctionScreen({ route, navigation }) {
       setTxLoading(true);
       const signer    = await getConnectedSigner();
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
-      const tx = await auctionCt.endAuction(tokenId);
+      const endTxP = auctionCt.endAuction(tokenId);
+      openMetaMask();
+      const tx = await endTxP;
       await waitForTx(tx);
       await api.post(`/auctions/${tokenId}/end`);
       showAlert(

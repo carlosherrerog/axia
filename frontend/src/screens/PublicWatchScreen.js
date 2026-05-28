@@ -9,7 +9,7 @@ import api, { WS_URL } from '../api/api.js';
 import { useEthProvider } from '../wallet/useEthProvider';
 import { colors, watchScreenStyles, alertColors, globalStyles, alertStyles, WATCH_STATES, roleColors } from '../themes/styles.js';
 import { resolveImageUri } from '../utils/ipfs';
-import { waitForTx } from '../utils/txUtils';
+import { waitForTx, openMetaMask } from '../utils/txUtils';
 import GlobalHeader from '../components/GlobalHeader';
 import WatchHistoryTab from '../components/WatchHistoryTab';
 import WatchDetailsTab from '../components/WatchDetailsTab';
@@ -153,10 +153,14 @@ export default function PublicWatchScreen({ route, navigation }) {
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer);
       const priceWei = ethers.parseUnits((Number(listingData.price) / 1000000).toString(), 6);
 
-      const approveTx = await usdcContract.approve(MARKETPLACE_ADDRESS, priceWei);
+      const approveTxP = usdcContract.approve(MARKETPLACE_ADDRESS, priceWei);
+      openMetaMask();
+      const approveTx = await approveTxP;
       await waitForTx(approveTx);
 
-      const buyTx = await marketplace.buyWatchEscrow(watchId);
+      const buyTxP = marketplace.buyWatchEscrow(watchId);
+      openMetaMask();
+      const buyTx = await buyTxP;
       await waitForTx(buyTx);
     } catch (error) {
       if (error?.code === 'ACTION_REJECTED') {

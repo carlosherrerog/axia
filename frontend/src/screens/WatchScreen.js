@@ -17,7 +17,7 @@ import Marketplace_ABI from '../contracts/WatchMarketplace.json';
 import UserAndWatchCard from '../components/UserAndWatchCard';
 import GlobalHeader from '../components/GlobalHeader';
 import { resolveImageUri } from '../utils/ipfs';
-import { waitForTx } from '../utils/txUtils';
+import { waitForTx, openMetaMask } from '../utils/txUtils';
 import WatchHistoryTab from '../components/WatchHistoryTab';
 
 const NFT_ADDRESS         = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS     || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
@@ -264,14 +264,20 @@ export default function WatchScreen({ route, navigation }) {
           const needed = (Number(sellerDeposit) / 1e6).toFixed(2);
           throw new Error(`Necesitas al menos ${needed} USDC como fianza para listar. Saldo actual: ${(Number(usdcBalance) / 1e6).toFixed(2)} USDC.`);
         }
-        const usdcApproveTx = await usdcContract.approve(MARKETPLACE_ADDRESS, sellerDeposit);
+        const usdcApproveTxP = usdcContract.approve(MARKETPLACE_ADDRESS, sellerDeposit);
+        openMetaMask();
+        const usdcApproveTx = await usdcApproveTxP;
         await waitForTx(usdcApproveTx);
       }
 
-      const nftApproveTx = await nftContract.approve(MARKETPLACE_ADDRESS, watchId);
+      const nftApproveTxP = nftContract.approve(MARKETPLACE_ADDRESS, watchId);
+      openMetaMask();
+      const nftApproveTx = await nftApproveTxP;
       await waitForTx(nftApproveTx);
 
-      const listTx = await marketplaceContract.listWatch(watchId, priceInWei);
+      const listTxP = marketplaceContract.listWatch(watchId, priceInWei);
+      openMetaMask();
+      const listTx = await listTxP;
       receipt = await waitForTx(listTx);
     } catch (error) {
       if (error.code === 'ACTION_REJECTED') {
@@ -340,7 +346,9 @@ export default function WatchScreen({ route, navigation }) {
         return;
       }
       const marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
-      const tx = await marketplaceContract.cancelListing(watchId);
+      const cancelTxP = marketplaceContract.cancelListing(watchId);
+      openMetaMask();
+      const tx = await cancelTxP;
       await waitForTx(tx);
       txHash = tx.hash;
     } catch (error) {
@@ -406,11 +414,15 @@ export default function WatchScreen({ route, navigation }) {
 
       if (!isManufacturer && listingData?.is_p2p !== false && priceInWei > currentPriceInWei) {
         const newDeposit = (priceInWei * 200n) / 10000n;
-        const approveTx = await usdcContract.approve(MARKETPLACE_ADDRESS, newDeposit);
+        const approveTxP = usdcContract.approve(MARKETPLACE_ADDRESS, newDeposit);
+        openMetaMask();
+        const approveTx = await approveTxP;
         await waitForTx(approveTx);
       }
 
-      const tx = await marketplaceContract.updateListingPrice(watchId, priceInWei);
+      const updateTxP = marketplaceContract.updateListingPrice(watchId, priceInWei);
+      openMetaMask();
+      const tx = await updateTxP;
       await waitForTx(tx);
       txHash = tx.hash;
     } catch (error) {
@@ -491,7 +503,9 @@ export default function WatchScreen({ route, navigation }) {
       const signer = await getConnectedSigner();
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
 
-      const tx = await nftContract.changeSecurityState(watchId, newStateId);
+      const securityTxP = nftContract.changeSecurityState(watchId, newStateId);
+      openMetaMask();
+      const tx = await securityTxP;
       await waitForTx(tx);
 
       await api.patch(`/nfts/${watchId}/security-state`, {
@@ -525,7 +539,9 @@ export default function WatchScreen({ route, navigation }) {
       const signer = await getConnectedSigner();
       const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, Marketplace_ABI.abi, signer);
 
-      const tx = await marketplace.confirmDelivery(watchId);
+      const confirmTxP = marketplace.confirmDelivery(watchId);
+      openMetaMask();
+      const tx = await confirmTxP;
       await waitForTx(tx);
 
       await api.post(`/marketplace/confirm-delivery/${watchId}`);
@@ -599,7 +615,9 @@ export default function WatchScreen({ route, navigation }) {
 
       const nftContract = new ethers.Contract(NFT_ADDRESS, WatchNFT_ABI.abi, signer);
 
-      const tx = await nftContract.transferFrom(userAddress, recipientWallet, watchId);
+      const transferTxP = nftContract.transferFrom(userAddress, recipientWallet, watchId);
+      openMetaMask();
+      const tx = await transferTxP;
       await waitForTx(tx);
 
       await api.post(`/nfts/${watchId}/transfer`, {

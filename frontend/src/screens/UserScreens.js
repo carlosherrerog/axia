@@ -17,7 +17,7 @@ import AlertModal, { useAlert } from '../components/AlertModal';
 import WatchAuction_ABI from '../contracts/WatchAuction.json';
 import WatchNFT_ABI     from '../contracts/WatchNFT.json';
 import MockUSDC_ABI     from '../contracts/MockUSDC.json';
-import { waitForTx } from '../utils/txUtils';
+import { waitForTx, openMetaMask } from '../utils/txUtils';
 
 const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS      || '0x701EAa91aeB8588694B116C004D1EaAC7f55F2F2';
 const NFT_ADDRESS     = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS     || '0xbBfCa1b8404Dc43238C4A359E8454632f00c292F';
@@ -382,10 +382,14 @@ export default function UserDashboardScreen({ route, navigation }) {
       const auctionCt = new ethers.Contract(AUCTION_ADDRESS, WatchAuction_ABI.abi, signer);
       const priceWei  = ethers.parseUnits(String(price), 6);
 
-      const approveTx = await nft.approve(AUCTION_ADDRESS, selectedWatch.id);
+      const approveTxP = nft.approve(AUCTION_ADDRESS, selectedWatch.id);
+      openMetaMask();
+      const approveTx = await approveTxP;
       await waitForTx(approveTx);
 
-      const createTx = await auctionCt.createAuction(selectedWatch.id, priceWei, dur);
+      const createTxP = auctionCt.createAuction(selectedWatch.id, priceWei, dur);
+      openMetaMask();
+      const createTx = await createTxP;
       await waitForTx(createTx);
 
       await api.post(`/auctions/${selectedWatch.id}/create`, {
