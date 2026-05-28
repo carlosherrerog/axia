@@ -268,32 +268,87 @@ def get_full_watch_profile(token_id: int) -> dict:
         raise ValueError(f"Error sincronizando datos desde blockchain: {str(e)}")
 
 
+def _get_transfers_alchemy(token_id: int) -> list:
+    """
+    Obtiene todas las transferencias ERC721 de un token usando alchemy_getAssetTransfers.
+    Sin límite de rango de bloques — Alchemy gestiona la paginación internamente.
+    """
+    from datetime import datetime, timezone
+    results = []
+    page_key = None
+    while True:
+        params = {
+            "fromBlock": "0x0",
+            "toBlock": "latest",
+            "contractAddresses": [WATCH_NFT_ADDRESS],
+            "category": ["erc721"],
+            "withMetadata": True,
+            "excludeZeroValue": False,
+            "maxCount": "0x3e8",
+        }
+        if page_key:
+            params["pageKey"] = page_key
+        try:
+            resp = requests.post(RPC_URL, json={
+                "jsonrpc": "2.0",
+                "method": "alchemy_getAssetTransfers",
+                "params": [params],
+                "id": 1,
+            }, timeout=30)
+            resp.raise_for_status()
+            data = resp.json().get("result", {})
+        except Exception as e:
+            print(f"[blockchain] alchemy_getAssetTransfers error: {e}")
+            break
+
+        for t in data.get("transfers", []):
+            tid_hex = t.get("erc721TokenId") or "0x0"
+            try:
+                if int(tid_hex, 16) != token_id:
+                    continue
+            except Exception:
+                continue
+            ts = None
+            raw_ts = (t.get("metadata") or {}).get("blockTimestamp")
+            if raw_ts:
+                try:
+                    ts = datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+                except Exception:
+                    pass
+            results.append({
+                "previous_owner_wallet": t["from"],
+                "new_owner_wallet": t["to"],
+                "block_number": int(t["blockNum"], 16),
+                "transferred_at": ts,
+            })
+
+        page_key = data.get("pageKey")
+        if not page_key:
+            break
+
+    print(f"[blockchain] alchemy_getAssetTransfers token {token_id}: {len(results)} transfers")
+    return results
+
+
 def get_ownership_history_from_chain(token_id: int, from_block: int = None) -> list:
     """
-    Reconstruye el historial de propietarios de un NFT leyendo los eventos
-    Transfer de WatchNFT y SaleCompleted de WatchMarketplace.
-    Los eventos son inmutables en la blockchain — nunca se pueden borrar.
+    Reconstruye el historial de propietarios de un NFT.
+    Transfers via alchemy_getAssetTransfers (sin límite de rango).
+    Precios via SaleCompleted (best-effort, chunks de 2000 bloques).
     """
     if not watchNFT_contract:
         return []
 
-    start_block = from_block if from_block is not None else DEPLOY_BLOCK
-
-    try:
-        # 1. Leer todos los eventos Transfer para este tokenId
-        transfer_logs = get_logs_paginated(
-            watchNFT_contract.events.Transfer,
-            start_block, 'latest',
-            argument_filters={'tokenId': token_id}
-        )
-    except Exception as e:
-        print(f"[blockchain] Error leyendo Transfer events para token {token_id}: {e}")
+    # 1. Obtener transferencias con la API de Alchemy (sin restricción de rango)
+    transfer_list = _get_transfers_alchemy(token_id)
+    if not transfer_list:
         return []
 
-    # 2. Construir mapa bloque → precio desde SaleCompleted (una sola consulta global)
+    # 2. Construir mapa bloque → precio desde SaleCompleted (best-effort)
     sale_price_by_block = {}
     if marketplace_contract:
         try:
+            start_block = from_block if from_block is not None else DEPLOY_BLOCK
             sale_logs = get_logs_paginated(
                 marketplace_contract.events.SaleCompleted,
                 start_block, 'latest',
@@ -301,34 +356,21 @@ def get_ownership_history_from_chain(token_id: int, from_block: int = None) -> l
             )
             for s in sale_logs:
                 raw_price = s['args'].get('price', 0)
-                price_usdc = int(raw_price) / 10**6
-                sale_price_by_block[s['blockNumber']] = price_usdc
+                sale_price_by_block[s['blockNumber']] = int(raw_price) / 10**6
         except Exception as e:
-            print(f"[blockchain] Error leyendo SaleCompleted para token {token_id}: {e}")
+            print(f"[blockchain] SaleCompleted (best-effort) error para token {token_id}: {e}")
 
-    # 3. Construir el historial raw
-    from datetime import datetime, timezone
-    marketplace_lower = MARKETPLACE_ADDRESS.lower() if MARKETPLACE_ADDRESS else None
-
+    # 3. Construir raw combinando transfers + precios
     raw = []
-    for log in transfer_logs:
-        from_addr = log['args']['from']
-        to_addr   = log['args']['to']
-        block_num = log['blockNumber']
-
-        try:
-            block = w3.eth.get_block(block_num)
-            ts = datetime.fromtimestamp(block['timestamp'], tz=timezone.utc)
-        except Exception:
-            ts = None
-
+    for t in transfer_list:
+        block_num = t["block_number"]
         raw.append({
-            "previous_owner_wallet": from_addr,
-            "new_owner_wallet": to_addr,
-            "via_contract_wallet": None,
-            "price_usdc": sale_price_by_block.get(block_num),
-            "transferred_at": ts,
-            "block_number": block_num,
+            "previous_owner_wallet": t["previous_owner_wallet"],
+            "new_owner_wallet":      t["new_owner_wallet"],
+            "via_contract_wallet":   None,
+            "price_usdc":            sale_price_by_block.get(block_num),
+            "transferred_at":        t["transferred_at"],
+            "block_number":          block_num,
         })
 
     # 4. Fusionar transferencias de contratos usando máquina de estados.
