@@ -67,7 +67,7 @@ def get_logs_paginated(event, from_block: int, to_block, argument_filters: dict 
     """Divide get_logs en chunks para no superar el límite de rango de cualquier RPC."""
     if to_block == 'latest':
         try:
-            to_block = w3_public.eth.block_number
+            to_block = w3.eth.block_number
         except Exception:
             to_block = from_block + LOG_CHUNK_SIZE
     results = []
@@ -160,7 +160,7 @@ def get_full_watch_profile(token_id: int) -> dict:
         if marketplace_contract:
             try:
                 approved_logs = get_logs_paginated(
-                    marketplace_contract_public.events.AuthenticityApproved,
+                    marketplace_contract.events.AuthenticityApproved,
                     DEPLOY_BLOCK, 'latest',
                     argument_filters={'tokenId': token_id}
                 )
@@ -180,7 +180,7 @@ def get_full_watch_profile(token_id: int) -> dict:
 
             try:
                 rejected_logs = get_logs_paginated(
-                    marketplace_contract_public.events.AuthenticityRejected,
+                    marketplace_contract.events.AuthenticityRejected,
                     DEPLOY_BLOCK, 'latest',
                     argument_filters={'tokenId': token_id}
                 )
@@ -282,7 +282,7 @@ def get_ownership_history_from_chain(token_id: int, from_block: int = None) -> l
     try:
         # 1. Leer todos los eventos Transfer para este tokenId
         transfer_logs = get_logs_paginated(
-            watchNFT_contract_public.events.Transfer,
+            watchNFT_contract.events.Transfer,
             start_block, 'latest',
             argument_filters={'tokenId': token_id}
         )
@@ -295,7 +295,7 @@ def get_ownership_history_from_chain(token_id: int, from_block: int = None) -> l
     if marketplace_contract:
         try:
             sale_logs = get_logs_paginated(
-                marketplace_contract_public.events.SaleCompleted,
+                marketplace_contract.events.SaleCompleted,
                 start_block, 'latest',
                 argument_filters={'tokenId': token_id}
             )
