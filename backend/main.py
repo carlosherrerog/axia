@@ -2807,6 +2807,14 @@ async def transfer_nft(
     db.add(notify_receiver)
     db.commit()
 
+    # Espera a que el RPC indexe el evento Transfer antes de releer el historial
+    await asyncio.sleep(4)
+    _resync_ownership_history(token_id, db)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+
     # 4. Notificamos por WebSocket para que las listas se refresquen solas
     if manager:
         await manager.broadcast("update_marketplace")
