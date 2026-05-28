@@ -7,9 +7,8 @@ export function isMobileWithoutWallet() {
   return /android|iphone|ipad|ipod|mobile/i.test(ua);
 }
 
-const FLOOR_PRIORITY_FEE = ethers.parseUnits('300', 'gwei');
-const FLOOR_MAX_FEE      = ethers.parseUnits('600', 'gwei');
-const BASE_FEE_BUFFER    = ethers.parseUnits('200', 'gwei');
+const GAS_TIP = ethers.parseUnits('300', 'gwei');
+const GAS_MAX = ethers.parseUnits('600', 'gwei');
 
 const AMOY_CHAIN_ID = '0x13882'; // 80002
 
@@ -38,31 +37,18 @@ async function ensureAmoyNetwork(rawProvider) {
     }
   }
 }
-// Margen sobre el valor que devuelva la red (+200%)
-const GAS_MARGIN = 300n;
-
-function applyMinGasFee(provider) {
-  const _getFeeData = provider.getFeeData.bind(provider);
-  provider.getFeeData = async () => {
-    const feeData = await _getFeeData();
-
-    const networkTip = feeData.maxPriorityFeePerGas ?? 0n;
-    const withMargin = (networkTip * GAS_MARGIN) / 100n;
-    const adjustedTip = withMargin < FLOOR_PRIORITY_FEE ? FLOOR_PRIORITY_FEE : withMargin;
-
-    // maxFeePerGas debe cubrir el tip + buffer para la baseFee, con floor absoluto
-    const networkMaxFee  = feeData.maxFeePerGas ?? 0n;
-    const minMaxFee      = adjustedTip + BASE_FEE_BUFFER;
-    const adjustedMaxFee = networkMaxFee < minMaxFee ? minMaxFee : networkMaxFee;
-    const finalMaxFee    = adjustedMaxFee < FLOOR_MAX_FEE ? FLOOR_MAX_FEE : adjustedMaxFee;
-
-    return new ethers.FeeData(
-      feeData.gasPrice,
-      finalMaxFee,
-      adjustedTip,
-    );
+// Intercepta sendTransaction en el signer para inyectar gas mínimo garantizado.
+// Parchear getFeeData no es suficiente porque MetaMask puede sobrescribir los valores.
+function wrapSignerWithGas(signer) {
+  const _sendTransaction = signer.sendTransaction.bind(signer);
+  signer.sendTransaction = async (tx) => {
+    const tip = (tx.maxPriorityFeePerGas != null && BigInt(tx.maxPriorityFeePerGas) > GAS_TIP)
+      ? BigInt(tx.maxPriorityFeePerGas) : GAS_TIP;
+    const max = (tx.maxFeePerGas != null && BigInt(tx.maxFeePerGas) > GAS_MAX)
+      ? BigInt(tx.maxFeePerGas) : GAS_MAX;
+    return _sendTransaction({ ...tx, maxPriorityFeePerGas: tip, maxFeePerGas: max });
   };
-  return provider;
+  return signer;
 }
 
 export function useEthProvider() {
@@ -87,21 +73,21 @@ export function useEthProvider() {
     if (isNativeExtension) {
       await win.ethereum.request({ method: 'eth_requestAccounts' });
       await ensureAmoyNetwork(win.ethereum);
-      const provider = applyMinGasFee(new ethers.BrowserProvider(win.ethereum));
-      return provider.getSigner();
+      const signer = await new ethers.BrowserProvider(win.ethereum).getSigner();
+      return wrapSignerWithGas(signer);
     }
 
     if (walletProvider) {
       await ensureAmoyNetwork(walletProvider);
-      const provider = applyMinGasFee(new ethers.BrowserProvider(walletProvider));
-      return provider.getSigner();
+      const signer = await new ethers.BrowserProvider(walletProvider).getSigner();
+      return wrapSignerWithGas(signer);
     }
 
     if (win?.ethereum) {
       await win.ethereum.request({ method: 'eth_requestAccounts' });
       await ensureAmoyNetwork(win.ethereum);
-      const provider = applyMinGasFee(new ethers.BrowserProvider(win.ethereum));
-      return provider.getSigner();
+      const signer = await new ethers.BrowserProvider(win.ethereum).getSigner();
+      return wrapSignerWithGas(signer);
     }
 
     throw new Error('No hay wallet disponible. Conecta MetaMask u otra wallet compatible.');
