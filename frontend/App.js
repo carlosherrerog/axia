@@ -325,8 +325,19 @@ function AppNavigator() {
       else if (u.roles?.includes('FABRICANTE')) targetDashboard = 'ManufacturerDashboard';
       else targetDashboard = 'UserDashboard';
 
-      // Si el linking ya resolvió la URL al dashboard correcto, no resetear
-      // (esto preserva la pestaña/pantalla activa al refrescar en web)
+      // Comprobar la URL directamente para evitar race condition con el linking
+      // (el linking es async y puede no haber resuelto cuando handleReady se ejecuta)
+      const dashboardPaths = {
+        UserDashboard:        '/app',
+        WatchmakerDashboard:  '/watchmaker',
+        ManufacturerDashboard:'/manufacturer',
+        Admin:                '/admin',
+      };
+      const targetPath = dashboardPaths[targetDashboard];
+      const currentPath = Platform.OS === 'web' ? window.location.pathname : null;
+      if (currentPath && targetPath && currentPath.startsWith(targetPath)) return;
+
+      // Fallback: comprobar el estado de navegación (para nativo / casos sin URL)
       const state = navigationRef.getState();
       const topRouteName = state?.routes?.[state.index]?.name;
       if (topRouteName === targetDashboard) return;
