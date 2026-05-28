@@ -2782,7 +2782,7 @@ async def transfer_nft(
     # 3. Actualización de todos los campos de propiedad y seguridad
     nft.owner_wallet = request.new_owner
     nft.owner_id = new_user.id
-    nft.is_imported = True
+    nft.is_imported = False
     nft.is_public = False
     nft.is_listed = False
 
