@@ -10,5 +10,10 @@ export async function waitForTx(txOrHash, confirmations = 1, timeout = 90000) {
   const provider = new ethers.JsonRpcProvider(AMOY_RPC);
   const receipt = await provider.waitForTransaction(hash, confirmations, timeout);
   if (!receipt) throw new Error('La transacción no se confirmó a tiempo. Comprueba el estado en Polygonscan.');
+  if (receipt.status === 0) {
+    const err = new Error(`La transacción fue rechazada por el contrato (hash: ${hash})`);
+    err.code = 'TRANSACTION_REVERTED';
+    throw err;
+  }
   return receipt;
 }

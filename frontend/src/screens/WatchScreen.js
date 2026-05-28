@@ -268,6 +268,15 @@ export default function WatchScreen({ route, navigation }) {
         await waitForTx(usdcApproveTx);
       }
 
+      // DEBUG TEMPORAL — eliminar después del diagnóstico
+      const signerAddr = await signer.getAddress();
+      const nftOwner   = await nftContract.ownerOf(watchId);
+      Alert.alert(
+        'DEBUG wallet',
+        `Signer:  ${signerAddr}\nOwner:   ${nftOwner}\nToken:   #${watchId}\nCoincide: ${signerAddr.toLowerCase() === nftOwner.toLowerCase() ? '✅ SÍ' : '❌ NO'}`,
+      );
+      // FIN DEBUG
+
       const nftApproveTx = await nftContract.approve(MARKETPLACE_ADDRESS, watchId);
       await waitForTx(nftApproveTx);
 
