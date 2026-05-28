@@ -3,6 +3,11 @@ import { Linking } from 'react-native';
 
 const AMOY_RPC = process.env.EXPO_PUBLIC_RPC_URL || 'https://rpc-amoy.polygon.technology';
 
+export const GAS_OVERRIDES = {
+  maxPriorityFeePerGas: ethers.parseUnits('30', 'gwei'),
+  maxFeePerGas:         ethers.parseUnits('60', 'gwei'),
+};
+
 // Abre MetaMask automáticamente cuando se usa WalletConnect (móvil).
 // Con la extensión nativa de escritorio no es necesario porque MetaMask ya está en el navegador.
 export function openMetaMask(delay = 500) {

@@ -10,7 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useEthProvider, isMobileWithoutWallet } from '../wallet/useEthProvider';
 import api, { getToken, WS_URL } from '../api/api';
 import { resolveImageUri } from '../utils/ipfs';
-import { waitForTx, openMetaMask } from '../utils/txUtils';
+import { waitForTx, openMetaMask, GAS_OVERRIDES } from '../utils/txUtils';
 import { useTheme } from '../context/ThemeContext';
 import { roleColors } from '../themes/styles';
 import GlobalHeader from '../components/GlobalHeader';
@@ -128,7 +128,7 @@ export default function SaleScreen({ route, navigation }) {
 
       let blockchainWarning = null;
       try {
-        const confirmTxP = marketplace.confirmDelivery(sale.token_id);
+        const confirmTxP = marketplace.confirmDelivery(sale.token_id, GAS_OVERRIDES);
         openMetaMask();
         const tx = await confirmTxP;
         await waitForTx(tx);

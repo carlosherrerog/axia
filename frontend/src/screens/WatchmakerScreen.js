@@ -9,7 +9,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect } from '@react-navigation/native';
 import { useEthProvider } from '../wallet/useEthProvider';
 import api, { getToken, WS_URL } from '../api/api';
-import { waitForTx, openMetaMask } from '../utils/txUtils';
+import { waitForTx, openMetaMask, GAS_OVERRIDES } from '../utils/txUtils';
 import { isMobileWithoutWallet } from '../wallet/useEthProvider';
 import GlobalHeader from '../components/GlobalHeader';
 import WatchCardForWatchmaker from '../components/WatchCardForWatchmaker';
@@ -188,7 +188,7 @@ export default function WatchmakerScreen({ navigation }) {
         // el backend NO se actualiza.
         const signer      = await getConnectedSigner();
         const marketplace = new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, signer);
-        const verifyTxP = marketplace.verifyAuthenticity(selectedWatch.token_id, isVerifySuccess);
+        const verifyTxP = marketplace.verifyAuthenticity(selectedWatch.token_id, isVerifySuccess, GAS_OVERRIDES);
         openMetaMask();
         const tx = await verifyTxP;
         await waitForTx(tx);
