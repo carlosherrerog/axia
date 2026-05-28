@@ -5,11 +5,12 @@ const AMOY_RPC = process.env.EXPO_PUBLIC_RPC_URL || 'https://rpc-amoy.polygon.te
 
 // Abre MetaMask automáticamente cuando se usa WalletConnect (móvil).
 // Con la extensión nativa de escritorio no es necesario porque MetaMask ya está en el navegador.
-export function openMetaMask() {
+export function openMetaMask(delay = 500) {
   const win = typeof window !== 'undefined' ? window : null;
   const isNativeExtension = win?.ethereum?.isMetaMask && !win?.ethereum?.isWalletConnect;
   if (!isNativeExtension) {
-    Linking.openURL('metamask://').catch(() => {});
+    // Espera a que la solicitud llegue al relay antes de abrir MetaMask
+    setTimeout(() => Linking.openURL('metamask://').catch(() => {}), delay);
   }
 }
 
