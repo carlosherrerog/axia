@@ -306,9 +306,10 @@ export default function UserDashboardScreen({ route, navigation }) {
   // No se dispara al cambiar de tab porque los datos ya vienen de fetchInitialData
 
   useFocusEffect(useCallback(() => {
+    fetchMyCollection();
     if (isDealer && activeTab === 'subastas') fetchAuctions();
     if (!isDealer && activeTab === 'subastas') fetchMyBids();
-  }, [isDealer, activeTab, fetchAuctions, fetchMyBids]));
+  }, [isDealer, activeTab, fetchAuctions, fetchMyBids, fetchMyCollection]));
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
