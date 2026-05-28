@@ -72,6 +72,8 @@ def get_logs_paginated(event, from_block: int, to_block, argument_filters: dict 
             to_block = from_block + LOG_CHUNK_SIZE
     results = []
     start = from_block
+    total_chunks = max(1, (to_block - from_block) // LOG_CHUNK_SIZE + 1)
+    print(f"[blockchain] get_logs {event.event_name} bloques {from_block}-{to_block} ({total_chunks} chunks, filtros={argument_filters})")
     while start <= to_block:
         end = min(start + LOG_CHUNK_SIZE - 1, to_block)
         try:
@@ -79,10 +81,13 @@ def get_logs_paginated(event, from_block: int, to_block, argument_filters: dict 
             if argument_filters:
                 kwargs["argument_filters"] = argument_filters
             chunk = event.get_logs(**kwargs)
+            if chunk:
+                print(f"[blockchain]   chunk {start}-{end}: {len(chunk)} eventos")
             results.extend(chunk)
         except Exception as e:
-            print(f"[blockchain] get_logs chunk {start}-{end} error: {e}")
+            print(f"[blockchain]   chunk {start}-{end} ERROR: {e}")
         start = end + 1
+    print(f"[blockchain] get_logs {event.event_name} total: {len(results)} eventos")
     return results
 
 if WATCH_NFT_ADDRESS:
