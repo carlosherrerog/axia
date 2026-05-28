@@ -454,7 +454,7 @@ export default function UserDashboardScreen({ route, navigation }) {
             flexDirection: 'row', marginHorizontal: hPad, marginTop: 12, marginBottom: 4,
             backgroundColor: colors.surface,
             borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-            padding: 4,
+            padding: 4, alignSelf: 'flex-start',
           }}>
             {[
               { key: 'coleccion', label: 'Colección', icon: 'grid-outline' },
@@ -464,13 +464,13 @@ export default function UserDashboardScreen({ route, navigation }) {
                 key={tab.key}
                 onPress={() => setActiveTab(tab.key)}
                 style={{
-                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                  paddingVertical: 10, borderRadius: 10, gap: 6,
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                  paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, gap: 5,
                   backgroundColor: activeTab === tab.key ? colors.primary : 'transparent',
                 }}
               >
                 <Ionicons name={tab.icon} size={15} color={activeTab === tab.key ? '#fff' : colors.textSecondary} />
-                <Text style={{ color: activeTab === tab.key ? '#fff' : colors.textSecondary, fontWeight: '600', fontSize: 14 }}>
+                <Text style={{ color: activeTab === tab.key ? '#fff' : colors.textSecondary, fontWeight: '600', fontSize: 13 }}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
