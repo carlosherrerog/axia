@@ -154,49 +154,9 @@ def get_full_watch_profile(token_id: int) -> dict:
         except Exception:
             pass
 
-        # 4b. OBTENER PERITAJES P2P DESDE EVENTOS DEL MARKETPLACE
-        # AuthenticityApproved/Rejected se emiten en WatchMarketplace, no en WatchNFT,
-        # por lo que getVerificationHistory no los recoge. Hay que leer los eventos.
-        if marketplace_contract:
-            try:
-                approved_logs = get_logs_paginated(
-                    marketplace_contract.events.AuthenticityApproved,
-                    DEPLOY_BLOCK, 'latest',
-                    argument_filters={'tokenId': token_id}
-                )
-                for log in approved_logs:
-                    wm = log['args']['watchmaker']
-                    try:
-                        ts = w3.eth.get_block(log['blockNumber'])['timestamp']
-                    except Exception:
-                        ts = 0
-                    verifications_db.append({
-                        "watchmaker": wm,
-                        "date": ts,
-                        "comment": "Peritaje superado en venta P2P — reloj verificado como auténtico."
-                    })
-            except Exception as e:
-                print(f"[blockchain] Error leyendo AuthenticityApproved para token {token_id}: {e}")
-
-            try:
-                rejected_logs = get_logs_paginated(
-                    marketplace_contract.events.AuthenticityRejected,
-                    DEPLOY_BLOCK, 'latest',
-                    argument_filters={'tokenId': token_id}
-                )
-                for log in rejected_logs:
-                    wm = log['args']['watchmaker']
-                    try:
-                        ts = w3.eth.get_block(log['blockNumber'])['timestamp']
-                    except Exception:
-                        ts = 0
-                    verifications_db.append({
-                        "watchmaker": wm,
-                        "date": ts,
-                        "comment": "Peritaje rechazado — se detectó que el reloj no es auténtico."
-                    })
-            except Exception as e:
-                print(f"[blockchain] Error leyendo AuthenticityRejected para token {token_id}: {e}")
+        # 4b. Peritajes P2P via AuthenticityApproved/Rejected
+        # Omitido: eth_getLogs no está disponible en este RPC para Amoy.
+        # Los peritajes quedan registrados en watch_verifications via /verify endpoint.
 
         # 5. OBTENER ESTADO DEL MARKETPLACE
         listing_db = None
@@ -332,35 +292,17 @@ def _get_transfers_alchemy(token_id: int) -> list:
 
 def get_ownership_history_from_chain(token_id: int, from_block: int = None) -> list:
     """
-    Reconstruye el historial de propietarios de un NFT.
-    Transfers via alchemy_getAssetTransfers (sin límite de rango).
-    Precios via SaleCompleted (best-effort, chunks de 2000 bloques).
+    Reconstruye el historial de propietarios de un NFT via alchemy_getAssetTransfers.
+    eth_getLogs no está disponible en Alchemy/Amoy — precios siempre None.
     """
     if not watchNFT_contract:
         return []
 
-    # 1. Obtener transferencias con la API de Alchemy (sin restricción de rango)
     transfer_list = _get_transfers_alchemy(token_id)
     if not transfer_list:
         return []
 
-    # 2. Construir mapa bloque → precio desde SaleCompleted (best-effort)
-    sale_price_by_block = {}
-    if marketplace_contract:
-        try:
-            start_block = from_block if from_block is not None else DEPLOY_BLOCK
-            sale_logs = get_logs_paginated(
-                marketplace_contract.events.SaleCompleted,
-                start_block, 'latest',
-                argument_filters={'tokenId': token_id}
-            )
-            for s in sale_logs:
-                raw_price = s['args'].get('price', 0)
-                sale_price_by_block[s['blockNumber']] = int(raw_price) / 10**6
-        except Exception as e:
-            print(f"[blockchain] SaleCompleted (best-effort) error para token {token_id}: {e}")
-
-    # 3. Construir raw combinando transfers + precios
+    # Construir raw — sin precios (eth_getLogs no disponible en Amoy)
     raw = []
     for t in transfer_list:
         block_num = t["block_number"]
@@ -368,7 +310,7 @@ def get_ownership_history_from_chain(token_id: int, from_block: int = None) -> l
             "previous_owner_wallet": t["previous_owner_wallet"],
             "new_owner_wallet":      t["new_owner_wallet"],
             "via_contract_wallet":   None,
-            "price_usdc":            sale_price_by_block.get(block_num),
+            "price_usdc":            None,
             "transferred_at":        t["transferred_at"],
             "block_number":          block_num,
         })
