@@ -7,8 +7,9 @@ export function isMobileWithoutWallet() {
   return /android|iphone|ipad|ipod|mobile/i.test(ua);
 }
 
-// Floor absoluto por si la red devuelve 0 o un valor muy bajo
-const FLOOR_PRIORITY_FEE = ethers.parseUnits('25', 'gwei');
+const FLOOR_PRIORITY_FEE = ethers.parseUnits('50',  'gwei');
+const FLOOR_MAX_FEE      = ethers.parseUnits('150', 'gwei');
+const BASE_FEE_BUFFER    = ethers.parseUnits('50',  'gwei'); // margen sobre baseFee
 
 const AMOY_CHAIN_ID = '0x13882'; // 80002
 
@@ -37,20 +38,27 @@ async function ensureAmoyNetwork(rawProvider) {
     }
   }
 }
-// Margen sobre el valor que devuelva la red (+20%)
-const GAS_MARGIN = 120n;
+// Margen sobre el valor que devuelva la red (+50%)
+const GAS_MARGIN = 150n;
 
 function applyMinGasFee(provider) {
   const _getFeeData = provider.getFeeData.bind(provider);
   provider.getFeeData = async () => {
     const feeData = await _getFeeData();
+
     const networkTip = feeData.maxPriorityFeePerGas ?? 0n;
-    // Aplicar margen del 20% sobre lo que pida la red, con floor de 25 gwei
     const withMargin = (networkTip * GAS_MARGIN) / 100n;
     const adjustedTip = withMargin < FLOOR_PRIORITY_FEE ? FLOOR_PRIORITY_FEE : withMargin;
+
+    // maxFeePerGas debe cubrir el tip + buffer para la baseFee, con floor absoluto
+    const networkMaxFee  = feeData.maxFeePerGas ?? 0n;
+    const minMaxFee      = adjustedTip + BASE_FEE_BUFFER;
+    const adjustedMaxFee = networkMaxFee < minMaxFee ? minMaxFee : networkMaxFee;
+    const finalMaxFee    = adjustedMaxFee < FLOOR_MAX_FEE ? FLOOR_MAX_FEE : adjustedMaxFee;
+
     return new ethers.FeeData(
       feeData.gasPrice,
-      feeData.maxFeePerGas,
+      finalMaxFee,
       adjustedTip,
     );
   };
