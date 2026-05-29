@@ -1619,7 +1619,7 @@ class MintTab(tk.Frame):
                 ],
             }
             meta_cid  = upload_json_pinata(metadata, f"axia_{uid.replace(':','')}.json")
-            token_uri = f"ipfs://{meta_cid}"
+            token_uri = f"https://gateway.pinata.cloud/ipfs/{meta_cid}"
             self._log("Metadata lista. Firmando transacción blockchain…", C["text2"])
 
             # 3. Mint en blockchain
