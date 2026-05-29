@@ -1907,6 +1907,35 @@ class SettingsTab(tk.Frame):
                  font=FONT_SMALL, fg=C["muted"], bg=C["surface"],
                  wraplength=600, justify="left").pack(anchor="w", pady=(6, 0))
 
+        # Bloque informativo — cómo funciona todo
+        info_card = card_frame(inner)
+        info_card.configure(highlightbackground=C["border"])
+
+        for icon, title, body in [
+            ("🔑", "Tu clave privada (PRIVATE_KEY)",
+             "Es la contraseña maestra de tu wallet blockchain. Con ella firmas cada minteo "
+             "y demuestras que eres el creador del reloj. Nunca la compartas con nadie."),
+            ("☁️", "Pinata — almacenamiento de imágenes",
+             "Cada fabricante sube sus propias fotos e información a su cuenta de Pinata "
+             "(pinata.cloud). Es como tener tu propio espacio en internet donde se guardan "
+             "las imágenes de tus relojes de forma permanente. Crea tu cuenta gratuita en "
+             "app.pinata.cloud y copia aquí tu API Key y Secret Key."),
+            ("📦", "La colección AXIA — un único registro compartido",
+             "Todos los relojes de todos los fabricantes quedan registrados en el mismo "
+             "contrato inteligente en la blockchain de Polygon. Es como un libro de registro "
+             "oficial donde cada reloj tiene un número único (token ID) y queda grabado para "
+             "siempre quién fue su fabricante. Aunque la colección sea compartida, cada NFT "
+             "te pertenece a ti y lleva tus royalties asociados en cada futura reventa."),
+        ]:
+            row = tk.Frame(info_card, bg=C["surface"])
+            row.pack(fill="x", pady=6)
+            tk.Label(row, text=f"{icon}  {title}", font=FONT_BODY,
+                     fg=C["text"], bg=C["surface"], anchor="w").pack(anchor="w")
+            tk.Label(row, text=body, font=FONT_SMALL, fg=C["muted"],
+                     bg=C["surface"], wraplength=680, justify="left").pack(anchor="w", pady=(2, 0))
+
+        separator(inner).pack(fill="x", padx=28, pady=12)
+
         # Grupos de configuración — solo claves del usuario
         groups = [
             ("Credenciales", [
