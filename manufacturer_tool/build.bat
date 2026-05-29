@@ -8,6 +8,7 @@ pyinstaller ^
   --onefile ^
   --windowed ^
   --name "AXIA-Manufacturer" ^
+  --icon "icons/axia.ico" ^
   --add-data "abi;abi" ^
   --add-data "icons;icons" ^
   --hidden-import "web3" ^
