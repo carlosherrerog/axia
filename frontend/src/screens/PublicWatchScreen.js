@@ -16,11 +16,10 @@ import WatchHistoryTab from '../components/WatchHistoryTab';
 import WatchDetailsTab from '../components/WatchDetailsTab';
 import { useScrollAware, HEADER_HEIGHT } from '../hooks/useScrollAware';
 
-const NFT_ADDRESS                = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS          || '0x00623aeAaE1Dc90A34754893db84145fECfCF539';
-const MARKETPLACE_ADDRESS        = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS         || '0x1eaea56137Dd520e77aE34851F9b13BC6658ADf4';
-const AUCTION_ADDRESS            = process.env.EXPO_PUBLIC_AUCTION_ADDRESS             || '0x4DaB374d75a890bB0311C05063a9EfB4ce95229e';
-const USDC_ADDRESS               = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS       || '0x7BE858258f6aF7D21016e90E1D011F3D8705A634';
-const SIGNATURE_VERIFIER_ADDRESS = process.env.EXPO_PUBLIC_SIGNATURE_VERIFIER_ADDRESS  || '0x92bc5ba3D4763a0129a1Dadacc1cf4b5Fb7b4837';
+const NFT_ADDRESS                = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS          || '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0';
+const MARKETPLACE_ADDRESS        = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS         || '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5';
+const AUCTION_ADDRESS            = process.env.EXPO_PUBLIC_AUCTION_ADDRESS             || '0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae';
+const USDC_ADDRESS               = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS       || '0x8612685dE8228E787378a984b8aee8bfad5CC550';
 const POLYGONSCAN_BASE           = 'https://amoy.polygonscan.com';
 
 // ABIs necesarios

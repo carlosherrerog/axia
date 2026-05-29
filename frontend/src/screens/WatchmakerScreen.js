@@ -17,7 +17,7 @@ import UserInfo from '../components/UserInfo';
 import AlertModal, { useAlert } from '../components/AlertModal';
 import { userStyles, colors, roleColors, globalStyles } from '../themes/styles';
 
-const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x1eaea56137Dd520e77aE34851F9b13BC6658ADf4';
+const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5';
 const MARKETPLACE_ABI = [
   "function verifyAuthenticity(uint256 tokenId, bool isValid) external"
 ];
@@ -175,7 +175,7 @@ export default function WatchmakerScreen({ navigation }) {
       if (isReverification && isVerifySuccess) {
         // Re-certificación aprobada: restaurar estado en WatchNFT (requiere firma obligatoria)
         const WATCHNFT_ABI = ["function restoreAuthenticity(uint256 tokenId, string repairDescription) external"];
-        const WATCHNFT_ADDRESS = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0x00623aeAaE1Dc90A34754893db84145fECfCF539';
+        const WATCHNFT_ADDRESS = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0';
         const signer   = await getConnectedSigner();
         const watchNFT = new ethers.Contract(WATCHNFT_ADDRESS, WATCHNFT_ABI, signer);
         const description = periComment.trim() || "Autenticidad restaurada tras re-certificación.";

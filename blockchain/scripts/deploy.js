@@ -5,9 +5,8 @@ const { ethers } = require("hardhat");
  * Order of deployment:
  * 1. WatchNFT (The Identity)
  * 2. MockUSDC (The Currency - for testing)
- * 3. WatchSignature (The Security)
- * 4. WatchMarketplace (The Economy)
- * 5. WatchAuction (The Bidding System)
+ * 3. WatchMarketplace (The Economy)
+ * 4. WatchAuction (The Bidding System)
  */
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -27,28 +26,21 @@ async function main() {
   const mockUSDCAddress = await mockUSDC.getAddress();
   console.log("\n2. MockUSDC deployed to:", mockUSDCAddress);
 
-  // --- 3. DEPLOY WATCH SIGNATURE ---
-  const WatchSignature = await ethers.getContractFactory("WatchSignature");
-  const watchSignature = await WatchSignature.deploy();
-  await watchSignature.waitForDeployment();
-  const watchSignatureAddress = await watchSignature.getAddress();
-  console.log("\n3. WatchSignature deployed to:", watchSignatureAddress);
-
-  // --- 4. DEPLOY WATCH MARKETPLACE ---
+  // --- 3. DEPLOY WATCH MARKETPLACE ---
   const WatchMarketplace = await ethers.getContractFactory("WatchMarketplace");
   const watchMarketplace = await WatchMarketplace.deploy(watchNFTAddress, mockUSDCAddress);
   await watchMarketplace.waitForDeployment();
   const marketplaceAddress = await watchMarketplace.getAddress();
   console.log("\n4. WatchMarketplace deployed to:", marketplaceAddress);
 
-  // --- 5. DEPLOY WATCH AUCTION ---
+  // --- 4. DEPLOY WATCH AUCTION ---
   const WatchAuction = await ethers.getContractFactory("WatchAuction");
   const watchAuction = await WatchAuction.deploy(watchNFTAddress, mockUSDCAddress, marketplaceAddress);
   await watchAuction.waitForDeployment();
   const auctionAddress = await watchAuction.getAddress();
   console.log("\n5. WatchAuction deployed to:", auctionAddress);
 
-  // --- 6. INITIAL CONFIGURATION (LINKING) ---
+  // --- 5. INITIAL CONFIGURATION (LINKING) ---
   
   // Link Marketplace in NFT contract
   await watchNFT.setMarketplaceAddress(marketplaceAddress);

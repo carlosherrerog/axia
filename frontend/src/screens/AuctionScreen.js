@@ -18,8 +18,8 @@ import MockUSDC_ABI from '../contracts/MockUSDC.json';
 import { waitForTx, openMetaMask, GAS_OVERRIDES } from '../utils/txUtils';
 import { isMobileWithoutWallet } from '../wallet/useEthProvider';
 
-const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS    || '0x4DaB374d75a890bB0311C05063a9EfB4ce95229e';
-const USDC_ADDRESS    = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x7BE858258f6aF7D21016e90E1D011F3D8705A634';
+const AUCTION_ADDRESS = process.env.EXPO_PUBLIC_AUCTION_ADDRESS    || '0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae';
+const USDC_ADDRESS    = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x8612685dE8228E787378a984b8aee8bfad5CC550';
 
 const AUCTION_ERRORS = {
   '69b8d0fe': 'La subasta ya no está activa.',

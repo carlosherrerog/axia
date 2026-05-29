@@ -402,9 +402,9 @@ function ToolConfigSection({ loggedUser, expanded, onToggle, colors }) {
   const rows = [
     { key: 'API_URL',             label: 'API_URL',             value: BACKEND_URL,                                                       secret: false },
     { key: 'RPC_URL',             label: 'RPC_URL',             value: AMOY_RPC,                                                          secret: false },
-    { key: 'WATCH_NFT_ADDRESS',   label: 'WATCH_NFT_ADDRESS',   value: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS   || '0x00623aeAaE1Dc90A34754893db84145fECfCF539', secret: false },
-    { key: 'MARKETPLACE_ADDRESS', label: 'MARKETPLACE_ADDRESS', value: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x1eaea56137Dd520e77aE34851F9b13BC6658ADf4', secret: false },
-    { key: 'USDC_ADDRESS',        label: 'USDC_ADDRESS',        value: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x7BE858258f6aF7D21016e90E1D011F3D8705A634', secret: false },
+    { key: 'WATCH_NFT_ADDRESS',   label: 'WATCH_NFT_ADDRESS',   value: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS   || '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0', secret: false },
+    { key: 'MARKETPLACE_ADDRESS', label: 'MARKETPLACE_ADDRESS', value: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5', secret: false },
+    { key: 'USDC_ADDRESS',        label: 'USDC_ADDRESS',        value: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x8612685dE8228E787378a984b8aee8bfad5CC550', secret: false },
     { key: 'wallet',              label: 'Tu wallet en AXIA',   value: loggedUser?.wallet_address || null,                                 secret: false, note: !loggedUser?.wallet_address ? 'No tienes wallet vinculada aún' : null },
   ];
 

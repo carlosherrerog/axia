@@ -9,7 +9,7 @@ import { resolveImageUri } from '../utils/ipfs';
 import { ethers } from 'ethers';
 import Marketplace_ABI from '../contracts/WatchMarketplace.json';
 
-const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x1eaea56137Dd520e77aE34851F9b13BC6658ADf4';
+const MARKETPLACE_ADDRESS = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5';
 
 export default function WatchCard({ nft, removeNFT, navigation, isAdminView = false, onRefresh, isManufacturer = false, walletConnected = true }) {
   const { ethProvider, getConnectedSigner } = useEthProvider();

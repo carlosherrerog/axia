@@ -136,11 +136,10 @@ const TECH_SECTIONS = [
     title: 'Contratos en Polygon',
     content: [
       { type: 'paragraph', text: 'Los contratos inteligentes de AXIA están desplegados en la mainnet de Polygon y son de acceso público. Puedes verificar su código y todas las transacciones en Polygonscan.' },
-      { type: 'contract', icon: 'diamond',         color: '#8b5cf6', label: 'WatchNFT',         description: 'NFT ERC-721 · Autenticación de relojes con NFC',          address: '0x00623aeAaE1Dc90A34754893db84145fECfCF539' },
-      { type: 'contract', icon: 'storefront',      color: '#10b981', label: 'WatchMarketplace', description: 'Listados, Escrow y comisiones del marketplace',            address: '0x1eaea56137Dd520e77aE34851F9b13BC6658ADf4' },
-      { type: 'contract', icon: 'hammer',          color: '#f59e0b', label: 'WatchAuction',     description: 'Sistema de subastas exclusivo para Dealers',              address: '0x4DaB374d75a890bB0311C05063a9EfB4ce95229e' },
-      { type: 'contract', icon: 'shield-checkmark', color: '#38bdf8', label: 'WatchSignature',  description: 'Verificación criptográfica de firmas',                    address: '0x92bc5ba3D4763a0129a1Dadacc1cf4b5Fb7b4837' },
-      { type: 'contract', icon: 'cash',            color: '#06b6d4', label: 'MockUSDC',         description: 'Stablecoin de prueba USDC utilizada en las transacciones', address: '0x7BE858258f6aF7D21016e90E1D011F3D8705A634' },
+      { type: 'contract', icon: 'diamond',         color: '#8b5cf6', label: 'WatchNFT',         description: 'NFT ERC-721 · Autenticación de relojes con NFC',          address: '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0' },
+      { type: 'contract', icon: 'storefront',      color: '#10b981', label: 'WatchMarketplace', description: 'Listados, Escrow y comisiones del marketplace',            address: '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5' },
+      { type: 'contract', icon: 'hammer',          color: '#f59e0b', label: 'WatchAuction',     description: 'Sistema de subastas exclusivo para Dealers',              address: '0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae' },
+{ type: 'contract', icon: 'cash',            color: '#06b6d4', label: 'MockUSDC',         description: 'Stablecoin de prueba USDC utilizada en las transacciones', address: '0x8612685dE8228E787378a984b8aee8bfad5CC550' },
     ],
   },
   {

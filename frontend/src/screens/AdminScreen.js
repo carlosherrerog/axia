@@ -907,7 +907,7 @@ const CONTRACTS = [
     label: 'WatchNFT',
     icon: 'disc-outline',
     color: '#8b5cf6',
-    address: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0x00623aeAaE1Dc90A34754893db84145fECfCF539',
+    address: process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS || '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0',
     desc: 'ERC-721 · Autenticación de relojes',
   },
   {
@@ -915,7 +915,7 @@ const CONTRACTS = [
     label: 'Marketplace',
     icon: 'storefront-outline',
     color: '#3b82f6',
-    address: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x1eaea56137Dd520e77aE34851F9b13BC6658ADf4',
+    address: process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS || '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5',
     desc: 'Escrow · Compraventa y liquidaciones',
   },
   {
@@ -923,23 +923,15 @@ const CONTRACTS = [
     label: 'WatchAuction',
     icon: 'hammer-outline',
     color: '#f59e0b',
-    address: process.env.EXPO_PUBLIC_AUCTION_ADDRESS || '0x4DaB374d75a890bB0311C05063a9EfB4ce95229e',
+    address: process.env.EXPO_PUBLIC_AUCTION_ADDRESS || '0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae',
     desc: 'Subastas con puja mínima',
-  },
-  {
-    key: 'sig',
-    label: 'Signature',
-    icon: 'shield-checkmark-outline',
-    color: '#10b981',
-    address: process.env.EXPO_PUBLIC_SIGNATURE_VERIFIER_ADDRESS || '0x92bc5ba3D4763a0129a1Dadacc1cf4b5Fb7b4837',
-    desc: 'Verificación de seguridad NFC',
   },
   {
     key: 'usdc',
     label: 'MockUSDC',
     icon: 'cash-outline',
     color: '#22c55e',
-    address: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x7BE858258f6aF7D21016e90E1D011F3D8705A634',
+    address: process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x8612685dE8228E787378a984b8aee8bfad5CC550',
     desc: 'Stablecoin de pagos (USDC)',
   },
 ];
@@ -1192,7 +1184,7 @@ export default function AdminScreen({ route, navigation }) {
       const provider = new ethers.JsonRpcProvider(AMOY_RPC);
       const pol = await provider.getBalance(address);
       setPolBalance(fmt(ethers.formatEther(pol), 4));
-      const usdcAddress = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x7BE858258f6aF7D21016e90E1D011F3D8705A634';
+      const usdcAddress = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS || '0x8612685dE8228E787378a984b8aee8bfad5CC550';
       const contract = new ethers.Contract(
         usdcAddress,
         ['function balanceOf(address) view returns (uint256)'],
