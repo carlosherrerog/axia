@@ -757,7 +757,7 @@ def send_test_funds(to_address: str, pol_amount: float = 1.0, usdc_amount: float
     w3.eth.wait_for_transaction_receipt(hash_pol, timeout=120)
 
     # 2. Enviar MockUSDC (ERC-20, 6 decimales)
-    nonce2 = w3.eth.get_transaction_count(admin)
+    nonce2 = nonce + 1  # nonce + 1 para evitar que el nodo devuelva un valor desactualizado
     usdc_wei = int(usdc_amount * 10 ** 6)
     tx_usdc = mock_usdc_contract.functions.transfer(to, usdc_wei).build_transaction({
         'from': admin,
