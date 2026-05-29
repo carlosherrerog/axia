@@ -18,6 +18,7 @@
       "icon": "./assets/axia-icons/axia-wordmark-purple-1024.png"
     },
     "android": {
+      "package": "com.axia.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/axia-icons/axia-wordmark-purple-1024.png",
         "backgroundColor": "#0d0d0d"
