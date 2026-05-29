@@ -125,7 +125,26 @@ export default function WatchHistoryTab({
     };
   });
 
-  const all = [...transfers, ...revisions, ...verifications].sort((a, b) => b._ts - a._ts);
+  const STATE_META = {
+    Stolen:       { icon: 'alert-circle-outline',      color: '#ef4444', label: 'Reportado como robado'  },
+    Lost:         { icon: 'help-circle-outline',        color: '#f97316', label: 'Reportado como perdido' },
+    Active:       { icon: 'checkmark-circle-outline',   color: '#10b981', label: 'Estado restaurado a activo' },
+    Destroyed:    { icon: 'trash-outline',              color: '#6b7280', label: 'Reloj destruido'         },
+    AlteredWatch: { icon: 'warning-outline',            color: '#ef4444', label: 'NFC alterado detectado'  },
+  };
+
+  const securityEvents = (watchData?.security_events || []).map(e => {
+    const meta = STATE_META[e.state] || { icon: 'alert-outline', color: '#6b7280', label: e.state };
+    return {
+      _type: 'security', _ts: e.timestamp || 0,
+      icon: meta.icon, color: meta.color, title: meta.label,
+      lines: [], date: e.timestamp
+        ? new Date(e.timestamp * 1000).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : '—',
+    };
+  });
+
+  const all = [...transfers, ...revisions, ...verifications, ...securityEvents].sort((a, b) => b._ts - a._ts);
 
   return (
     <View style={watchScreenStyles.contentCard}>

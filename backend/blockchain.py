@@ -33,10 +33,13 @@ POLYGONSCAN_API_KEY = os.getenv("POLYGONSCAN_API_KEY")
 POLYGONSCAN_API_URL = "https://api.etherscan.io/v2/api"
 POLYGONSCAN_CHAIN_ID = "80002"  # Polygon Amoy
 # topic0 precalculados
-_TOPIC_TRANSFER       = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-_TOPIC_SALE_COMPLETED        = "0x1b44502901e931a03e1ed724d3d7746167e9699a6831744cc24066c94ee414f0"
-_TOPIC_AUTHENTICITY_APPROVED = "0x213ed9c62fc3f1ceb155014ceb9460317e4f4f9736c49c00c0e80f3dbdcd567f"
-_TOPIC_AUTHENTICITY_REJECTED = "0x6220127034fd15fd91b9d561504747d36924c1bce9ca2127fdf6bca19e17069a"
+_TOPIC_TRANSFER               = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+_TOPIC_SALE_COMPLETED         = "0x1b44502901e931a03e1ed724d3d7746167e9699a6831744cc24066c94ee414f0"
+_TOPIC_AUTHENTICITY_APPROVED  = "0x213ed9c62fc3f1ceb155014ceb9460317e4f4f9736c49c00c0e80f3dbdcd567f"
+_TOPIC_AUTHENTICITY_REJECTED  = "0x6220127034fd15fd91b9d561504747d36924c1bce9ca2127fdf6bca19e17069a"
+_TOPIC_SECURITY_STATE_CHANGED = "0x742254a6f360c90275b3743d022408669fa824be784b5777eeea0a5e895bb2cd"
+
+_WATCH_STATES = {0: "Active", 1: "Stolen", 2: "Lost", 3: "Destroyed", 4: "AlteredWatch"}
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
@@ -771,4 +774,32 @@ def send_test_funds(to_address: str, pol_amount: float = 1.0, usdc_amount: float
     w3.eth.wait_for_transaction_receipt(hash_usdc, timeout=120)
 
     return hash_pol.hex(), hash_usdc.hex()
+
+
+def get_security_state_events_from_chain(token_id: int) -> list:
+    """Lee eventos SecurityStateChanged del contrato WatchNFT para un token dado."""
+    from datetime import datetime, timezone
+
+    if not POLYGONSCAN_API_KEY:
+        return []
+
+    token_id_topic = "0x" + hex(token_id)[2:].zfill(64)
+    logs = _polygonscan_get_logs(WATCH_NFT_ADDRESS, _TOPIC_SECURITY_STATE_CHANGED, topic1=token_id_topic)
+
+    events = []
+    for log in logs:
+        try:
+            new_state = int(log["data"], 16)
+            ts = int(log["timeStamp"], 16) if log.get("timeStamp") else None
+            events.append({
+                "state": _WATCH_STATES.get(new_state, str(new_state)),
+                "state_code": new_state,
+                "timestamp": ts,
+                "tx_hash": log.get("transactionHash"),
+            })
+        except Exception:
+            pass
+
+    events.sort(key=lambda e: e["timestamp"] or 0)
+    return events
     

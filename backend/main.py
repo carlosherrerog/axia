@@ -1281,6 +1281,7 @@ def get_nft_details(token_id: int, db: Session = Depends(database.get_db)):
             }
             for h in db_history
         ],
+        "security_events": blockchain.get_security_state_events_from_chain(watch.token_id),
     }
 
 @app.get("/nfts/{token_id}/listing")
@@ -2814,6 +2815,7 @@ def get_public_watch_details(token_id: int, db: Session = Depends(database.get_d
         "mint_date": watch.mint_date.isoformat() if watch.mint_date else None,
         "is_public": bool(watch.is_public),
         "is_imported": bool(watch.is_imported),
+        "security_events": blockchain.get_security_state_events_from_chain(watch.token_id),
     }
 
 @app.get("/public/nfts/{token_id}/listing")
