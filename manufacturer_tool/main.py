@@ -1104,15 +1104,18 @@ class LoginFrame(tk.Frame):
         styled_label(card, "Iniciar sesión", font=FONT_HEAD,
                      bg=C["bg_alt"]).pack(pady=(0, 26))
 
-        styled_label(card, "Usuario o correo", font=FONT_SMALL,
+        form = tk.Frame(card, bg=C["bg_alt"])
+        form.pack(padx=8)
+
+        styled_label(form, "Usuario o correo", font=FONT_SMALL,
                      fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
         self.id_var = tk.StringVar()
-        styled_entry(card, self.id_var, 34).pack(pady=(4, 16))
+        styled_entry(form, self.id_var, 34).pack(anchor="w", pady=(4, 16))
 
-        styled_label(card, "Contraseña", font=FONT_SMALL,
+        styled_label(form, "Contraseña", font=FONT_SMALL,
                      fg=C["text2"], bg=C["bg_alt"]).pack(anchor="w")
         self.pw_var = tk.StringVar()
-        styled_entry(card, self.pw_var, 34, show="•").pack(pady=(4, 8))
+        styled_entry(form, self.pw_var, 34, show="•").pack(anchor="w", pady=(4, 8))
 
         self.status_label = tk.Label(card, text="", font=FONT_SMALL,
                                      fg=C["text2"], bg=C["bg_alt"])
