@@ -187,7 +187,7 @@ function MarketplaceCard({ paused, loading, onToggle, logisticsStatus, copiedLog
     if (!logisticsStatus) return;
     const fetchBalances = async () => {
       try {
-        const provider = new ethers.JsonRpcProvider('https://rpc-amoy.polygon.technology');
+        const provider = new ethers.JsonRpcProvider(AMOY_RPC);
         if (logisticsStatus.address) {
           const bal = await provider.getBalance(logisticsStatus.address);
           setLogisticsPolBalance(Number(ethers.formatEther(bal)).toFixed(4));
@@ -899,7 +899,7 @@ function ActiveUserCard({ u, roleColor, onRevoke, colors }) {
 
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 const EXPLORER_BASE = 'https://amoy.polygonscan.com/address/';
-const AMOY_RPC      = 'https://rpc-amoy.polygon.technology';
+const AMOY_RPC      = process.env.EXPO_PUBLIC_RPC_URL || 'https://polygon-amoy.g.alchemy.com/v2/3tDtSIFSyEZKyEJfl1r7R';
 
 const CONTRACTS = [
   {
@@ -1325,7 +1325,7 @@ export default function AdminScreen({ route, navigation }) {
               chainId: AMOY_CHAIN_ID,
               chainName: 'Polygon Amoy',
               nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-              rpcUrls: ['https://rpc-amoy.polygon.technology'],
+              rpcUrls: [AMOY_RPC],
               blockExplorerUrls: ['https://amoy.polygonscan.com'],
             }],
           });

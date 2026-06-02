@@ -28,7 +28,7 @@ async function ensureAmoyNetwork(rawProvider) {
           chainId: AMOY_CHAIN_ID,
           chainName: 'Polygon Amoy Testnet',
           nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-          rpcUrls: ['https://rpc-amoy.polygon.technology'],
+          rpcUrls: [process.env.EXPO_PUBLIC_RPC_URL || 'https://polygon-amoy.g.alchemy.com/v2/3tDtSIFSyEZKyEJfl1r7R'],
           blockExplorerUrls: ['https://amoy.polygonscan.com'],
         }],
       });

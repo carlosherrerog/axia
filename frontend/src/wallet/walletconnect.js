@@ -7,7 +7,7 @@ const amoy = {
   name:       'Polygon Amoy',
   currency:   'POL',
   explorerUrl:'https://amoy.polygonscan.com',
-  rpcUrl:     'https://rpc-amoy.polygon.technology',
+  rpcUrl:     process.env.EXPO_PUBLIC_RPC_URL || 'https://polygon-amoy.g.alchemy.com/v2/3tDtSIFSyEZKyEJfl1r7R',
 };
 
 const metadata = {
