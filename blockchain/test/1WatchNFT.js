@@ -46,26 +46,19 @@ describe("WatchNFT", function () {
         expect(datosReloj2.brand).to.equal("Omega");   
     })
 
-    it("USER. CU 2.COMO usuario QUIERO consultar la ficha técnica, historial de mantenimiento y la trazabilidad de propietarios.", async function () {
-        // admin mintea el reloj 1 que se le asigna al él mismo
+    it("USER. CU 2.COMO usuario QUIERO consultar la ficha técnica y la trazabilidad de propietarios.", async function () {
         await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie",2024, ethers.id("NFC-001"), "ipfs://foto1", owner.address);
-
-        // admin mintea el reloj 2 que se le asigna al cliente 1
         await watchNFT.connect(rolex).mintWatch("Omega", "Speedmaster",  "numeroSerie",2024, ethers.id("NFC-002"), "ipfs://foto2", client.address);
 
-        // 1. el admin tiene que añadir a la whitelist de relojeros certificados.
-        await watchNFT.manageWatchmaker(watchmaker.address, true);
-
-        // 2. el relojero ahora autorizado añade 2 revisiones al mismo reloj.
-        await watchNFT.connect(watchmaker).addRevision(1, "Bisel cambiado");
-        await watchNFT.connect(watchmaker).addRevision(1, "Revisión reloj");
-
-        
-        // 3. el cliente le compra un reloj al admin
+        // el admin transfiere el reloj 1 al cliente 1
         await watchNFT.transferFrom(owner.address, client.address, 1);
 
-        // 4. consultas del CU (información, historial revisiones, propietario actual)
+        // consultas de datos y propietario
         const balance = await watchNFT.balanceOf(client.address);
+        expect(balance).to.equal(2);
+
+        const watchData = await watchNFT.getWatchData(1);
+        expect(watchData.brand).to.equal("Rolex");
     })
 
     it("USER. CU 3. COMO usuario QUIERO escanear el chip NFC del reloj físico con mi móvil.", async function () {
@@ -170,25 +163,6 @@ describe("WatchNFT", function () {
         expect(await watchNFT.balanceOf(client2.address)).to.equal(1);
     });
 
-    it("USER CU 7. COMO usuario QUIERO buscar y obtener la información de un reloj utilizando su número de serie.", async function () {
-        const hashNFC = ethers.id("NFC-SERIAL-TEST");
-        const serialNumber = "CZ-8822-ABC";
-
-        await watchNFT.connect(rolex).mintWatch("Citizen", "Tsuyosa", serialNumber, 2024, hashNFC, "ipfs://foto", client.address);
-
-        // 2. búsqueda por número de serie
-        const watchData = await watchNFT.getWatchBySerialNumber(serialNumber);
-
-        // VERIFICACIONES
-        expect(watchData.brand).to.equal("Citizen");
-        expect(watchData.model).to.equal("Tsuyosa");
-        expect(watchData.serialNumber).to.equal(serialNumber);
-
-        // 4. Validar seguridad: busca un número de serie que no existe debe dar error
-        await expect(
-            watchNFT.getWatchBySerialNumber("SERIE-FALSA-123")
-        ).to.be.revertedWithCustomError(watchNFT, "SerialNumberNotRegistered");
-    });
 
     it("FABRICANTE CU 1. COMO fabricante autorizado QUIERO registrar nuevos relojes y ser reconocido como creador.", async function () {
         const hashNFC = ethers.id("NFC-FAB1");
@@ -256,43 +230,6 @@ describe("WatchNFT", function () {
         expect(await watchNFT.ownerOf(tokenId)).to.equal(client.address);
     });
 
-    it("RELOJERO CU 1. COMO relojero certificado QUIERO registrar inmutablemente las revisiones.", async function () {
-        await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie", 2024, ethers.id("NFC-REV"), "ipfs://foto", client.address);
-
-        // 1. el administrador da de alta a un relojero oficial
-        await watchNFT.manageWatchmaker(watchmaker.address, true);
-
-        // 2. el relojero autorizado añade una revisión al Token ID 1
-        await watchNFT.connect(watchmaker).addRevision(1, "Mantenimiento anual y cambio de cristal.");
-
-        // 3. Comprobamos que el historial se ha actualizado correctamente en la blockchain
-        const history = await watchNFT.getRevisionHistory(1);
-        expect(history.length).to.equal(1);
-        expect(history[0].watchmaker).to.equal(watchmaker.address);
-        expect(history[0].description).to.equal("Mantenimiento anual y cambio de cristal.");
-
-        // 4. Validar seguridad: el cliente intenta añadir una revisión falsa a su propio reloj
-        await expect(
-            watchNFT.connect(client).addRevision(1, "Revision falsa para subir el precio")
-        ).to.be.revertedWithCustomError(watchNFT, "NotAuthorizedWatchmaker");
-    });
-
-    it("RELOJERO CU 2. Como relojero certificado QUIERO registrar inmutablemente las verificaciones de relojes.", async function () {
-        await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie", 2024, ethers.id("NFC-REV"), "ipfs://foto", client.address);
-        const token1 = 1;
-        const comment = "Cambio de correa por una no oficial.";
-
-        // 1. el relojero ejecuta la verificación
-        await watchNFT.connect(watchmaker).verifyAuthenticity(token1, comment);
-
-        // 2. se lee el historial de la blockchain
-        const verification = await watchNFT.getVerificationHistory(token1);
-        
-        // índice 0 = certificación de origen del fabricante (minteo); índice 1 = verificación del relojero
-        expect(verification[1].watchmaker).to.equal(watchmaker.address);
-        expect(verification[1].comment).to.equal(comment);
-        expect(verification[1].date).to.be.above(0);
-    });
 
     it("RELOJERO CU 3. COMO relojero certificado QUIERO restaurar el estado Active de un reloj marcado como alterado, tras certificar su reparación física.", async function () {
         await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie", 2024, ethers.id("NFC-REV"), "ipfs://foto", client.address);
@@ -392,11 +329,6 @@ describe("WatchNFT", function () {
             watchNFT.connect(client).resumeContract()
         ).to.be.reverted;
 
-        // 6. un relojero no puede añadir revisiones mientras hay una emergencia
-        await expect(
-            watchNFT.connect(watchmaker).addRevision(1, "Reparación urgente")
-        ).to.be.revertedWithCustomError(watchNFT, "EnforcedPause");
-        
         // 6. el cliente intenta enviar su reloj a otro cliente durante la pausa
         await expect(
             watchNFT.connect(client).transferFrom(client.address, client2.address, 1)
@@ -410,51 +342,33 @@ describe("WatchNFT", function () {
         expect(await watchNFT.ownerOf(2)).to.equal(client.address);
     });
 
-    it("ADMIN CU 3. COMO administrador QUIERO poder destruir el NFT de un reloj de forma irreversible.", async function () {
+    it("ADMIN CU 3. COMO administrador QUIERO poder destruir el NFT de un reloj robado o perdido de forma irreversible.", async function () {
         await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie", 2024, ethers.id("NFC-BURN"), "ipfs://foto-burn", client.address);
 
         // 1. se comprueba que el token existe y pertenece al cliente
         expect(await watchNFT.ownerOf(1)).to.equal(client.address);
 
-        // 2. Validar seguridad: el cliente intenta destruir su propio reloj
+        // 2. Validar seguridad: el admin no puede destruir un reloj activo
+        await expect(
+            watchNFT.burnWatch(1)
+        ).to.be.revertedWithCustomError(watchNFT, "InvalidState");
+
+        // 3. Validar seguridad: el cliente no puede destruir su propio reloj
         await expect(
             watchNFT.connect(client).burnWatch(1)
-        ).to.be.reverted; // falla porque no es el Owner del contrato
+        ).to.be.reverted;
 
-        // 3. el admin ejecuta la destrucción oficial del activo
+        // 4. el dueño reporta el reloj como robado
+        await watchNFT.connect(client).changeSecurityState(1, 1); // 1 = Stolen
+
+        // 5. el admin destruye el activo irrecuperable
         await watchNFT.burnWatch(1);
 
-        // 4. se comprueba que el token ha sido eliminado de la blockchain
+        // 6. se comprueba que el token ha sido eliminado de la blockchain
         await expect(watchNFT.ownerOf(1)).to.be.reverted;
     });
 
-    it("ADMIN CU 4. COMO administrador QUIERO poder activar y desactivar un bloqueo administrativo.", async function () {
-        await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie", 2024, ethers.id("NFC-BURN"), "ipfs://foto-burn", client.address);
-
-        const tokenId = 1; // ID del reloj de prueba
-        
-        // 1. Validar seguridad: intentar bloquear como un usuario normal
-        await expect(
-            watchNFT.connect(client).setLock(tokenId, true)
-        ).to.be.revertedWithCustomError(watchNFT, "OwnableUnauthorizedAccount");
-
-        // 2. bloqueo como administrador
-        await watchNFT.connect(owner).setLock(tokenId, true);
-        expect(await watchNFT.isLocked(tokenId)).to.equal(true);
-
-        // 3. Validar seguridad: intentar transferir el reloj estando bloqueado.
-        //    Aunque client1 sea el dueño, el require(!isLocked) de _update lo impedirá
-        await expect(
-            watchNFT.connect(client).transferFrom(client.address, client2.address, tokenId)
-        ).to.be.revertedWithCustomError(watchNFT, "TokenLockedAdmin");
-
-        // 4. se desloquea y se verifica que ya se puede transferir
-        await watchNFT.connect(owner).setLock(tokenId, false);
-        await watchNFT.connect(client).transferFrom(client.address, client2.address, tokenId);
-        expect(await watchNFT.ownerOf(tokenId)).to.equal(client2.address);
-    });  
-
-    it("ADMIN CU 5. COMO administrador QUIERO vincular la dirección del Marketplace.", async function () {
+    it("ADMIN CU 4. COMO administrador QUIERO vincular la dirección del Marketplace.", async function () {
         await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner",  "numeroSerie", 2024, ethers.id("NFC-MKT"), "ipfs://foto", client.address);
         const tokenId = 1;
 
@@ -484,7 +398,7 @@ describe("WatchNFT", function () {
         expect(watchData.state).to.equal(4);
     });
 
-    it("ADMIN CU 6. COMO administrador QUIERO poder marcar manualmente un reloj como AlteredNFC por orden legal o detección de fraude fuera del flujo comercial estándar.", async function () {
+    it("ADMIN CU 5. COMO administrador QUIERO poder marcar manualmente un reloj como AlteredNFC por orden legal o detección de fraude fuera del flujo comercial estándar.", async function () {
         await watchNFT.connect(rolex).mintWatch("Rolex", "Datejust",  "numeroSerie", 2024, ethers.id("NFC-LEGAL"), "ipfs://foto-legal", client.address);
         const tokenId = 1;
 
@@ -504,55 +418,19 @@ describe("WatchNFT", function () {
         ).to.be.revertedWithCustomError(watchNFT, "TransferBlocked");
     });
 
-    it("ADMIN CU 7. COMO administrador QUIERO vincular la identidad física del reloj a la blockchain de forma privada mediante el Hash del UID.", async function () {
-        const uidNFC = "63C23204"; // el UID 
-        const hashUID = ethers.id(uidNFC); // se hashea el UID
-        
-        // 1. el Fabricante registra el reloj usando la huella digital (Hash), nunca el UID en texto claro
+    it("ADMIN CU 6. COMO administrador QUIERO vincular la identidad física del reloj a la blockchain mediante el Hash del UID.", async function () {
+        const uidNFC = "63C23204";
+        const hashUID = ethers.id(uidNFC);
+
         await watchNFT.connect(rolex).mintWatch("Citizen", "Quartz Diver 1982", "CZ-7721-XP", 1982, hashUID, "ipfs://foto-citizen", client.address);
         const tokenId = 1;
 
-        // 2. Comprobación de Privacidad: se asegura que el contrato puede encontrar el TokenID usando el Hash
+        // el contrato puede encontrar el TokenID usando el Hash NFC
         expect(await watchNFT.getTokenByNFC(hashUID)).to.equal(tokenId);
 
-        // 3. Autenticación Positiva: el servidor Python manda el hash correcto al leer el Citizen
-        const isAuthentic = await watchNFT.verifyHash(tokenId, hashUID);
-        expect(isAuthentic).to.equal(true);
-
-        // 4. Autenticación Negativa (Seguridad): un falsificador usa un chip diferente ("FFFFFFFF")
+        // hash no registrado revierte
         const fakeHash = ethers.id("FFFFFFFF");
-        const isFakeAuthentic = await watchNFT.verifyHash(tokenId, fakeHash);
-        
-        // el contrato inteligente rechaza la firma
-        expect(isFakeAuthentic).to.equal(false);
-    });
-
-    it("ADMIN CU 8. COMO administrador QUIERO modificar el Hash del chip NFC de un reloj en caso de reparación o sustitución física.", async function () {
-        const oldHash = ethers.id("OLD-CHIP-001");
-        const newHash = ethers.id("NEW-CHIP-002");
-        const serialNumber = "CZ-REPAIR-99";
-
-        await watchNFT.connect(rolex).mintWatch("Rolex", "Submariner", serialNumber, 2024, oldHash, "ipfs://foto-repair", client.address);
-        const tokenId = 1;
-
-        // 1. Verificación inicial: el contrato reconoce el chip antiguo
-        expect(await watchNFT.verifyHash(tokenId, oldHash)).to.be.true;
-
-        // 2. Validar seguridad: un usuario normal intenta cambiar el Hash (debe fallar)
-        await expect(
-            watchNFT.connect(client).setWatchHash(tokenId, newHash)
-        ).to.be.revertedWithCustomError(watchNFT, "OwnableUnauthorizedAccount");
-
-        // 3. el admin actualiza el Hash al sustituir la pieza NFC
-        await watchNFT.connect(owner).setWatchHash(tokenId, newHash);
-
-        // 4. Verificaciones Finales: el chip antiguo ya no es válido, el nuevo sí
-        expect(await watchNFT.verifyHash(tokenId, oldHash)).to.be.false;
-        expect(await watchNFT.verifyHash(tokenId, newHash)).to.be.true;
-
-        // se verifica que el struct principal de datos también se ha sincronizado con el nuevo Hash
-        const watchData = await watchNFT.getWatchData(tokenId);
-        expect(watchData.hashUID).to.equal(newHash);
+        await expect(watchNFT.getTokenByNFC(fakeHash)).to.be.revertedWithCustomError(watchNFT, "NFCNotRegistered");
     });
 
 })

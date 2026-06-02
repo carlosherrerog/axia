@@ -178,6 +178,14 @@ contract WatchMarketplace is Ownable, Pausable, ReentrancyGuard {
         logisticsSystem = _systemAddress;
     }
 
+    /**
+     * @notice Updates the ERC20 payment token address (e.g. for mainnet USDC migration).
+     */
+    function setPaymentToken(address _newPaymentToken) external onlyOwner {
+        if (_newPaymentToken == address(0)) revert InvalidAddress();
+        paymentToken = IERC20(_newPaymentToken);
+    }
+
     // ==========================================
     // LOGISTICS SYSTEM FUNCTIONS
     // ==========================================
@@ -360,51 +368,6 @@ contract WatchMarketplace is Ownable, Pausable, ReentrancyGuard {
         watchNFT.transferFrom(address(this), buyer, _tokenId);
 
         emit SaleCompleted(_tokenId, msg.sender, seller, price);
-    }
-
-    /**
-     * @notice Approves a mutual return, refunding the buyer and returning the NFT.
-     * @dev If a watchmaker verified the item, their fee is deducted from the buyer's refund.
-     * @param _tokenId The ID of the escrowed watch.
-     */
-    function approveReturn(uint256 _tokenId) external whenNotPaused nonReentrant {
-        Listing storage listing = listings[_tokenId];
-
-        if (listing.state != ListingState.Escrowed) revert NotInEscrow();
-        if (listing.seller != msg.sender) revert Unauthorized();
-
-        address buyer = listing.buyer;
-        address seller = listing.seller;
-        uint256 price = listing.price;
-        uint256 deposit = listing.sellerDeposit; 
-
-        // 1. Check if a watchmaker already performed verification
-        uint256 watchmakerFee = 0;
-        address verifyingWm = listing.verifyingWatchmaker;
-        if (listing.isP2P && listing.watchmakerApproved && verifyingWm != address(0)) {
-            watchmakerFee = (price * watchmakerFeePercent) / 10000;
-        }
-
-        // 2. Clear listing
-        delete listings[_tokenId];
-
-        // 3. Pay watchmaker (if applicable) and refund remaining balance to buyer
-        if (watchmakerFee > 0) {
-            if (!paymentToken.transfer(verifyingWm, watchmakerFee)) revert TransferFailed();
-            if (!paymentToken.transfer(buyer, price - watchmakerFee)) revert TransferFailed();
-        } else {
-            if (!paymentToken.transfer(buyer, price)) revert TransferFailed();
-        }
-
-        // 4. Return full deposit to seller
-        if (deposit > 0) {
-            if (!paymentToken.transfer(seller, deposit)) revert TransferFailed();
-        }
-
-        // 5. Return NFT to seller
-        watchNFT.transferFrom(address(this), seller, _tokenId);
-
-        emit EscrowRefunded(_tokenId, buyer, seller, price);
     }
 
     // ==========================================

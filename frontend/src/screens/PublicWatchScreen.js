@@ -16,10 +16,10 @@ import WatchHistoryTab from '../components/WatchHistoryTab';
 import WatchDetailsTab from '../components/WatchDetailsTab';
 import { useScrollAware, HEADER_HEIGHT } from '../hooks/useScrollAware';
 
-const NFT_ADDRESS                = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS          || '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0';
-const MARKETPLACE_ADDRESS        = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS         || '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5';
-const AUCTION_ADDRESS            = process.env.EXPO_PUBLIC_AUCTION_ADDRESS             || '0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae';
-const USDC_ADDRESS               = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS       || '0x8612685dE8228E787378a984b8aee8bfad5CC550';
+const NFT_ADDRESS                = process.env.EXPO_PUBLIC_WATCH_NFT_ADDRESS          || '0x50E3985463cD46684697079A43F4d46731A27249';
+const MARKETPLACE_ADDRESS        = process.env.EXPO_PUBLIC_MARKETPLACE_ADDRESS         || '0xBc2a666C02AEa56831C0afF1D9b26A5149c88E95';
+const AUCTION_ADDRESS            = process.env.EXPO_PUBLIC_AUCTION_ADDRESS             || '0xcD7320Cf7d59cF5089F55E177e4073B4D3Ef0532';
+const USDC_ADDRESS               = process.env.EXPO_PUBLIC_PAYMENT_TOKEN_ADDRESS       || '0x109115cca6Acb934EB55b67cfc4E847111e59A53';
 const POLYGONSCAN_BASE           = 'https://amoy.polygonscan.com';
 
 // ABIs necesarios

@@ -29,10 +29,10 @@ El proyecto es un monorepo con tres servicios independientes desplegables:
 
 | Contrato | Dirección | Función |
 |---|---|---|
-| WatchNFT | `0x98663d8A262A9F8F92aCC349CD9f15f2010814b0` | ERC-721 — gemelos digitales, integración NFC |
-| WatchMarketplace | `0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5` | Listados, escrow, compraventas P2P y Dealer |
-| WatchAuction | `0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae` | Subastas con precio mínimo y puja inglesa |
-| MockUSDC | `0x8612685dE8228E787378a984b8aee8bfad5CC550` | Stablecoin de prueba (6 decimales, ERC-20) |
+| WatchNFT | `0x50E3985463cD46684697079A43F4d46731A27249` | ERC-721 — gemelos digitales, integración NFC |
+| WatchMarketplace | `0xBc2a666C02AEa56831C0afF1D9b26A5149c88E95` | Listados, escrow, compraventas P2P y Dealer |
+| WatchAuction | `0xcD7320Cf7d59cF5089F55E177e4073B4D3Ef0532` | Subastas con precio mínimo y puja inglesa |
+| MockUSDC | `0x109115cca6Acb934EB55b67cfc4E847111e59A53` | Stablecoin de prueba (6 decimales, ERC-20) |
 
 Verificables en [Amoy Polygonscan](https://amoy.polygonscan.com).
 

@@ -136,10 +136,10 @@ const TECH_SECTIONS = [
     title: 'Contratos en Polygon',
     content: [
       { type: 'paragraph', text: 'Los contratos inteligentes de AXIA están desplegados en la mainnet de Polygon y son de acceso público. Puedes verificar su código y todas las transacciones en Polygonscan.' },
-      { type: 'contract', icon: 'diamond',         color: '#8b5cf6', label: 'WatchNFT',         description: 'NFT ERC-721 · Autenticación de relojes con NFC',          address: '0x98663d8A262A9F8F92aCC349CD9f15f2010814b0' },
-      { type: 'contract', icon: 'storefront',      color: '#10b981', label: 'WatchMarketplace', description: 'Listados, Escrow y comisiones del marketplace',            address: '0x0b37B3C1A5e3ae541c0793eAd83975f683dA3aB5' },
-      { type: 'contract', icon: 'hammer',          color: '#f59e0b', label: 'WatchAuction',     description: 'Sistema de subastas exclusivo para Dealers',              address: '0xe995aC6099389EAc72AC51212dA02EFA3117D6Ae' },
-{ type: 'contract', icon: 'cash',            color: '#06b6d4', label: 'MockUSDC',         description: 'Stablecoin de prueba USDC utilizada en las transacciones', address: '0x8612685dE8228E787378a984b8aee8bfad5CC550' },
+      { type: 'contract', icon: 'diamond',         color: '#8b5cf6', label: 'WatchNFT',         description: 'NFT ERC-721 · Autenticación de relojes con NFC',          address: '0x50E3985463cD46684697079A43F4d46731A27249' },
+      { type: 'contract', icon: 'storefront',      color: '#10b981', label: 'WatchMarketplace', description: 'Listados, Escrow y comisiones del marketplace',            address: '0xBc2a666C02AEa56831C0afF1D9b26A5149c88E95' },
+      { type: 'contract', icon: 'hammer',          color: '#f59e0b', label: 'WatchAuction',     description: 'Sistema de subastas exclusivo para Dealers',              address: '0xcD7320Cf7d59cF5089F55E177e4073B4D3Ef0532' },
+      { type: 'contract', icon: 'cash',            color: '#06b6d4', label: 'MockUSDC',         description: 'Stablecoin de prueba USDC utilizada en las transacciones', address: '0x109115cca6Acb934EB55b67cfc4E847111e59A53' },
     ],
   },
   {

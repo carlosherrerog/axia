@@ -442,59 +442,6 @@ describe("WatchMarketplace", function (){
             expect(await mockUSDC.balanceOf(watchmaker.address)).to.equal(0);
         });
 
-   it("USER CU 7. COMO vendedor QUIERO poder aceptar una devolución de mutuo acuerdo y el comprador asume el coste del peritaje.", async function () {
-        const tokenId = 2;
-        const listPrice = ethers.parseUnits("5000", 6);
-        const sellerDeposit = (listPrice * 200n) / 10000n; // 2% fianza = 100 USDC
-
-        await watchNFT.connect(rolex).mintWatch("Rolex", "Oyster", "numeroSerie", 2024, ethers.id("NFC-DEV1"), "ipfs://dev1", client3.address);
-
-        // 1. el vendedor da permisos y lista el reloj
-        await watchNFT.connect(client3).approve(marketplaceAddress, tokenId);
-        await watchMarketplace.connect(client3).listWatch(tokenId, listPrice);
-
-        // 2. client1 compra el reloj (pasa a estado Escrowed)
-        await watchMarketplace.connect(client1).buyWatchEscrow(tokenId);
-
-        // 3. el reloj se envía y el relojero lo certifica
-        await watchMarketplace.connect(logisticsSystem).markAsShipped(tokenId);
-        await watchMarketplace.connect(logisticsSystem).assignWatchmaker(tokenId, watchmaker.address);
-        await watchMarketplace.connect(watchmaker).verifyAuthenticity(tokenId, true);
-
-        // comisión
-        const watchmakerFeePercent = await watchMarketplace.watchmakerFeePercent();
-        const watchmakerFee = (listPrice * watchmakerFeePercent) / 10000n;
-
-        // saldos ANTES de la devolución
-        const buyerBalanceBeforeReturn = await mockUSDC.balanceOf(client1.address);
-        const sellerBalanceBeforeReturn = await mockUSDC.balanceOf(client3.address);
-        const watchmakerBalanceBeforeReturn = await mockUSDC.balanceOf(watchmaker.address);
-
-        // 4. el vendedor aprueba la devolución de mutuo acuerdo
-        await expect(watchMarketplace.connect(client3).approveReturn(tokenId))
-            .to.emit(watchMarketplace, "EscrowRefunded");
-
-        // 5. VERIFICACIONES
-        const wmFee = (listPrice * 200n) / 10000n;
-        const platFee = (listPrice * 150n) / 10000n;
-        const royFee = (listPrice * 100n) / 10000n;
-        const sellerPayout = listPrice - wmFee - platFee - royFee;
-        // NFT vuelve a ser propiedad del vendedor
-        expect(await watchNFT.ownerOf(tokenId)).to.equal(client3.address);
-
-        // el comprador recupera el precio MENOS la comisión que le pagó al relojero
-        expect(await mockUSDC.balanceOf(client1.address)).to.equal(buyerBalanceBeforeReturn + listPrice - watchmakerFee);
-
-        // el relojero cobra su comisión (salió del dinero del comprador)
-        expect(await mockUSDC.balanceOf(watchmaker.address)).to.equal(watchmakerBalanceBeforeReturn + watchmakerFee);
-
-        // el vendedor recupera intacta su fianza (100 USDC)
-        expect(await mockUSDC.balanceOf(client3.address)).to.equal(sellerBalanceBeforeReturn + sellerDeposit);
-
-        // el anuncio se borra de la base de datos (ListingState.Inactive == 0)
-        const listing = await watchMarketplace.listings(tokenId);
-        expect(listing.state).to.equal(0);
-    });
 
     it("        7.1. COMO vendedor QUIERO denegar una devolución injustificada PARA que el sistema logístico fuerce la finalización de la venta.", async function () {
         const listPrice = ethers.parseUnits("5000", 6);
