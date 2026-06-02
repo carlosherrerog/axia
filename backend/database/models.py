@@ -172,7 +172,8 @@ class Notification(Base):
     title: Mapped[str] = mapped_column(String)
     message: Mapped[str] = mapped_column(String)
     type: Mapped[str] = mapped_column(String)
-    reference_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # offer_id para tipo OFFER
+    reference_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # RELACIONES

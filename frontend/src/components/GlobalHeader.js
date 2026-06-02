@@ -50,9 +50,7 @@ export default function GlobalHeader({
   const showInlineTabs = !isMobile && tabs?.length > 0 && !showBack;
 
   const [localUser, setLocalUser]               = useState(loggedUser);
-  const [internalCount, setInternalCount]       = useState(() =>
-    Platform.OS === 'web' ? parseInt(localStorage.getItem('notifCount') || '0', 10) : 0
-  );
+  const [internalCount, setInternalCount]       = useState(0);
   const [moreMenuVisible, setMoreMenuVisible]   = useState(false);
   const [disconnectVisible, setDisconnectVisible] = useState(false);
   const [walletMenuVisible, setWalletMenuVisible] = useState(false);
@@ -65,11 +63,8 @@ export default function GlobalHeader({
   // Banner de notificación emergente
   const [showBanner, setShowBanner] = useState(false);
   const [lastNotif, setLastNotif]   = useState(null);
-  const translateY        = useRef(new Animated.Value(-100)).current;
-  const lastShownNotifId  = useRef(
-    Platform.OS === 'web' ? (parseInt(localStorage.getItem('lastShownNotifId') || '0', 10) || null) : null
-  );
-  const pulseAnim         = useRef(new Animated.Value(1)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
+  const pulseAnim  = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!localUser?.wallet_address) return;
@@ -96,41 +91,41 @@ export default function GlobalHeader({
     : title?.toLowerCase().includes('fabricante') ? roleColors.FABRICANTE
     : colors.primary;
 
-  // WebSocket + conteo de notificaciones
+  // WebSocket + conteo de notificaciones no leídas
   useEffect(() => {
     if (!localUser?.id) return;
     let ws;
 
-    const fetchUnread = async (checkNew = false) => {
+    const refreshCount = async () => {
+      try {
+        const res = await api.get('/notifications/unread-count');
+        setInternalCount(res.data.count);
+      } catch {}
+    };
+
+    const checkNewNotification = async () => {
       try {
         const res = await api.get('/notifications');
-        setInternalCount(res.data.length);
-        if (Platform.OS === 'web') localStorage.setItem('notifCount', String(res.data.length));
-        if (checkNew && res.data.length > 0) {
-          const newest = res.data[0];
-          if (newest.id !== lastShownNotifId.current) {
-            lastShownNotifId.current = newest.id;
-            if (Platform.OS === 'web') localStorage.setItem('lastShownNotifId', String(newest.id));
-            triggerBanner(newest);
-          }
+        const unread = res.data.filter(n => !n.is_read);
+        setInternalCount(unread.length);
+        if (unread.length > 0) {
+          const newest = unread[0];
+          triggerBanner(newest);
+          await api.patch(`/notifications/${newest.id}/read`);
+          setInternalCount(prev => Math.max(0, prev - 1));
         }
       } catch {}
     };
 
-    fetchUnread(false);
+    refreshCount();
     getToken().then(token => {
       ws = new WebSocket(`${WS_URL}/ws/${localUser.id}?token=${token}`);
       ws.onmessage = (e) => {
-        if (e.data === 'update_users') { fetchUnread(true); return; }
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.type === 'update_marketplace' || msg.type === 'update_auction') fetchUnread(true);
-        } catch {}
+        if (e.data === 'update_users') { checkNewNotification(); return; }
       };
     });
-    const unsubFocus = navigation?.addListener('focus', () => fetchUnread(true));
-    return () => { ws?.close(); unsubFocus?.(); };
-  }, [localUser, navigation]);
+    return () => { ws?.close(); };
+  }, [localUser]);
 
   const triggerBanner = (notif) => {
     setLastNotif(notif);

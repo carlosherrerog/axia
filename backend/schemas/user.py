@@ -152,6 +152,7 @@ class Notification(NotificationBase):
     user_id: int
     watch_id: Optional[int] = None
     reference_id: Optional[int] = None
+    is_read: bool = False
     created_at: datetime
 
     class Config:

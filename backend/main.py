@@ -2963,6 +2963,60 @@ async def get_notifications(
              .order_by(models.Notification.created_at.desc())\
              .all()
 
+@app.get("/notifications/unread-count")
+async def get_unread_count(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Devuelve el número de notificaciones no leídas del usuario."""
+    count = db.query(models.Notification).filter(
+        models.Notification.user_id == current_user.id,
+        models.Notification.is_read == False
+    ).count()
+    return {"count": count}
+
+@app.patch("/notifications/read-all")
+async def mark_all_read(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Marca todas las notificaciones del usuario como leídas."""
+    db.query(models.Notification).filter(
+        models.Notification.user_id == current_user.id,
+        models.Notification.is_read == False
+    ).update({"is_read": True})
+    db.commit()
+    return {"message": "Todas las notificaciones marcadas como leídas"}
+
+@app.delete("/notifications/all")
+async def delete_all_notifications(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Borra todas las notificaciones del usuario."""
+    db.query(models.Notification).filter(
+        models.Notification.user_id == current_user.id
+    ).delete()
+    db.commit()
+    return {"message": "Todas las notificaciones eliminadas"}
+
+@app.patch("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: int,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Marca una notificación concreta como leída."""
+    db_notif = db.query(models.Notification).filter(
+        models.Notification.id == notification_id,
+        models.Notification.user_id == current_user.id
+    ).first()
+    if not db_notif:
+        raise HTTPException(status_code=404, detail="Notificación no encontrada")
+    db_notif.is_read = True
+    db.commit()
+    return {"message": "Notificación marcada como leída"}
+
 @app.delete("/notifications/{notification_id}")
 async def delete_notification(
     notification_id: int,
@@ -2974,10 +3028,10 @@ async def delete_notification(
         models.Notification.id == notification_id,
         models.Notification.user_id == current_user.id
     ).first()
-    
+
     if not db_notif:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
-        
+
     db.delete(db_notif)
     db.commit()
     return {"message": "Notificación eliminada"}

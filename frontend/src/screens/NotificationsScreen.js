@@ -37,6 +37,8 @@ export default function NotificationsScreen({ navigation }) {
         ...n,
         date: new Date(n.created_at).toLocaleDateString('es-ES'),
       })));
+      // Marcar todas como leídas al abrir la pantalla
+      await api.patch('/notifications/read-all').catch(() => {});
     } catch (e) {
       console.error('Error cargando notificaciones:', e);
     } finally {
@@ -66,7 +68,7 @@ export default function NotificationsScreen({ navigation }) {
 
   const handleClearAll = async () => {
     try {
-      await Promise.all(notifications.map(n => api.delete(`/notifications/${n.id}`)));
+      await api.delete('/notifications/all');
       setNotifications([]);
     } catch { showAlert('Error', 'No se pudieron borrar todas las notificaciones.', 'error'); }
   };
