@@ -1981,7 +1981,7 @@ export default function AdminScreen({ route, navigation }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          maxWidth: isDesktop ? 1100 : undefined,
+          maxWidth: isDesktop ? 1400 : undefined,
           alignSelf: 'center', width: '100%',
           padding: isDesktop ? 24 : 16,
           paddingBottom: 80,
@@ -1998,7 +1998,7 @@ export default function AdminScreen({ route, navigation }) {
       >
         {sidebar}
 
-        {/* Panel derecho */}
+        {/* Panel central — contratos y operaciones */}
         <View style={{ flex: 1, minWidth: 0 }}>
 
           {/* ── Contratos desplegados ── */}
@@ -2063,6 +2063,10 @@ export default function AdminScreen({ route, navigation }) {
             onBurn={handleBurnWatch}
             colors={colors}
           />
+        </View>
+
+        {/* Panel derecho — gestión de usuarios */}
+        <View style={{ flex: 1, minWidth: 0 }}>
 
           {/* Tabs */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
@@ -2113,7 +2117,6 @@ export default function AdminScreen({ route, navigation }) {
                 {activeSection === 'pending' && `${allPending.length} solicitud${allPending.length !== 1 ? 'es' : ''} pendiente${allPending.length !== 1 ? 's' : ''}`}
                 {['RELOJERO','DEALER','FABRICANTE'].includes(activeSection) && `${users.filter(u => u.roles?.includes(activeSection)).length} ${ROLE_META[activeSection].label.toLowerCase()} activos`}
                 {activeSection === 'users' && `${particulares.length} particular${particulares.length !== 1 ? 'es' : ''}`}
-
               </Text>
             </View>
           )}
