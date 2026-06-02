@@ -1970,63 +1970,89 @@ export default function AdminScreen({ route, navigation }) {
     </View>
   );
 
+  const activeColor = activeSection === 'pending' ? '#f59e0b'
+    : activeSection === 'users' ? colors.primary
+    : ROLE_META[activeSection]?.color || colors.primary;
+
   const userManagementPanel = (
-    <>
-      {/* Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        style={{ marginBottom: 14 }}
-        contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
-        {SECTIONS.map(sec => {
-          const on = activeSection === sec.id;
-          const c  = sec.id === 'pending' ? '#f59e0b'
-            : sec.id === 'users' ? colors.primary
-            : ROLE_META[sec.id]?.color || colors.primary;
-          return (
-            <Pressable key={sec.id} onPress={() => setActiveSection(sec.id)}
-              style={[{
-                flexDirection: 'row', alignItems: 'center', gap: 6,
-                paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5,
-                borderColor: on ? c : colors.border,
-                backgroundColor: on ? `${c}10` : colors.backgroundAlt,
-              }, Platform.OS === 'web' && { cursor: 'pointer' }]}
-            >
-              <Ionicons name={sec.icon} size={14} color={on ? c : colors.textSecondary} />
-              <Text style={{ color: on ? c : colors.textSecondary, fontWeight: on ? '700' : '500', fontSize: 13 }}>
-                {sec.label}
-              </Text>
-              {sec.badge > 0 && (
-                <View style={{
-                  backgroundColor: sec.id === 'pending' ? '#f59e0b' : ROLE_META[sec.id]?.color || colors.primary,
-                  borderRadius: 9, minWidth: 18, height: 18,
-                  justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
-                }}>
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{sec.badge}</Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* Título sección */}
-      {!loadingUsers && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+    <View style={{
+      backgroundColor: colors.backgroundAlt,
+      borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+      overflow: 'hidden',
+    }}>
+      {/* Cabecera */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', gap: 8,
+        paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
+      }}>
+        <Ionicons name="people-outline" size={15} color={colors.primary} />
+        <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14, flex: 1 }}>
+          Gestión de usuarios
+        </Text>
+        {stats.pending > 0 && (
           <View style={{
-            width: 3, height: 16, borderRadius: 2,
-            backgroundColor: activeSection === 'pending' ? '#f59e0b'
-              : activeSection === 'users' ? colors.primary
-              : ROLE_META[activeSection]?.color || colors.primary,
-          }} />
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>
-            {activeSection === 'pending' && `${allPending.length} solicitud${allPending.length !== 1 ? 'es' : ''} pendiente${allPending.length !== 1 ? 's' : ''}`}
-            {['RELOJERO','DEALER','FABRICANTE'].includes(activeSection) && `${users.filter(u => u.roles?.includes(activeSection)).length} ${ROLE_META[activeSection].label.toLowerCase()} activos`}
-            {activeSection === 'users' && `${particulares.length} particular${particulares.length !== 1 ? 'es' : ''}`}
-          </Text>
-        </View>
-      )}
+            backgroundColor: '#f59e0b', borderRadius: 10,
+            minWidth: 20, height: 20, paddingHorizontal: 6,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{stats.pending}</Text>
+          </View>
+        )}
+      </View>
 
-      {renderContent()}
-    </>
+      <View style={{ padding: 14 }}>
+        {/* Tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 14 }}
+          contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+          {SECTIONS.map(sec => {
+            const on = activeSection === sec.id;
+            const c  = sec.id === 'pending' ? '#f59e0b'
+              : sec.id === 'users' ? colors.primary
+              : ROLE_META[sec.id]?.color || colors.primary;
+            return (
+              <Pressable key={sec.id} onPress={() => setActiveSection(sec.id)}
+                style={[{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1.5,
+                  borderColor: on ? c : colors.border,
+                  backgroundColor: on ? `${c}10` : colors.surface,
+                }, Platform.OS === 'web' && { cursor: 'pointer' }]}
+              >
+                <Ionicons name={sec.icon} size={14} color={on ? c : colors.textSecondary} />
+                <Text style={{ color: on ? c : colors.textSecondary, fontWeight: on ? '700' : '500', fontSize: 13 }}>
+                  {sec.label}
+                </Text>
+                {sec.badge > 0 && (
+                  <View style={{
+                    backgroundColor: sec.id === 'pending' ? '#f59e0b' : ROLE_META[sec.id]?.color || colors.primary,
+                    borderRadius: 9, minWidth: 18, height: 18,
+                    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
+                  }}>
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '800' }}>{sec.badge}</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {/* Título sección */}
+        {!loadingUsers && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: activeColor }} />
+            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>
+              {activeSection === 'pending' && `${allPending.length} solicitud${allPending.length !== 1 ? 'es' : ''} pendiente${allPending.length !== 1 ? 's' : ''}`}
+              {['RELOJERO','DEALER','FABRICANTE'].includes(activeSection) && `${users.filter(u => u.roles?.includes(activeSection)).length} ${ROLE_META[activeSection].label.toLowerCase()} activos`}
+              {activeSection === 'users' && `${particulares.length} particular${particulares.length !== 1 ? 'es' : ''}`}
+            </Text>
+          </View>
+        )}
+
+        {renderContent()}
+      </View>
+    </View>
   );
 
   return (
