@@ -162,7 +162,7 @@ export default function GlobalHeader({
               chainId: AMOY_CHAIN_ID,
               chainName: 'Polygon Amoy',
               nativeCurrency: { name: 'POL', symbol: 'POL', decimals: 18 },
-              rpcUrls: ['https://rpc-amoy.polygon.technology'],
+              rpcUrls: [process.env.EXPO_PUBLIC_RPC_URL],
               blockExplorerUrls: ['https://amoy.polygonscan.com'],
             }],
           });

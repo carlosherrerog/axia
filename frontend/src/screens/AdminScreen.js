@@ -899,7 +899,7 @@ function ActiveUserCard({ u, roleColor, onRevoke, colors }) {
 
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 const EXPLORER_BASE = 'https://amoy.polygonscan.com/address/';
-const AMOY_RPC      = process.env.EXPO_PUBLIC_RPC_URL || 'https://polygon-amoy.g.alchemy.com/v2/3tDtSIFSyEZKyEJfl1r7R';
+const AMOY_RPC      = process.env.EXPO_PUBLIC_RPC_URL;
 
 const CONTRACTS = [
   {

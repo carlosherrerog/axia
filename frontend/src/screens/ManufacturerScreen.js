@@ -386,7 +386,7 @@ export default function ManufacturerScreen({ navigation }) {
   );
 }
 
-const AMOY_RPC   = process.env.EXPO_PUBLIC_RPC_URL || 'https://polygon-amoy.g.alchemy.com/v2/3tDtSIFSyEZKyEJfl1r7R';
+const AMOY_RPC   = process.env.EXPO_PUBLIC_RPC_URL;
 const BACKEND_URL = 'https://axia-8ivf.onrender.com';
 
 function ToolConfigSection({ loggedUser, expanded, onToggle, colors }) {

@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { Linking } from 'react-native';
 
-const AMOY_RPC = process.env.EXPO_PUBLIC_RPC_URL || 'https://rpc-amoy.polygon.technology';
+const AMOY_RPC = process.env.EXPO_PUBLIC_RPC_URL;
 
 export const GAS_OVERRIDES = {
   maxPriorityFeePerGas: ethers.parseUnits('30', 'gwei'),
