@@ -17,13 +17,14 @@ El proyecto es un monorepo con tres servicios independientes desplegables:
 ```
 
 **Despliegue en producción:**
-- Frontend: Vercel
-- Backend: Render (PostgreSQL via Supabase)
-- Blockchain: Polygon Amoy (testnet — ver nota abajo)
+- Frontend: [Vercel](https://axia-sandy.vercel.app)
+- Backend: [Render](https://axia-8ivf.onrender.com)
+- Base de datos: Supabase (PostgreSQL)
+- Blockchain: Polygon Amoy (testnet activo para demo — ver nota en contratos)
 
 ## Contratos inteligentes
 
-> **Nota sobre la red:** Los contratos están desplegados originalmente en **Polygon mainnet**, lo que demuestra la viabilidad del sistema en producción real. Para las pruebas y la demostración del TFG se utiliza **Polygon Amoy** (testnet), que permite operar sin coste económico real manteniendo un entorno técnicamente idéntico. Ambos despliegues coexisten; la aplicación activa apunta a Amoy.
+> **Nota sobre la red:** Los contratos están desplegados en **Polygon mainnet** y en **Polygon Amoy** (testnet). La aplicación activa apunta a Amoy, que permite operar sin coste económico real en un entorno técnicamente idéntico a mainnet. Los contratos en mainnet corresponden a una versión anterior del código.
 
 ### Polygon Amoy — testnet (activo)
 
@@ -36,15 +37,15 @@ El proyecto es un monorepo con tres servicios independientes desplegables:
 
 Verificables en [Amoy Polygonscan](https://amoy.polygonscan.com).
 
-### Polygon mainnet (desplegado, no activo en esta demo)
+### Polygon mainnet (versión anterior — desplegado)
 
 | Contrato | Dirección |
 |---|---|
 | WatchNFT | `0x8725a60F432EDCaA3dF1d7987e99B9C18c465988` |
-| WatchMarketplace | `0x867646fC1f7F7Eb24bEfdfdBE8130453226283ca` |
-| WatchAuction | `0xAac2855fDc5fA3A3d81fEe442662E44f98985574` |
-| WatchSignature | `0xBF3B419496a24f94b0F4DD83bbccA501Bd9F8620` |
-| MockUSDC | `0x48F996eb99127A5858fb88670C0F670403B2a03D` |
+| WatchMarketplace | `0x57057749e6aF1b21070FA2A4e5D4359AA2711735` |
+| WatchAuction | `0xe7Be5Fd0162f7f2fbC5851FB9DC2f5b4b81F63d6` |
+| WatchSignature | `0x967187957d31d0912aE57cad1B51F764339AaEe6` |
+| MockUSDC | `0xbBfCa1b8404Dc43238C4A359E8454632f00c292F` |
 
 Verificables en [Polygonscan](https://polygonscan.com).
 
