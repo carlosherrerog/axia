@@ -893,19 +893,6 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "signatureVerifier",
-      "outputs": [
-        {
-          "internalType": "contract IWatchSignature",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "address",
