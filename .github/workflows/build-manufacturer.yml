@@ -21,7 +21,7 @@ jobs:
             exe: dist/AXIA-Manufacturer.exe
           - os: macos-latest
             artifact: AXIA-Manufacturer-macos
-            exe: dist/AXIA-Manufacturer.app
+            exe: dist/AXIA-Manufacturer-macos.zip
 
     runs-on: ${{ matrix.os }}
 
@@ -86,6 +86,12 @@ jobs:
             --hidden-import "PIL.ImageTk" \
             --clean \
             main.py
+
+      - name: Zip app bundle (macOS)
+        if: runner.os == 'macOS'
+        working-directory: manufacturer_tool
+        run: |
+          ditto -c -k --keepParent "dist/AXIA-Manufacturer.app" "dist/AXIA-Manufacturer-macos.zip"
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
