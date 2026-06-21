@@ -19,6 +19,9 @@ jobs:
           - os: windows-latest
             artifact: AXIA-Manufacturer-windows
             exe: dist/AXIA-Manufacturer.exe
+          - os: macos-latest
+            artifact: AXIA-Manufacturer-macos
+            exe: dist/AXIA-Manufacturer.app
 
     runs-on: ${{ matrix.os }}
 
@@ -42,6 +45,28 @@ jobs:
 
       - name: Build (Linux)
         if: runner.os == 'Linux'
+        working-directory: manufacturer_tool
+        run: |
+          pyinstaller \
+            --onefile \
+            --windowed \
+            --name "AXIA-Manufacturer" \
+            --add-data "abi:abi" \
+            --add-data "icons:icons" \
+            --hidden-import "web3" \
+            --hidden-import "web3.middleware" \
+            --hidden-import "web3.providers" \
+            --hidden-import "smartcard" \
+            --hidden-import "smartcard.System" \
+            --hidden-import "smartcard.util" \
+            --hidden-import "PIL" \
+            --hidden-import "PIL.Image" \
+            --hidden-import "PIL.ImageTk" \
+            --clean \
+            main.py
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
         working-directory: manufacturer_tool
         run: |
           pyinstaller \
