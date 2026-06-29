@@ -1,0 +1,199 @@
+@startuml DC_Contratos
+
+title Diagrama de Clases: Contratos Solidity (Blockchain)
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 8
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam backgroundColor #FFFFFF
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 90
+skinparam ranksep 70
+
+skinparam class {
+  BackgroundColor       #FFFFFF
+  BorderColor           #000000
+  FontColor             #000000
+  BorderThickness       1.5
+  HeaderBackgroundColor #EEEEEE
+  AttributeFontSize     7
+  AttributeFontColor    #000000
+}
+
+hide circle
+top to bottom direction
+
+' ── Fila 1: OpenZeppelin ──────────────────────────────
+together {
+  abstract class ERC721URIStorage <<external>> {}
+  abstract class Ownable <<external>> {}
+  abstract class Pausable <<external>> {}
+  abstract class ReentrancyGuard <<external>> {}
+  abstract class ERC20 <<external>> {}
+}
+
+' ── Fila 2: Contratos AXIA ───────────────────────────
+together {
+  class WatchNFT <<contract>> {
+    +nextTokenId: uint256
+    +marketplaceAddress: address
+    +watches: Map<uint256, Watch>
+    +nfcToTokenId: Map<bytes32, uint256>
+    +authorizedManufacturers: Map<address, bool>
+    +authorizedWatchmakers: Map<address, bool>
+    +authorizedDealers: Map<address, bool>
+    --
+    +mintWatch()
+    +changeSecurityState()
+    +alteredWatch()
+    +restoreAuthenticity()
+    +burnWatch()
+    +manageManufacturer()
+    +manageWatchmaker()
+    +manageDealer()
+    +setMarketplaceAddress()
+    +pauseContract()
+    +resumeContract()
+    +getWatchData()
+    +getWatchManufacturer()
+    +getTokenByNFC()
+  }
+
+  class WatchMarketplace <<contract>> {
+    +watchNFT: WatchNFT
+    +paymentToken: IERC20
+    +marketPlaceFeePercent: uint256
+    +royaltyPercent: uint256
+    +watchmakerFeePercent: uint256
+    +sellerDepositPercent: uint256
+    +feeRecipient: address
+    +logisticsSystem: address
+    +auctionContract: address
+    +listings: Map<uint256, Listing>
+    --
+    +listWatch()
+    +cancelListing()
+    +updateListingPrice()
+    +buyWatchEscrow()
+    +confirmDelivery()
+    +verifyAuthenticity()
+    +markAsShipped()
+    +assignWatchmaker()
+    +refundEscrow()
+    +createAuctionEscrow()
+    +setFees()
+    +updateFeeRecipient()
+    +setLogisticsSystem()
+    +setAuctionContract()
+    +setPaymentToken()
+    +pauseMarketplace()
+    +resumeMarketplace()
+  }
+
+  class WatchAuction <<contract>> {
+    +watchNFT: WatchNFT
+    +paymentToken: IERC20
+    +marketplace: WatchMarketplace
+    +auctions: Map<uint256, Auction>
+    --
+    +createAuction()
+    +placeBid()
+    +endAuction()
+  }
+
+  class MockUSDC <<contract>> {
+    --
+    +mint()
+    +decimals()
+  }
+}
+
+' ── Fila 3: Structs principales ──────────────────────
+together {
+  class Watch <<struct>> {
+    +brand: string
+    +model: string
+    +serialNumber: string
+    +manufacturingYear: uint256
+    +hashUID: bytes32
+    +state: WatchState
+    +manufacturer: address
+  }
+
+  class Listing <<struct>> {
+    +seller: address
+    +buyer: address
+    +price: uint256
+    +sellerDeposit: uint256
+    +isP2P: bool
+    +watchmakerApproved: bool
+    +isShipped: bool
+    +assignedWatchmaker: address
+    +verifyingWatchmaker: address
+    +state: ListingState
+  }
+
+  class Auction <<struct>> {
+    +seller: address
+    +highestBidder: address
+    +highestBid: uint256
+    +endTime: uint256
+    +minPrice: uint256
+    +active: bool
+  }
+}
+
+' ── Fila 4: Enums de estado ───────────────────────────
+together {
+  enum WatchState <<enumeration>> {
+    Active
+    Stolen
+    Lost
+    Destroyed
+    AlteredWatch
+  }
+
+  enum ListingState <<enumeration>> {
+    Inactive
+    Active
+    Escrowed
+  }
+}
+
+' ── Herencias ─────────────────────────────────────────
+ERC721URIStorage <|-- WatchNFT
+Ownable          <|-- WatchNFT
+Pausable         <|-- WatchNFT
+
+Ownable         <|-- WatchMarketplace
+Pausable        <|-- WatchMarketplace
+ReentrancyGuard <|-- WatchMarketplace
+
+ReentrancyGuard <|-- WatchAuction
+Pausable        <|-- WatchAuction
+
+ERC20 <|-- MockUSDC
+
+' ── Asociaciones entre contratos (sin rank) ──────────
+WatchMarketplace "1" -[norank]-> "1" WatchNFT
+WatchMarketplace "1" -[norank]-> "1" MockUSDC
+WatchAuction     "1" -[norank]-> "1" WatchNFT
+WatchAuction     "1" -[norank]-> "1" WatchMarketplace
+WatchAuction     "1" -[norank]-> "1" MockUSDC
+
+' ── Composiciones contrato → struct ──────────────────
+WatchNFT         "1" *--> "0..*" Watch
+WatchMarketplace "1" *--> "0..*" Listing
+WatchAuction     "1" *--> "0..*" Auction
+
+' ── Listing y Auction referencian Watch (via tokenId) ─
+Listing "0..1" -[norank]-> "1" Watch
+Auction "0..1" -[norank]-> "1" Watch
+
+' ── Dependencias struct → enum ───────────────────────
+Watch   ..> WatchState
+Listing ..> ListingState
+
+@enduml

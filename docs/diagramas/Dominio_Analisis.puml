@@ -1,0 +1,83 @@
+@startuml Dominio_Analisis
+
+title Modelo del Dominio
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundCorner 0
+skinparam backgroundColor #FFFFFF
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam minClassWidth 140
+skinparam classHeaderBackgroundColor #FFFFFF
+skinparam nodesep 55
+skinparam ranksep 55
+hide circle
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #000000
+  FontColor #000000
+  BorderThickness 1.5
+}
+
+top to bottom direction
+
+class Usuario           { }
+class Particular        { }
+class Dealer            { }
+class Fabricante        { }
+class Relojero          { }
+class Reloj             { }
+class Anuncio           { }
+class Subasta           { }
+class Puja              { }
+class "Historial de Propiedad"  as Historial      { }
+class Venta             { }
+class Transferencia     { }
+class Peritaje          { }
+class Notificación      { }
+class "Solicitud de Fondos"     as SolicitudFondos { }
+
+' Jerarquía de usuarios
+Usuario    <|-- Particular
+Usuario    <|-- Dealer
+Usuario    <|-- Fabricante
+Usuario    <|-- Relojero
+
+' Solo Particular, Dealer y Fabricante poseen relojes
+Particular "1" -- "0..*" Reloj : posee
+Dealer     "1" -- "0..*" Reloj : posee
+Fabricante "1" -- "0..*" Reloj : posee
+
+' Composiciones del reloj
+Reloj "1" *-- "0..*" Anuncio
+Reloj "1" *-- "0..*" Subasta
+Reloj "1" *-- "1"    Historial
+Reloj "1" *-- "0..*" Peritaje
+
+' Subasta contiene pujas
+Subasta "1" *-- "0..*" Puja
+
+' Historial contiene ventas y transferencias
+Historial "1" *-- "0..*" Venta
+Historial "1" *-- "0..*" Transferencia
+
+' Una venta proviene de un anuncio completado
+Anuncio "1" -- "0..1" Venta : origina
+
+' Pujas
+Usuario "1" -- "0..*" Puja : realiza
+
+' Relojero realiza peritajes
+Relojero "1" -- "0..*" Peritaje : realiza
+
+' Notificaciones
+Usuario "1"    -- "0..*" Notificación    : destinatario de
+Reloj   "0..1" -- "0..*" Notificación
+
+' Solicitud de fondos
+Usuario "1" -- "0..*" SolicitudFondos : solicita
+
+@enduml

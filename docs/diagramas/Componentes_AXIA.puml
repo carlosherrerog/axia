@@ -1,0 +1,76 @@
+@startuml Componentes_AXIA
+
+title Diagrama de componentes del sistema AXIA
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 10
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #333333
+  FontSize 9
+}
+skinparam package {
+  BackgroundColor #FAFAFA
+  BorderColor #333333
+  FontSize 10
+}
+skinparam arrow {
+  Color #333333
+  FontSize 9
+}
+
+top to bottom direction
+
+package "Frontend" as PRES {
+  component "React Native · Expo\n(Vercel)" as Front
+  component "Herramienta del Fabricante\n(Tkinter)" as Tool
+}
+
+package "Datos" as DATA {
+  component "PostgreSQL\n(Supabase)" as DB
+  component "IPFS\n(Pinata)" as IPFS
+}
+
+package "Backend · Render\n<<orientado a servicios>>" as BACK {
+  component "main.py\nAPI REST · WebSocket\nauth · marketplace · subastas" as Main
+  component "blockchain.py\nweb3.py · ABIs · gas" as BCPy
+}
+
+package "Blockchain · Polygon Amoy\n<<orientado a objetos>>" as CHAIN {
+  component "WatchNFT" as NFT
+  component "WatchMarketplace" as MKT
+  component "WatchAuction" as AUC
+  component "MockUSDC" as USDC
+}
+
+' Conexiones
+Front --> Main      : REST / WebSocket
+Tool  --> Main      : REST API
+
+Main  --> DB        : SQL
+Main  --> IPFS      : HTTP
+Main  --> BCPy
+
+BCPy  --> NFT       : "JSON-RPC "
+BCPy  --> MKT       : "JSON-RPC  "
+BCPy  --> AUC       : "JSON-RPC   "
+
+note right of PRES
+  React Native · Expo y la Herramienta del
+  Fabricante también acceden directamente
+  a los contratos vía JSON-RPC (ethers.js
+  y web3.py respectivamente).
+end note
+
+' Layout
+PRES  -[hidden]d-> DATA
+PRES  -[hidden]d-> BACK
+DATA  -[hidden]r-> BACK
+BACK  -[hidden]d-> CHAIN
+
+@enduml
